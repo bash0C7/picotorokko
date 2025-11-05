@@ -54,3 +54,11 @@ build-iPhoneSimulator/
 
 # Used by RuboCop. Remote config files pulled in from inherit_from directive.
 # .rubocop-https?--*
+
+# ===== PicoRuby Development Kit specific =====
+# macOS
+.DS_Store
+
+# PicoRuby/R2P2-ESP32
+.cache/
+.picoruby-env.yml
