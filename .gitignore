@@ -62,3 +62,6 @@ build-iPhoneSimulator/
 # PicoRuby/R2P2-ESP32
 .cache/
 .picoruby-env.yml
+
+# Claude Code
+.claude/
