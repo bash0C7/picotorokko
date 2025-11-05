@@ -11,22 +11,22 @@
 
 ## Installation
 
-### Configure Bundler for vendor/bundle isolation
+Add this line to your application's Gemfile:
 
-```bash
-bundle config set --local path 'vendor/bundle'
+```ruby
+gem 'pap'
 ```
 
-### Install dependencies
+And then execute:
 
 ```bash
 bundle install
 ```
 
-### Build the gem (optional)
+Or install it yourself as:
 
 ```bash
-bundle exec gem build pap.gemspec
+gem install pap
 ```
 
 ## Quick Start
@@ -34,7 +34,7 @@ bundle exec gem build pap.gemspec
 ### 1. Check current environment
 
 ```bash
-bundle exec exe/pap env show
+bundle exec pap env show
 ```
 
 ### 2. Fetch environment from cache
@@ -42,20 +42,20 @@ bundle exec exe/pap env show
 If you have a `.picoruby-env.yml` with environment definitions:
 
 ```bash
-bundle exec exe/pap cache fetch stable-2024-11
+bundle exec pap cache fetch stable-2024-11
 ```
 
 ### 3. Setup build environment
 
 ```bash
-bundle exec exe/pap build setup stable-2024-11
+bundle exec pap build setup stable-2024-11
 ```
 
 ### 4. Build, flash, and monitor
 
 ```bash
-bundle exec exe/pap flash
-bundle exec exe/pap monitor
+bundle exec pap flash
+bundle exec pap monitor
 ```
 
 ## Commands Reference
@@ -111,7 +111,43 @@ For detailed specifications, see [SPEC.md](SPEC.md).
 
 ## Development
 
-After checking out the repo, run `bundle install` to install dependencies. Then, run `bundle exec rake test` to run the tests.
+After checking out the repo:
+
+### 1. Configure Bundler for vendor/bundle isolation
+
+```bash
+bundle config set --local path 'vendor/bundle'
+```
+
+### 2. Install dependencies
+
+```bash
+bundle install
+```
+
+### 3. Run tests
+
+```bash
+bundle exec rake test
+```
+
+### 4. Run linter
+
+```bash
+bundle exec rubocop
+```
+
+### 5. Build the gem
+
+```bash
+bundle exec gem build pap.gemspec
+```
+
+### 6. Test CLI locally
+
+```bash
+bundle exec exe/pap --help
+```
 
 ## License
 
