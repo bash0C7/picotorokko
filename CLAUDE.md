@@ -40,6 +40,8 @@ ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビ�
 
 ## TODO Management
 
+**Project tasks are tracked in `TODO.md` at repository root.**
+
 **Maintain TODO.md with strict discipline**:
 
 - ✅ **Remove completed tasks immediately** — Delete from TODO.md as soon as work is done and committed

@@ -1,5 +1,7 @@
 # TODO: Project Maintenance Tasks
 
+> **TODO Management Methodology**: See `.claude/skills/project-workflow/SKILL.md` and `CLAUDE.md` ## TODO Management section for task management rules and workflow.
+
 ## Future Enhancements (Optional)
 
 ### CI/CD Integration

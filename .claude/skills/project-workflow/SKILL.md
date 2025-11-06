@@ -65,6 +65,7 @@ rake buildall     # Combines destructive ops
 
 ```
 1. Check TODO.md for ongoing tasks and priorities
+   (See CLAUDE.md ## TODO Management for task management rules)
 2. Use explore agent to review relevant code/structure
 3. Make targeted edits (small, focused)
 4. Commit with clear message via `commit` subagent
