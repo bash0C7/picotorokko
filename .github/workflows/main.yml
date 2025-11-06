@@ -10,30 +10,21 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
-    strategy:
-      fail-fast: false
-      matrix:
-        ruby:
-          - '3.1'
-          - '3.2'
-          - '3.3'
-          - '3.4'
+    name: Ruby 3.4
 
     steps:
       - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ matrix.ruby }}
+          ruby-version: '3.4'
           bundler-cache: true
       - name: Run tests
         run: bundle exec rake
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: success() && matrix.ruby == '3.4'
+        if: success()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-          files: ./coverage/coverage.xml
         continue-on-error: true
