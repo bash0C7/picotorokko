@@ -35,14 +35,18 @@ The command should be renamed from `pap` to `pra` to better reflect the project'
   - TODO: ユニットテストの追加
 
 - [ ] Add comprehensive unit tests for all commands
-  - Current state: test/pap_test.rb has only placeholder tests (line 12-14)
-  - Line 13: `assert_equal("expected", "actual")` is a failing placeholder test
-  - Required tests:
-    - Env commands: show, set, latest
-    - Cache commands: list, fetch, clean, prune
-    - Build commands: setup, clean, list
-    - Patch commands: export, apply, diff
-    - R2P2 commands: flash, monitor (build is in conflict, see Critical Issues)
+  - Progress: 38 tests, 93 assertions, 100% passing
+  - ✓ Basic tests: VERSION constant, CLI version command (test/pap_test.rb)
+  - ✓ Env module tests: YAML operations, environment management, symlinks (test/env_test.rb)
+  - ✓ Env commands: show, set (test/commands/env_test.rb)
+  - ✓ Cache commands: list, clean, prune (test/commands/cache_test.rb)
+  - ✓ Build commands: clean, list (test/commands/build_test.rb)
+  - Remaining tests needed:
+    - Env commands: latest (requires network/git mocking)
+    - Cache commands: fetch (requires network/git mocking)
+    - Build commands: setup (complex, requires git repo setup)
+    - Patch commands: export, apply, diff (requires git repo setup)
+    - R2P2 commands: flash, monitor (delegates to Rakefile, complex to test)
 
 ## Documentation
 
