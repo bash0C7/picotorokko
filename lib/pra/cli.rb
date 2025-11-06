@@ -6,7 +6,7 @@ require_relative 'commands/env'
 require_relative 'commands/cache'
 require_relative 'commands/build'
 require_relative 'commands/patch'
-require_relative 'commands/r2p2'
+require_relative 'commands/device'
 require_relative 'commands/ci'
 
 module Pra
@@ -32,19 +32,8 @@ module Pra
     desc 'ci SUBCOMMAND ...ARGS', 'CI/CD configuration commands'
     subcommand 'ci', Pra::Commands::Ci
 
-    # R2P2-ESP32タスク委譲（トップレベルコマンドを動的生成）
-    # Note: 'build'は除外（Build Environment Managementのサブコマンドと衝突するため）
-    Pra::Commands::R2P2.tasks.each do |task_name, task|
-      next if task_name.to_s == 'build'  # buildコマンドは除外
-
-      desc "#{task_name} [ENV_NAME]", task.description
-      option :env, type: :string, default: 'current', aliases: '-e', desc: 'Environment name'
-
-      define_method(task_name) do |env_name = nil|
-        env_name ||= options[:env]
-        Pra::Commands::R2P2.new.send(task_name, env_name)
-      end
-    end
+    desc 'device SUBCOMMAND ...ARGS', 'ESP32 device operation commands'
+    subcommand 'device', Pra::Commands::Device
 
     # バージョン表示
     desc 'version', 'Show pra version'

@@ -3,8 +3,8 @@ require 'thor'
 
 module Pra
   module Commands
-    # R2P2-ESP32タスク委譲コマンド群
-    class R2P2 < Thor
+    # ESP32デバイス操作コマンド群（R2P2-ESP32タスク委譲）
+    class Device < Thor
       def self.exit_on_failure?
         true
       end
@@ -21,6 +21,38 @@ module Pra
         puts "Monitoring: #{env_name}"
         puts '(Press Ctrl+C to exit)'
         delegate_to_r2p2('monitor', env_name)
+      end
+
+      desc 'build [ENV_NAME]', 'Build firmware for ESP32'
+      def build(env_name = 'current')
+        puts "Building: #{env_name}"
+        delegate_to_r2p2('build', env_name)
+        puts '✓ Build completed'
+      end
+
+      desc 'setup_esp32 [ENV_NAME]', 'Setup ESP32 build environment'
+      def setup_esp32(env_name = 'current')
+        puts "Setting up ESP32: #{env_name}"
+        delegate_to_r2p2('setup_esp32', env_name)
+        puts '✓ ESP32 setup completed'
+      end
+
+      # 明示的に定義されていないコマンドをRakeタスクに透過的に委譲
+      def method_missing(method_name, *args)
+        # Thorの内部メソッド呼び出しは無視
+        return super if method_name.to_s.start_with?('_')
+
+        env_name = args.first || 'current'
+        puts "Delegating to R2P2-ESP32 task: #{method_name}"
+        delegate_to_r2p2(method_name.to_s, env_name)
+      rescue
+        # Rakeタスクが存在しない場合など
+        raise Thor::UndefinedCommandError, "Could not find command or R2P2-ESP32 task: #{method_name}"
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        # Thorの内部メソッド以外は全てR2P2タスクとして扱う可能性がある
+        !method_name.to_s.start_with?('_') || super
       end
 
       private
