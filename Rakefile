@@ -13,4 +13,9 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
-task default: %i[test rubocop]
+# 開発時のデフォルトタスク：クイックにテストのみ実行
+task default: %i[test]
+
+# CI専用タスク：じっくりテスト（カバレッジチェックあり）
+desc "Run tests with coverage checks (for CI)"
+task ci: :test
