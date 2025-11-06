@@ -24,5 +24,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SPEC.md with detailed English specification
 - README.md with installation and usage guide
 
-[Unreleased]: https://github.com/yourusername/pap/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/yourusername/pap/releases/tag/v0.1.0
+[Unreleased]: https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/releases/tag/v0.1.0

@@ -58,9 +58,8 @@ The command should be renamed from `pap` to `pra` to better reflect the project'
   - ✓ Updated all workflow examples (Scenario 1, 2, 3) to use `rake build` directly
   - README.md already correct (no changes needed)
 
-- [ ] Fix CHANGELOG.md URL placeholders (line 27-28)
-  - Current: `https://github.com/yourusername/pap/...`
-  - Should be: `https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/...`
+- [x] Fix CHANGELOG.md URL placeholders (line 27-28)
+  - ✓ Updated to: `https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/...`
 
 - [ ] Consider adding example .picoruby-env.yml file
   - SPEC.md (line 131-163) provides sample configuration
