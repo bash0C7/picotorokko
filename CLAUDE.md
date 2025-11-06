@@ -39,6 +39,19 @@ ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビ�
 - ❓ `rake build`, `rake cleanbuild` — Ask first
 - 🚫 `rake init`, `rake update`, `rake buildall` — Never (destructive `git reset --hard`)
 
+## Gem Development
+
+**Dependency Management** (gemspec centralization):
+- ✅ **All dependencies go in `pra.gemspec`** — Single source of truth
+  - Runtime: `spec.add_dependency`
+  - Development: `spec.add_development_dependency` (rake, test-unit, rubocop, etc.)
+- ✅ **Gemfile must be minimal** — Only `source` + `gemspec` directive
+  ```ruby
+  source "https://rubygems.org"
+  gemspec
+  ```
+- 🚫 **Never duplicate dependencies in Gemfile** — Causes version conflicts and management overhead
+
 ## Testing & Quality
 
 @import .claude/docs/testing-guidelines.md

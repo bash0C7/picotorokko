@@ -10,17 +10,18 @@
 - [x] Test framework: test-unit (not minitest)
 - [x] Ruby version: 3.4 in CI, 3.1+ in gemspec
 
-### Phase 1: Update Dependencies
+### Phase 1: Update Dependencies ✅
 **Goal**: Upgrade RuboCop and add performance/rake plugins for 2025 best practices
 
-- [ ] Update Gemfile with modern RuboCop versions
-  - [ ] Change `gem "rubocop", "~> 1.21"` to `gem "rubocop", "~> 1.81"`
-  - [ ] Add `gem "rubocop-performance", "~> 1.26"` (performance optimization checks)
-  - [ ] Add `gem "rubocop-rake", "~> 0.7"` (Rake-specific style checks)
-  - [ ] Note: Do NOT add rubocop-minitest (project uses test-unit, not minitest)
+- [x] Centralize all dependencies to pra.gemspec (gemspec-first approach)
+  - [x] Add `spec.add_development_dependency "rubocop", "~> 1.81"`
+  - [x] Add `spec.add_development_dependency "rubocop-performance", "~> 1.26"`
+  - [x] Add `spec.add_development_dependency "rubocop-rake", "~> 0.7"`
+  - [x] Minimize Gemfile to `source` + `gemspec` only
+  - [x] Document gemspec centralization rule in CLAUDE.md
 
-- [ ] Run bundle update to fetch new versions
-  - [ ] Execute: `bundle update rubocop rubocop-performance rubocop-rake`
+- [ ] Run bundle install to fetch new versions (待機中 - 他環境で実行)
+  - [ ] Execute: `bundle install`
   - [ ] Verify Gemfile.lock is updated with new dependencies
   - [ ] Verify bundle exec works: `bundle exec rubocop --version`
 
