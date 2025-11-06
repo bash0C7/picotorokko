@@ -34,6 +34,9 @@ Gem::Specification.new do |spec|
   # Runtime dependencies
   spec.add_dependency "thor", "~> 1.3"
 
+  # Development dependencies
+  spec.add_development_dependency "simplecov", "~> 0.22"
+
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
 end

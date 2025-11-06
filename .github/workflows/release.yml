@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.2.0)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (skip actual publish)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Validate version format
+        run: |
+          if ! [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format X.Y.Z (e.g., 0.2.0)"
+            exit 1
+          fi
+
+      - name: Update version file
+        run: |
+          sed -i 's/VERSION = ".*"/VERSION = "${{ inputs.version }}"/' lib/pra/version.rb
+          git diff lib/pra/version.rb
+
+      - name: Run tests
+        run: bundle exec rake test
+
+      - name: Build gem
+        run: gem build pra.gemspec
+
+      - name: Commit version bump
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git add lib/pra/version.rb
+          git commit -m "Bump version to ${{ inputs.version }}"
+          git push origin main
+
+      - name: Create Git tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+          git push origin "v${{ inputs.version }}"
+
+      - name: Publish to RubyGems
+        if: ${{ !inputs.dry_run }}
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          mkdir -p ~/.gem
+          echo "---" > ~/.gem/credentials
+          echo ":rubygems_api_key: ${GEM_HOST_API_KEY}" >> ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+          gem push pra-${{ inputs.version }}.gem
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ inputs.version }}" \
+            --title "v${{ inputs.version }}" \
+            --generate-notes \
+            pra-${{ inputs.version }}.gem
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "::notice::Dry run completed successfully"
+          echo "::notice::Version would be bumped to ${{ inputs.version }}"
+          echo "::notice::Gem built: pra-${{ inputs.version }}.gem"
+          ls -lh pra-${{ inputs.version }}.gem

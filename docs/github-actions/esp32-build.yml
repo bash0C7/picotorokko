@@ -1,0 +1,134 @@
+# ESP32 Firmware Build Workflow for PicoRuby Applications
+#
+# This workflow builds ESP32 firmware for PicoRuby applications using the pra tool.
+# Copy this file to .github/workflows/esp32-build.yml in your project.
+#
+# Prerequisites:
+# 1. Install pra gem in your project (bundle add pra)
+# 2. Create .picoruby-env.yml with your R2P2-ESP32 configuration
+# 3. (Optional) Configure CODECOV_TOKEN for coverage reports
+
+name: ESP32 Firmware Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Install pra gem
+        run: |
+          gem install pra
+          pra --version
+
+      - name: Setup ESP-IDF environment
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.1
+          target: esp32
+
+      - name: Fetch PicoRuby environment from cache
+        run: |
+          # Fetch the environment specified in .picoruby-env.yml
+          # Example: pra cache fetch stable-2024-11
+          # Adjust the environment name based on your configuration
+          if [ -f .picoruby-env.yml ]; then
+            ENV_NAME=$(grep -oP '(?<=^  )[^:]+' .picoruby-env.yml | head -1)
+            echo "Fetching environment: $ENV_NAME"
+            pra cache fetch "$ENV_NAME"
+          else
+            echo "Error: .picoruby-env.yml not found"
+            exit 1
+          fi
+
+      - name: Setup build environment
+        run: |
+          pra build setup
+
+      - name: Apply patches
+        run: |
+          # Apply any custom patches from patch/ directory
+          if [ -d patch ]; then
+            pra patch apply --all || true
+          fi
+
+      - name: Build firmware
+        run: |
+          cd .cache/*/r2p2-esp32
+          idf.py build
+
+      - name: List build artifacts
+        run: |
+          find .cache/*/r2p2-esp32/build -name "*.bin" -o -name "*.elf"
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32-firmware
+          path: |
+            .cache/*/r2p2-esp32/build/bootloader/bootloader.bin
+            .cache/*/r2p2-esp32/build/partition_table/partition-table.bin
+            .cache/*/r2p2-esp32/build/*.bin
+            .cache/*/r2p2-esp32/build/*.elf
+          retention-days: 30
+
+      - name: Generate flash instructions
+        if: success()
+        run: |
+          echo "# Flash Instructions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the artifacts and flash to your ESP32 using:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "esptool.py --chip esp32 --port /dev/ttyUSB0 write_flash \\" >> $GITHUB_STEP_SUMMARY
+          echo "  0x1000 bootloader.bin \\" >> $GITHUB_STEP_SUMMARY
+          echo "  0x8000 partition-table.bin \\" >> $GITHUB_STEP_SUMMARY
+          echo "  0x10000 <your-app-name>.bin" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Or use pra command:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "bundle exec pra r2p2 flash --port /dev/ttyUSB0" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Optional: Run Ruby tests if you have PicoRuby unit tests
+  test:
+    runs-on: ubuntu-latest
+    if: false  # Enable this job by changing to 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Run tests
+        run: bundle exec rake test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: success()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+        continue-on-error: true

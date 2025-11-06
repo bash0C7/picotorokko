@@ -34,28 +34,28 @@ Implementation order: Developer features first → User features second
 
 #### A. For Gem Developers (this repository)
 
-- [ ] Test & Coverage Automation
-  - [ ] Add SimpleCov for coverage measurement (target: 90%)
-  - [ ] Extend `.github/workflows/main.yml` with Ruby matrix testing (3.1, 3.2, 3.3, 3.4)
-  - [ ] Add coverage badge to README.md
-  - [ ] Upload coverage reports to Codecov
-  - [ ] Fail CI if coverage drops below threshold
+- [x] Test & Coverage Automation
+  - [x] Add SimpleCov for coverage measurement (target: 90%)
+  - [x] Extend `.github/workflows/main.yml` with Ruby matrix testing (3.1, 3.2, 3.3, 3.4)
+  - [x] Add coverage badge to README.md
+  - [x] Upload coverage reports to Codecov
+  - [x] Fail CI if coverage drops below threshold
 
-- [ ] Manual Release Workflow (workflow_dispatch trigger)
-  - [ ] Create `.github/workflows/release.yml`
-  - [ ] Implement version bump automation
-  - [ ] Build and publish gem to RubyGems.org (manual trigger only)
-  - [ ] Create GitHub Release with auto-generated notes
-  - [ ] Document release process in CONTRIBUTING.md
-  - [ ] Setup: Requires `RUBYGEMS_API_KEY` in GitHub Secrets
+- [x] Manual Release Workflow (workflow_dispatch trigger)
+  - [x] Create `.github/workflows/release.yml`
+  - [x] Implement version bump automation
+  - [x] Build and publish gem to RubyGems.org (manual trigger only)
+  - [x] Create GitHub Release with auto-generated notes
+  - [x] Document release process in CONTRIBUTING.md
+  - [x] Setup: Requires `RUBYGEMS_API_KEY` in GitHub Secrets
 
 #### B. For Gem Users (pra command users - PicoRuby developers)
 
-- [ ] ESP32 Firmware Build CI Template
-  - [ ] Create example workflow: `docs/github-actions/esp32-build.yml`
-  - [ ] Use `espressif/esp-idf-ci-action` for ESP-IDF builds
-  - [ ] Upload firmware artifacts (bootloader.bin, partition-table.bin, app.bin)
-  - [ ] Document flash process after downloading artifacts:
+- [x] ESP32 Firmware Build CI Template
+  - [x] Create example workflow: `docs/github-actions/esp32-build.yml`
+  - [x] Use `espressif/esp-idf-ci-action` for ESP-IDF builds
+  - [x] Upload firmware artifacts (bootloader.bin, partition-table.bin, app.bin)
+  - [x] Document flash process after downloading artifacts:
     ```bash
     esptool.py --chip esp32 write_flash \
       0x1000 bootloader.bin \
@@ -63,15 +63,15 @@ Implementation order: Developer features first → User features second
       0x10000 app.bin
     ```
 
-- [ ] CI/CD Documentation for Users
-  - [ ] Add "CI/CD Integration" section to README.md
-  - [ ] Create docs/CI_CD_GUIDE.md with step-by-step setup
-  - [ ] Explain firmware build artifacts and flash process
+- [x] CI/CD Documentation for Users
+  - [x] Add "CI/CD Integration" section to README.md
+  - [x] Create docs/CI_CD_GUIDE.md with step-by-step setup
+  - [x] Explain firmware build artifacts and flash process
   - [ ] (Optional) Consider `pra init --ci` command to auto-generate workflow
 
 #### C. Shared/Common Features
 
-- [ ] Best Practices Documentation
-  - [ ] Document gem development CI/CD workflow
-  - [ ] Document user's PicoRuby project CI/CD workflow
-  - [ ] Add troubleshooting guide for CI failures
+- [x] Best Practices Documentation
+  - [x] Document gem development CI/CD workflow
+  - [x] Document user's PicoRuby project CI/CD workflow
+  - [x] Add troubleshooting guide for CI failures
