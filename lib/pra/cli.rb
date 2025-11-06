@@ -7,6 +7,7 @@ require_relative 'commands/cache'
 require_relative 'commands/build'
 require_relative 'commands/patch'
 require_relative 'commands/r2p2'
+require_relative 'commands/ci'
 
 module Pra
   # praコマンドのCLIエントリーポイント
@@ -27,6 +28,9 @@ module Pra
 
     desc 'patch SUBCOMMAND ...ARGS', 'Patch management commands'
     subcommand 'patch', Pra::Commands::Patch
+
+    desc 'ci SUBCOMMAND ...ARGS', 'CI/CD configuration commands'
+    subcommand 'ci', Pra::Commands::Ci
 
     # R2P2-ESP32タスク委譲（トップレベルコマンドを動的生成）
     # Note: 'build'は除外（Build Environment Managementのサブコマンドと衝突するため）

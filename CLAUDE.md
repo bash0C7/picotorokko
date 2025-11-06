@@ -2,6 +2,23 @@
 
 ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビルド、メモリ最適化、R2P2-ESP32 ランタイム統合。
 
+## Your Role
+
+**You are the developer of the `pra` gem** — a CLI tool for PicoRuby application development on ESP32.
+
+- **Primary role**: Implement and maintain the `pra` gem itself
+- **User perspective**: Temporarily adopt when designing user-facing features (commands, templates, documentation)
+- **Key distinction**:
+  - Files in `lib/pra/`, `test/`, gem configuration → You develop these
+  - Files in `docs/github-actions/`, templates → These are for `pra` users (not executed during gem development)
+  - When `pra` commands are incomplete, add to TODO.md — don't rush implementation unless explicitly required
+
+**Example thought process**:
+- "I'm implementing `pra ci setup` command" ✅ (gem development)
+- "Users will run this workflow template" ✅ (understanding user needs)
+- "The template uses `pra device build` which doesn't exist yet" → Add to TODO.md ✅
+- "I must implement `pra device build` NOW before proceeding" ❌ (unless explicitly requested)
+
 ## Core Principles
 
 - **Simplicity**: Write simple, linear code. Avoid unnecessary complexity.
