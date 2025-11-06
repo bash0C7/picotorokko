@@ -67,7 +67,8 @@ Implementation order: Developer features first → User features second
   - [x] Add "CI/CD Integration" section to README.md
   - [x] Create docs/CI_CD_GUIDE.md with step-by-step setup
   - [x] Explain firmware build artifacts and flash process
-  - [ ] (Optional) Consider `pra init --ci` command to auto-generate workflow
+  - [x] (Optional) Consider `pra init --ci` command to auto-generate workflow
+    - Implemented as `pra ci setup` instead (object-first command structure)
 
 #### C. Shared/Common Features
 
@@ -82,3 +83,21 @@ Implementation order: Developer features first → User features second
   - [ ] Require branches to be up to date before merging
   - [ ] Optional: Require pull request reviews
   - [ ] Prevent force pushes and deletions
+
+### CLI Command Structure Refactoring
+
+- [ ] Clarify "environment" terminology
+  - [ ] `pra env` → Manages environment definitions (`.picoruby-env.yml`)
+  - [ ] `pra build` → Manages build environments (`.cache/*/r2p2-esp32/`)
+  - [ ] Consider renaming to avoid confusion (e.g., `pra build-env` or `pra workspace`)
+
+- [ ] Reorganize R2P2 device tasks under `pra device` namespace
+  - [ ] Move `flash`, `monitor` to `pra device flash`, `pra device monitor`
+  - [ ] Use metaprogramming to transparently delegate all R2P2-ESP32 Rake tasks
+  - [ ] Avoid manual decoration for each task
+
+- [x] Add CI/CD setup command
+  - [x] Implement `pra ci setup` to auto-generate GitHub Actions workflow
+  - [x] Copy `docs/github-actions/esp32-build.yml` to `.github/workflows/`
+  - [x] Handle existing file conflicts (prompt for overwrite)
+  - [ ] Optional: `pra ci update` to refresh workflow template
