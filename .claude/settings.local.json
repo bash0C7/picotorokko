@@ -5,7 +5,9 @@
       "Bash(git mv:*)",
       "Bash(find:*)",
       "Bash(bundle exec rake test:*)",
-      "Bash(bundle exec exe/pra version:*)"
+      "Bash(bundle exec exe/pra version:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

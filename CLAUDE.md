@@ -42,8 +42,17 @@ Specialized knowledge loads on-demand:
 
 ## Workflow
 
-1. **Investigate**: Use `explore` subagent for code understanding
-2. **Plan**: Use `ExitPlanMode` if complex design needed
-3. **Implement**: Small, incremental changes
-4. **Commit**: Use `commit` subagent immediately
-5. **Verify**: User runs `rake build` / `rake flash`
+1. **Check TODO.md**: Always check [TODO.md](TODO.md) first for ongoing tasks and priorities
+2. **Investigate**: Use `explore` subagent for code understanding
+3. **Plan**: Use `ExitPlanMode` if complex design needed
+4. **Implement**: Small, incremental changes
+5. **Commit**: Use `commit` subagent immediately
+6. **Verify**: User runs `rake build` / `rake flash`
+
+## Important: TODO Management
+
+- **TODO.md** contains the authoritative project task list
+- Always check [TODO.md](TODO.md) at the start of each session
+- Use `TodoWrite` tool to sync with [TODO.md](TODO.md) progress
+- Update [TODO.md](TODO.md) after each logical task completion
+- Never ignore or work around [TODO.md](TODO.md) — it defines project priorities
