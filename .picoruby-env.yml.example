@@ -1,0 +1,40 @@
+# PicoRuby development environment configuration file
+# Each environment is immutable, uniquely identified by commit hash + timestamp
+#
+# Copy this file to `.picoruby-env.yml` and customize for your project:
+#   cp .picoruby-env.yml.example .picoruby-env.yml
+#
+# Usage:
+#   pap env show              - Display current environment
+#   pap env set ENV_NAME      - Switch to specified environment
+#   pap env latest            - Fetch latest versions and switch to them
+#   pap cache fetch ENV_NAME  - Fetch environment from GitHub
+
+current: stable-2024-11
+
+environments:
+  stable-2024-11:
+    R2P2-ESP32:
+      commit: f500652
+      timestamp: "20241105_143022"
+    picoruby-esp32:
+      commit: 6a6da3a
+      timestamp: "20241105_142015"
+    picoruby:
+      commit: e57c370
+      timestamp: "20241105_141030"
+    created_at: "2024-11-05 14:30:22"
+    notes: "Stable version"
+
+  development:
+    R2P2-ESP32:
+      commit: 34a1c23
+      timestamp: "20241104_120000"
+    picoruby-esp32:
+      commit: f331744
+      timestamp: "20241104_115500"
+    picoruby:
+      commit: df21508
+      timestamp: "20241104_115000"
+    created_at: "2024-11-04 12:00:00"
+    notes: "Under development"

@@ -61,10 +61,10 @@ The command should be renamed from `pap` to `pra` to better reflect the project'
 - [x] Fix CHANGELOG.md URL placeholders (line 27-28)
   - ✓ Updated to: `https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/...`
 
-- [ ] Consider adding example .picoruby-env.yml file
-  - SPEC.md (line 131-163) provides sample configuration
-  - No example file exists in repository for users to reference
-  - Could add `.picoruby-env.yml.example` or document in README
+- [x] Consider adding example .picoruby-env.yml file
+  - ✓ Added `.picoruby-env.yml.example` with sample configuration
+  - ✓ Based on SPEC.md (line 131-163) sample
+  - ✓ Includes usage instructions and two example environments
 
 ## Future Enhancements (Optional)
 
