@@ -19,12 +19,12 @@
   - [x] Added terminology documentation and clarified code comments/messages
   - [ ] Consider renaming commands in future if needed (e.g., `pra build-env` or `pra workspace`)
 
-- [ ] Reorganize R2P2 device tasks under `pra device` namespace
-  - [ ] Move `flash`, `monitor` to `pra device flash`, `pra device monitor`
-  - [ ] Add `pra device build` command (delegates to `rake build`)
-  - [ ] Add `pra device setup_esp32` command (delegates to `rake setup_esp32`)
-  - [ ] Use metaprogramming to transparently delegate all R2P2-ESP32 Rake tasks
-  - [ ] Avoid manual decoration for each task
+- [x] Reorganize R2P2 device tasks under `pra device` namespace
+  - [x] Move `flash`, `monitor` to `pra device flash`, `pra device monitor`
+  - [x] Add `pra device build` command (delegates to `rake build`)
+  - [x] Add `pra device setup_esp32` command (delegates to `rake setup_esp32`)
+  - [x] Use metaprogramming to transparently delegate all R2P2-ESP32 Rake tasks
+  - [x] Avoid manual decoration for each task
 
 - [ ] Enhance `pra build setup` for complete build preparation
   - [ ] Add PicoRuby build step (call `rake setup_esp32` via ESP-IDF env)
