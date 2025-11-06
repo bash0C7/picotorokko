@@ -1,4 +1,6 @@
-# pra - PicoRuby Application Platform
+# PicoRuby Application on [R2P2-ESP32](https://github.com/picoruby/R2P2-ESP32) development kit
+
+Packaged by pra(**P**ico**R**uby **A**pplication) command
 
 [![Ruby](https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/actions/workflows/main.yml/badge.svg)](https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/branch/main/graph/badge.svg)](https://codecov.io/gh/bash0C7/picoruby-application-on-r2p2-esp32-development-kit)
