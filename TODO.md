@@ -32,17 +32,16 @@ The command should be renamed from `pap` to `pra` to better reflect the project'
   - ✓ GitHub API または `git ls-remote` で最新コミット取得
   - ✓ 自動的に .picoruby-env.yml に追記
   - Note: キャッシュ取得は別コマンドとして実装済み
-  - TODO: ユニットテストの追加
+  - ✓ ユニットテストの追加（Git操作のモック化含む）
 
 - [ ] Add comprehensive unit tests for all commands
-  - Progress: 38 tests, 93 assertions, 100% passing
+  - Progress: 41 tests, 112 assertions, 100% passing
   - ✓ Basic tests: VERSION constant, CLI version command (test/pap_test.rb)
   - ✓ Env module tests: YAML operations, environment management, symlinks (test/env_test.rb)
-  - ✓ Env commands: show, set (test/commands/env_test.rb)
+  - ✓ Env commands: show, set, latest (test/commands/env_test.rb)
   - ✓ Cache commands: list, clean, prune (test/commands/cache_test.rb)
   - ✓ Build commands: clean, list (test/commands/build_test.rb)
   - Remaining tests needed:
-    - Env commands: latest (requires network/git mocking)
     - Cache commands: fetch (requires network/git mocking)
     - Build commands: setup (complex, requires git repo setup)
     - Patch commands: export, apply, diff (requires git repo setup)
