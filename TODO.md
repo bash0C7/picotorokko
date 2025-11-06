@@ -9,7 +9,7 @@ The command should be renamed from `pra` to `pra` to better reflect the project'
 
 ## High Priority
 
-- [ ] Rename command from `pra` to `pra`
+- [x] Rename command from `pra` to `pra`
   - Directory: `lib/pra/` → `lib/pra/`
   - Executable: `exe/pra` → `exe/pra`
   - Gemspec: `pra.gemspec` → `pra.gemspec`
