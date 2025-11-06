@@ -489,26 +489,7 @@ diff --git a/storage/home/custom.rb (working) vs (patch/)
 
 ### 🚀 R2P2-ESP32 Task Delegation Commands
 
-#### `pap build [ENV_NAME]`
-
-**Description**: Build R2P2-ESP32
-
-**Arguments**:
-- `ENV_NAME` - Environment name (default: `current`)
-
-**Operation**:
-1. cd into `build/{env}/R2P2-ESP32/`
-2. Setup ESP-IDF environment variables (leverages existing Rakefile's `setup_environment`)
-3. Execute `rake build` in R2P2-ESP32's `Rakefile`
-
-**Example**:
-```bash
-pap build stable-2024-11
-# => Building in build/f500652-.../R2P2-ESP32/
-#    [idf.py build output...]
-```
-
----
+**Note**: The `pap build` command has been removed to avoid conflict with Build Environment Management commands. Use `rake build` directly in the R2P2-ESP32 directory instead.
 
 #### `pap flash [ENV_NAME]`
 
@@ -546,8 +527,12 @@ pap build stable-2024-11
 # 1. Check environment
 pap env show
 
-# 2. Build, flash, and monitor
-pap build
+# 2. Build (via R2P2-ESP32's Rakefile directly)
+cd build/current/R2P2-ESP32
+rake build
+cd ../../..
+
+# 3. Flash and monitor
 pap flash
 pap monitor
 
@@ -565,11 +550,15 @@ pap env latest
 #    Switched to: latest-20241105-143500
 
 # 2. Build
-pap build
+cd build/current/R2P2-ESP32
+rake build
+cd ../../..
 
 # 3. If issues found, revert to stable
 pap env set stable-2024-11
-pap build
+cd build/current/R2P2-ESP32
+rake build
+cd ../../..
 ```
 
 ### Scenario 3: Patch Management
@@ -588,7 +577,9 @@ git commit -m "Update patches and storage"
 # 4. Test application in another environment
 pap env set development
 pap build setup  # patches auto-applied
-pap build
+cd build/current/R2P2-ESP32
+rake build
+cd ../../..
 ```
 
 ---

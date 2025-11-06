@@ -9,17 +9,14 @@ The command should be renamed from `pap` to `pra` to better reflect the project'
 
 ## Critical Issues
 
-- [ ] **[BUG] Fix `pap build` command name collision** (lib/pap/cli.rb)
-  - Problem: `pap build` has two conflicting definitions:
-    1. Build Environment Management: `pap build setup/clean/list` (line 25)
-    2. R2P2-ESP32 Task Delegation: `pap build [ENV_NAME]` (line 32-39)
-  - Impact: `pap build --help` fails, treating `--help` as environment name
-  - Discrepancy: SPEC.md defines both, README.md only defines Build Environment Management
-  - Solution options:
-    - Option A: Remove R2P2 `build` from top-level, keep only `pap flash` and `pap monitor`
-    - Option B: Rename R2P2 build to `pap compile [ENV_NAME]`
-    - Option C: Move R2P2 tasks to subcommand `pap r2p2 build/flash/monitor`
-  - Recommended: **Option A** - matches README.md and avoids confusion
+- [x] **[BUG] Fix `pap build` command name collision** (lib/pap/cli.rb)
+  - ✓ **Resolved with Option A**: Removed R2P2 `build` from top-level
+  - Changes:
+    - lib/pap/cli.rb: Excluded `build` from R2P2 task delegation (line 34)
+    - lib/pap/commands/r2p2.rb: Removed `build` method
+    - SPEC.md: Updated documentation and workflow examples
+  - **Result**: Only `pap flash` and `pap monitor` available as R2P2 delegation commands
+  - **Build workflow**: Use `rake build` directly in R2P2-ESP32 directory
 
 ## High Priority
 
@@ -49,18 +46,17 @@ The command should be renamed from `pap` to `pra` to better reflect the project'
 
 ## Documentation
 
-- [ ] Fix SPEC.md and README.md inconsistencies
+- [x] Fix SPEC.md and README.md inconsistencies
   - ✓ SPEC.md already has Changelog section (line 642-646)
-  - [ ] Update SPEC.md: Remove or clarify R2P2 `pap build` command (line 492-510)
-  - [ ] Ensure README.md and SPEC.md align on all command definitions
-  - [ ] Add missing command descriptions if any
-  - [ ] Document the resolution of `pap build` name collision
+  - ✓ Updated SPEC.md: Removed R2P2 `pap build` command documentation
+  - ✓ README.md and SPEC.md now align on all command definitions
+  - ✓ Documented the resolution of `pap build` name collision
   - Note: CHANGELOG.md (line 20) correctly lists only `flash` and `monitor`, not `build`
 
-- [ ] Update documentation after fixing `pap build` collision
-  - Update SPEC.md Section 5 (R2P2-ESP32 Task Delegation)
-  - Update README.md if needed
-  - Update any workflow examples that use conflicting commands
+- [x] Update documentation after fixing `pap build` collision
+  - ✓ Updated SPEC.md Section 5 (R2P2-ESP32 Task Delegation)
+  - ✓ Updated all workflow examples (Scenario 1, 2, 3) to use `rake build` directly
+  - README.md already correct (no changes needed)
 
 - [ ] Fix CHANGELOG.md URL placeholders (line 27-28)
   - Current: `https://github.com/yourusername/pap/...`

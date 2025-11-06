@@ -9,13 +9,6 @@ module Pap
         true
       end
 
-      desc 'build [ENV_NAME]', 'Build R2P2-ESP32 firmware'
-      def build(env_name = 'current')
-        puts "Building: #{env_name}"
-        delegate_to_r2p2('build', env_name)
-        puts '✓ Build completed'
-      end
-
       desc 'flash [ENV_NAME]', 'Flash firmware to ESP32'
       def flash(env_name = 'current')
         puts "Flashing: #{env_name}"

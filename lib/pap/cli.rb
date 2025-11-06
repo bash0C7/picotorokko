@@ -29,7 +29,10 @@ module Pap
     subcommand 'patch', Pap::Commands::Patch
 
     # R2P2-ESP32タスク委譲（トップレベルコマンドを動的生成）
+    # Note: 'build'は除外（Build Environment Managementのサブコマンドと衝突するため）
     Pap::Commands::R2P2.tasks.each do |task_name, task|
+      next if task_name.to_s == 'build'  # buildコマンドは除外
+
       desc "#{task_name} [ENV_NAME]", task.description
       option :env, type: :string, default: 'current', aliases: '-e', desc: 'Environment name'
 
