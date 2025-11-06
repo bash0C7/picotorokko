@@ -75,3 +75,10 @@ Implementation order: Developer features first → User features second
   - [x] Document gem development CI/CD workflow
   - [x] Document user's PicoRuby project CI/CD workflow
   - [x] Add troubleshooting guide for CI failures
+
+- [ ] Branch Protection Rules (Local execution with gh CLI)
+  - [ ] Configure branch protection for `main` branch
+  - [ ] Require status checks: `test` job must pass
+  - [ ] Require branches to be up to date before merging
+  - [ ] Optional: Require pull request reviews
+  - [ ] Prevent force pushes and deletions

@@ -116,6 +116,46 @@ For maintainers releasing to RubyGems:
 2. Add as `RUBYGEMS_API_KEY` in GitHub repository secrets
 3. The release workflow will use this key automatically
 
+## Branch Protection Settings
+
+To ensure code quality, configure branch protection rules for the `main` branch:
+
+### Setting Up Branch Protection
+
+1. Go to **Settings** → **Branches** in the GitHub repository
+2. Click **Add branch protection rule**
+3. Enter `main` as the branch name pattern
+4. Configure the following settings:
+
+#### Required Status Checks
+
+- ☑️ **Require status checks to pass before merging**
+  - ☑️ **Require branches to be up to date before merging**
+  - Add required status check: `test` (from the Ruby CI workflow)
+
+#### Additional Recommended Settings
+
+- ☑️ **Require a pull request before merging**
+  - Require approvals: 1 (optional for small teams)
+- ☑️ **Require conversation resolution before merging**
+- ☑️ **Do not allow bypassing the above settings** (for stricter enforcement)
+
+### What This Prevents
+
+- Merging PRs with failing tests
+- Merging PRs with insufficient test coverage (CI enforces 80% line coverage minimum)
+- Merging without code review (if approvals are required)
+- Force pushes to main branch
+
+### CI Workflow Details
+
+The `test` job in `.github/workflows/main.yml` runs:
+- Full test suite via `bundle exec rake ci`
+- Coverage validation (minimum 80% line coverage, 50% branch coverage)
+- Codecov upload for coverage tracking
+
+When the `test` job fails, the PR cannot be merged until issues are resolved.
+
 ## Questions?
 
 Feel free to open an issue for questions or discussions!
