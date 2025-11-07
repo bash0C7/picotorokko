@@ -10,6 +10,10 @@ SimpleCov.start do
   minimum_coverage line: 80, branch: 50 if ENV["CI"]
 end
 
+# Codecov v4対応: Cobertura XML形式で出力
+require "simplecov-cobertura"
+SimpleCov.formatter = SimpleCov::Formatter::CoberturaFormatter
+
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "pra"
 
