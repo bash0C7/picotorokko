@@ -10,7 +10,10 @@
       "Bash(git commit:*)",
       "Bash(bundle exec rake:*)",
       "Bash(bundle install:*)",
-      "Bash(bundle exec rubocop:*)"
+      "Bash(bundle exec rubocop:*)",
+      "Bash(bundle exec pra ci:*)",
+      "Bash(bundle exec pra build:*)",
+      "Bash(bundle exec pra:*)"
     ],
     "deny": [],
     "ask": []

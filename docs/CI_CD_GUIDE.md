@@ -349,7 +349,7 @@ bundle exec pra cache fetch your-environment-definition-name
 1. **Pin Environment Definition Versions**: Use specific commit hashes in `.picoruby-env.yml`
 2. **Test Locally First**: Run `pra build setup && rake build` before pushing
 3. **Use Artifacts Expiry**: Set reasonable retention days (30-90)
-4. **Enable Branch Protection**: Require CI to pass before merging
+4. **Enable Branch Protection**: Require status checks and prevent force pushes
 5. **Document Flash Process**: Add flash instructions to your README
 
 ### For Gem Developers
