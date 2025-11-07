@@ -16,15 +16,40 @@
 
 - [ ] Update esp32-build.yml template for correct pra command flow
   - [ ] Ensure workflow uses: `pra cache fetch` → `pra build setup` → `pra device build`
-  - [ ] Remove internal path exposure (`.cache/*/R2P2-ESP32`)
+  - [ ] Remove internal path exposure (incorrect `.cache/*/r2p2-esp32` → should use `pra device build`)
   - [ ] Remove redundant `pra patch apply` (already done in `pra build setup`)
+  - [ ] Update flash instructions to use `pra device flash` instead of manual commands
   - [ ] Validate workflow aligns with local development workflow
   - **Status**: Template exists at `docs/github-actions/esp32-build.yml` (135 lines)
   - **Current Issues**:
     - Uses `idf.py build` directly (line 74-76) instead of `pra device build`
     - Redundant `pra patch apply` call (line 67-71)
-    - Internal cache path exposed (`.cache/*/r2p2-esp32`)
+    - Internal path exposed with incorrect path (`.cache/*/r2p2-esp32` → actual: `build/current/R2P2-ESP32`)
+    - Artifact paths also expose internal structure (line 86-90)
   - **Solution**: Update template to use `pra device build` and remove redundant steps
+  - **Implementation Ready**: ✅ `pra device build` is already implemented in `lib/pra/commands/device.rb`
+
+---
+
+### ⚠️ pra ci コマンド実装禁止 (Implementation Forbidden)
+
+**以下の `pra ci` コマンド関連の実装は、特別な指示がない限り禁止**
+
+**理由**:
+- `pra ci` コマンドは他のCLIコマンド（`pra device build`, `pra cache fetch` など）のインターフェースに依存
+- これらのコマンドが変更されると、CI テンプレートやコマンドの動作に影響
+- まず基盤となるコマンド群を安定化させてからCI機能を実装すべき
+- テンプレート更新機能（`--force`オプション）は、ユーザーがテンプレートをカスタマイズする前提のため、基盤が安定してから実装が望ましい
+
+**許可される作業**:
+- ✅ CI テンプレートファイル (`docs/github-actions/esp32-build.yml`) の修正・改善
+- ✅ CI ドキュメント (`docs/CI_CD_GUIDE.md`) の更新
+- 🚫 `pra ci setup --force` オプションの実装
+- 🚫 `pra ci` 関連の新機能追加
+
+---
+
+### pra ci setup --force オプション (実装禁止中)
 
 - [ ] Add `--force` option to `pra ci setup` command
   - **Rationale**: CI workflow templates should be "fork and customize" model. Users edit workflows directly (ESP-IDF version, target chip, branches, custom steps). `pra ci setup --force` allows refreshing template while letting users salvage changes via `git diff`.
