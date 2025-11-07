@@ -13,7 +13,8 @@
       "Bash(bundle exec rubocop:*)",
       "Bash(bundle exec pra ci:*)",
       "Bash(bundle exec pra build:*)",
-      "Bash(bundle exec pra:*)"
+      "Bash(bundle exec pra:*)",
+      "Bash(gh pr view:*)"
     ],
     "deny": [],
     "ask": []
