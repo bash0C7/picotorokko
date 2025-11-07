@@ -166,26 +166,6 @@
 
 ## 🟢 Low Priority (Optional Enhancements)
 
-### Ruby バージョンマトリックステスト
-
-- [ ] CI で複数の Ruby バージョンをテスト
-  - **Location**: `.github/workflows/main.yml:18-23`
-  - **Current State**:
-    - 現在は Ruby 3.4 のみでテスト実行
-    - `pra.gemspec` では Ruby >= 3.1.0 を要求
-  - **Problem**:
-    - Ruby 3.1, 3.2, 3.3 での互換性が検証されていない
-    - ユーザーが古いバージョンを使用した際にバグが発生する可能性
-  - **Solution**:
-    1. `.github/workflows/main.yml` の strategy.matrix に Ruby バージョン配列を追加:
-       ```yaml
-       strategy:
-         matrix:
-           ruby: ['3.1', '3.2', '3.3', '3.4']
-       ```
-    2. steps の `ruby-version: '3.4'` を `ruby-version: ${{ matrix.ruby }}` に変更
-  - **Note**: CI 実行時間が増加するため、低優先度
-
 ### セキュリティ強化（シンボリックリンク race condition 対策）
 
 - [ ] build.rb のシンボリックリンクチェックに race condition 対策
