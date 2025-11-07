@@ -63,31 +63,23 @@ jobs:
         run: |
           pra build setup
 
-      - name: Apply patches
-        run: |
-          # Apply any custom patches from patch/ directory
-          if [ -d patch ]; then
-            pra patch apply --all || true
-          fi
-
       - name: Build firmware
         run: |
-          cd .cache/*/r2p2-esp32
-          idf.py build
+          pra device build
 
       - name: List build artifacts
         run: |
-          find .cache/*/r2p2-esp32/build -name "*.bin" -o -name "*.elf"
+          find build/current/R2P2-ESP32/build -name "*.bin" -o -name "*.elf"
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
           name: esp32-firmware
           path: |
-            .cache/*/r2p2-esp32/build/bootloader/bootloader.bin
-            .cache/*/r2p2-esp32/build/partition_table/partition-table.bin
-            .cache/*/r2p2-esp32/build/*.bin
-            .cache/*/r2p2-esp32/build/*.elf
+            build/current/R2P2-ESP32/build/bootloader/bootloader.bin
+            build/current/R2P2-ESP32/build/partition_table/partition-table.bin
+            build/current/R2P2-ESP32/build/*.bin
+            build/current/R2P2-ESP32/build/*.elf
           retention-days: 30
 
       - name: Generate flash instructions
@@ -97,15 +89,15 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Download the artifacts and flash to your ESP32 using:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "pra device flash --port /dev/ttyUSB0" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Or use esptool.py directly:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "esptool.py --chip esp32 --port /dev/ttyUSB0 write_flash \\" >> $GITHUB_STEP_SUMMARY
           echo "  0x1000 bootloader.bin \\" >> $GITHUB_STEP_SUMMARY
           echo "  0x8000 partition-table.bin \\" >> $GITHUB_STEP_SUMMARY
           echo "  0x10000 <your-app-name>.bin" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Or use pra command:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "bundle exec pra r2p2 flash --port /dev/ttyUSB0" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   # Optional: Run Ruby tests if you have PicoRuby unit tests
