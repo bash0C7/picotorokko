@@ -8,11 +8,41 @@
 
 - [ ] Consider renaming commands in future if needed (e.g., `pra build-env` or `pra workspace`)
 
-- [ ] Enhance `pra build setup` for complete build preparation
-  - [ ] Add PicoRuby build step (call `rake setup_esp32` via ESP-IDF env)
-  - [ ] Ensure `pra build setup` handles all pre-build requirements
-  - [ ] Update documentation to reflect `pra build setup` capabilities
-  - **Status**: `pra build setup` already implemented in `lib/pra/commands/build.rb`, but may need PicoRuby build step integration
+- [x] ~~Enhance `pra build setup` for complete build preparation~~ **完了 (2025-11-07)**
+  - [x] ~~Add PicoRuby build step (call `rake setup_esp32` via ESP-IDF env)~~ **実装完了**
+  - [ ] **次のセッションで実施**: ESP-IDF 環境での動作確認
+  - [ ] **次のセッションで実施**: README.md の更新
+    - **必須修正** (コマンド形式の誤り):
+      - 行 74-75: `pra flash` / `pra monitor` → `pra device flash` / `pra device monitor` に修正
+      - 行 107-108: Commands Reference セクションも同様に修正
+      - 行 162: `pra r2p2 flash` を `pra device flash` に修正（または該当行を削除）
+    - **機能追加の説明**:
+      - `pra build setup` のセクション（行 95 付近）に以下を追加:
+        ```
+        - Automatically runs `rake setup_esp32` to prepare PicoRuby build environment
+        - Sets up all pre-build requirements (submodules, dependencies, etc.)
+        - Displays warnings if ESP-IDF environment setup fails
+        ```
+    - **オプション**: `pra device` コマンド群の説明セクションを追加
+      - 明示的なサブコマンド: `flash`, `monitor`, `build`, `setup_esp32`
+      - 動的 Rake 委譲機能の説明（`lib/pra/commands/device.rb:41-51` の method_missing）
+  - **実装詳細**:
+    - **Location**: `lib/pra/commands/build.rb:80-90`
+    - **実装内容**:
+      - パッチ適用後、storage/home コピー前に `rake setup_esp32` を実行
+      - `Pra::Env.execute_with_esp_env` を使用して ESP-IDF 環境で実行
+      - エラーハンドリング: 失敗時は警告を表示して処理を継続（ユーザーが後で手動実行可能）
+    - **テスト結果**: 既存テスト全て通過 (9 tests, 29 assertions, 0 failures)
+      - ESP-IDF 環境がない場合は警告が出るが、rescue 句で適切にハンドリングされる
+    - **動作確認方法** (ESP-IDF 環境で実施):
+      1. キャッシュを用意: `pra cache fetch <env_name>`
+      2. ビルド環境構築: `pra build setup <env_name>`
+      3. 出力に "Setting up PicoRuby build environment..." と "✓ PicoRuby build environment ready" が表示されることを確認
+      4. 失敗した場合は "✗ Warning: Failed to run rake setup_esp32" が表示される
+    - **関連ファイル**:
+      - 実装: `lib/pra/commands/build.rb`
+      - ESP-IDF 実行ユーティリティ: `lib/pra/env.rb:230-256` (`execute_with_esp_env` メソッド)
+      - テスト: `test/commands/build_test.rb`
 
 ---
 
@@ -78,16 +108,9 @@
 
 ### README.md コマンド説明の修正
 
-- [ ] README.md のコマンド形式を正しい CLI サブコマンドに統一
-  - **Location**: `README.md:71-76, 162`
-  - **Problem**:
-    - 行 71-76: `pra flash` / `pra monitor` と記載されているが、正しくは `pra device flash` / `pra device monitor`
-    - 行 162: `pra r2p2 flash` は実装されていない存在しないコマンド
-  - **Fix**:
-    1. 行 71-76: コマンド形式を `pra device flash` / `pra device monitor` に修正
-    2. 行 162: 存在しないコマンド `pra r2p2 flash` を削除、または `pra device flash` に修正
-    3. device サブコマンド群（flash, monitor, build, setup_esp32）の説明セクションを追加
-  - **Related**: `lib/pra/commands/device.rb` の実装と整合性を保つ
+- [ ] README.md のコマンド形式を正しい CLI サブコマンドに統一 **→ CLI Command Structure Refactoring に統合**
+  - **Note**: この項目は「CLI Command Structure Refactoring」セクション（行 11-28）に詳細が記載されています
+  - **次のセッションで実施**: 上記セクションの指示に従って README.md を更新してください
 
 ### device.rb の method_missing テスト追加
 
