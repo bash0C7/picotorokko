@@ -71,8 +71,8 @@ bundle exec pra build setup stable-2024-11
 ### 4. Build, flash, and monitor
 
 ```bash
-bundle exec pra flash
-bundle exec pra monitor
+bundle exec pra device flash
+bundle exec pra device monitor
 ```
 
 ## Commands Reference
@@ -102,10 +102,27 @@ bundle exec pra monitor
 - `pra patch apply [ENV_NAME]` - Apply patches to build environment
 - `pra patch diff [ENV_NAME]` - Display differences between working changes and stored patches
 
-### R2P2-ESP32 Task Delegation
+### Device Management (R2P2-ESP32 Task Delegation)
 
-- `pra flash [ENV_NAME]` - Flash firmware to ESP32 (delegates to R2P2-ESP32)
-- `pra monitor [ENV_NAME]` - Monitor ESP32 serial output (delegates to R2P2-ESP32)
+The `pra device` command provides access to R2P2-ESP32 development tasks through transparent delegation to the Rakefile in your build environment.
+
+#### Built-in Subcommands
+
+- `pra device flash [ENV_NAME]` - Flash firmware to ESP32
+- `pra device monitor [ENV_NAME]` - Monitor ESP32 serial output
+- `pra device build [ENV_NAME]` - Build firmware
+- `pra device setup_esp32 [ENV_NAME]` - Setup ESP32 build environment
+
+#### Dynamic Rake Task Delegation
+
+Any undefined subcommand is automatically delegated to R2P2-ESP32's Rakefile, allowing you to run custom Rake tasks without modifying the pra gem:
+
+```bash
+# Execute any Rake task from R2P2-ESP32/Rakefile
+bundle exec pra device <custom_task> [ENV_NAME]
+```
+
+This transparent delegation mechanism uses Ruby's `method_missing` to forward unrecognized commands to the build environment's Rakefile, giving you full access to all R2P2-ESP32 build tasks.
 
 ### Other
 
@@ -159,7 +176,7 @@ esptool.py --chip esp32 --port /dev/ttyUSB0 write_flash \
   0x10000 app.bin
 
 # Or using pra command (recommended)
-bundle exec pra r2p2 flash --port /dev/ttyUSB0
+bundle exec pra device flash --port /dev/ttyUSB0
 ```
 
 For detailed CI/CD setup instructions, see [docs/CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md).
