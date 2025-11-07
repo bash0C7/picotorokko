@@ -81,6 +81,17 @@ module Pra
           # パッチを適用
           apply_patches(build_path)
 
+          # PicoRuby ビルド環境のセットアップ（rake setup_esp32）
+          puts '  Setting up PicoRuby build environment...'
+          r2p2_path = File.join(build_path, 'R2P2-ESP32')
+          begin
+            Pra::Env.execute_with_esp_env('rake setup_esp32', r2p2_path)
+            puts '  ✓ PicoRuby build environment ready'
+          rescue => e
+            puts "  ✗ Warning: Failed to run rake setup_esp32: #{e.message}"
+            puts '  You may need to run it manually later.'
+          end
+
           # storage/homeをコピー
           puts '  Copying storage/home...'
           home_src = File.join(Pra::Env::STORAGE_HOME)

@@ -45,9 +45,13 @@ module Pra
         env_name = args.first || 'current'
         puts "Delegating to R2P2-ESP32 task: #{method_name}"
         delegate_to_r2p2(method_name.to_s, env_name)
-      rescue
+      rescue StandardError => e
         # Rakeタスクが存在しない場合など
-        raise Thor::UndefinedCommandError, "Could not find command or R2P2-ESP32 task: #{method_name}"
+        raise Thor::UndefinedCommandError.new(
+          method_name.to_s,
+          self.class.all_commands.keys,
+          self.class.namespace
+        )
       end
 
       def respond_to_missing?(method_name, include_private = false)
