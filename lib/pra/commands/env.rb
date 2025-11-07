@@ -51,10 +51,7 @@ module Pra
         raise "Error: Environment definition '#{env_name}' not found in .picoruby-env.yml" if env_config.nil?
 
         # ビルド環境が存在するか確認
-        r2p2_hash = env_config['R2P2-ESP32']['commit'] + '-' + env_config['R2P2-ESP32']['timestamp']
-        esp32_hash = env_config['picoruby-esp32']['commit'] + '-' + env_config['picoruby-esp32']['timestamp']
-        picoruby_hash = env_config['picoruby']['commit'] + '-' + env_config['picoruby']['timestamp']
-        env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+        env_hash = Pra::Env.compute_env_hash(env_config)
         build_path = Pra::Env.get_build_path(env_hash)
 
         if Dir.exist?(build_path)

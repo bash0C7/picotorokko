@@ -28,11 +28,7 @@ module Pra
         env_config = Pra::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
-        r2p2_hash = env_config['R2P2-ESP32']['commit'] + '-' + env_config['R2P2-ESP32']['timestamp']
-        esp32_hash = env_config['picoruby-esp32']['commit'] + '-' + env_config['picoruby-esp32']['timestamp']
-        picoruby_hash = env_config['picoruby']['commit'] + '-' + env_config['picoruby']['timestamp']
-        env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-
+        env_hash = Pra::Env.compute_env_hash(env_config)
         build_path = Pra::Env.get_build_path(env_hash)
         raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
 
@@ -107,11 +103,7 @@ module Pra
         env_config = Pra::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
-        r2p2_hash = env_config['R2P2-ESP32']['commit'] + '-' + env_config['R2P2-ESP32']['timestamp']
-        esp32_hash = env_config['picoruby-esp32']['commit'] + '-' + env_config['picoruby-esp32']['timestamp']
-        picoruby_hash = env_config['picoruby']['commit'] + '-' + env_config['picoruby']['timestamp']
-        env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-
+        env_hash = Pra::Env.compute_env_hash(env_config)
         build_path = Pra::Env.get_build_path(env_hash)
         raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
 
