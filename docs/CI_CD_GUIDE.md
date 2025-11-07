@@ -34,7 +34,15 @@ For more details, see the [Terminology section in README.md](../README.md#termin
 
 If you're building a PicoRuby application for ESP32, you can automate the firmware build process using GitHub Actions.
 
-#### Step 1: Copy the Example Workflow
+**Recommended**: If you have the `pra` gem installed, use the `pra ci setup` command to automatically copy the workflow template:
+
+```bash
+pra ci setup
+```
+
+This will create `.github/workflows/esp32-build.yml` from the latest template.
+
+#### Step 1: Copy the Example Workflow (Manual Method)
 
 ```bash
 # In your PicoRuby application repository
@@ -94,6 +102,19 @@ The workflow will automatically run on:
 - Push to `main` or `develop` branches
 - Pull requests
 - Manual trigger via GitHub Actions UI
+
+#### Updating Workflow Template
+
+When `pra` gem is updated with workflow improvements:
+
+```bash
+gem update pra
+pra ci setup --force  # Overwrite with latest template
+git diff .github/workflows/esp32-build.yml  # Review changes
+# Salvage any custom changes you need
+```
+
+**Note**: The `--force` option will be available in a future version of `pra`. It allows you to refresh the workflow template while preserving your ability to review and restore custom changes via `git diff`.
 
 ### Understanding the Build Process
 
