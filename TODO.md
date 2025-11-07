@@ -183,6 +183,7 @@
   - **Related Files**:
     - `test/test_helper.rb` (line 11)
     - `.github/workflows/main.yml` (line 26) - will change from `TEST=test/pra_test.rb` back to `ci` task
+    - `.codecov.yml` - Change `informational: true` back to `informational: false` when coverage requirements are restored
 
 ---
 
