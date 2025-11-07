@@ -71,3 +71,31 @@
   - **Documentation Updates**:
     1. Consider adding `pra ci setup` mention in main README.md if relevant
   - **Related Context**: Original TODO planned "Add CI/CD update command" with `pra ci update` subcommand. Analysis showed workflow templates are meant to be "fork and customize" by users (documented in CI_CD_GUIDE.md). Rather than Bmodel (config-based), Amodel (user ownership) is more appropriate, so `pra ci setup --force` is the right pattern.
+
+---
+
+### Codecov カバレッジアップロード対応 (2025年11月 最新ベストプラクティス対応)
+
+- [ ] SimpleCov Cobertura formatter 導入
+  - **Status**: 調査完了。codecov-action v4 対応が必要
+  - **Current Problem**:
+    - SimpleCov のデフォルトJSON形式（`.resultset.json`）は codecov-action v4 と互換性なし
+    - Codecov エラー: "No coverage reports found"
+    - ワークフロー実行: https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/actions/runs/19156186766
+  - **Root Cause**:
+    - `test/test_helper.rb` に SimpleCov formatter 設定がない
+    - SimpleCov がデフォルトの JSON 形式で出力
+    - Codecov (v4) が JSON 形式の SimpleCov 出力をサポートしていない
+  - **Solution** (Codecov公式ブログ推奨):
+    1. `simplecov-cobertura` gem を `pra.gemspec` の development dependency に追加
+    2. `test/test_helper.rb` の SimpleCov.start の後に追加:
+       ```ruby
+       require 'simplecov-cobertura'
+       SimpleCov.formatter = SimpleCov::Formatter::CoberturaFormatter
+       ```
+    3. これで `coverage.xml` (Cobertura XML形式) が生成され、codecov-action v4 が自動検出
+  - **Documentation**:
+    - Codecov supported formats: https://docs.codecov.com/docs/supported-report-formats
+    - Codecov Ruby guide: https://about.codecov.io/blog/getting-started-with-code-coverage-for-ruby/
+  - **Alternative Option**: simplecov-lcov gem (LCOV形式) でも対応可能
+  - **Note**: GitHub Secrets に `CODECOV_TOKEN` の登録が別途必要（ユーザーが Codecov サイトで取得して手動登録）
