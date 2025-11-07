@@ -84,7 +84,7 @@ module Pra
           begin
             Pra::Env.execute_with_esp_env('rake setup_esp32', r2p2_path)
             puts '  ✓ PicoRuby build environment ready'
-          rescue => e
+          rescue StandardError => e
             puts "  ✗ Warning: Failed to run rake setup_esp32: #{e.message}"
             puts '  You may need to run it manually later.'
           end
