@@ -112,19 +112,6 @@
   - **Note**: この項目は「CLI Command Structure Refactoring」セクション（行 11-28）に詳細が記載されています
   - **次のセッションで実施**: 上記セクションの指示に従って README.md を更新してください
 
-### device.rb の method_missing テスト追加
-
-- [ ] device コマンドの動的 Rake 委譲機能のテスト追加
-  - **Location**: `test/commands/device_test.rb` に追加
-  - **Problem**:
-    - `lib/pra/commands/device.rb:41-51` の `method_missing` を使った透過的 Rake タスク委譲のテストがない
-    - `pra device <任意のタスク>` で Rakefile の任意のタスクを実行できる機能が未テスト
-  - **Test Cases**:
-    1. 定義されていないコマンド（例: `pra device custom_task`）が Rake タスクに委譲されることを確認
-    2. Rake タスクが存在しない場合のエラーハンドリング
-    3. Rake タスク実行時の環境変数（ENV）が正しく設定されること
-  - **Related**: `lib/pra/commands/device.rb:41-51` の method_missing 実装
-
 ---
 
 ## 🟡 Medium Priority (Code Quality & Documentation)
