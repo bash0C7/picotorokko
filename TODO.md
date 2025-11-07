@@ -138,6 +138,29 @@
     - PR #30 failing CI checks
     - Need to ensure other test files work before expanding test scope
 
+### Setup Git Hooks for Local RuboCop & Test Execution
+
+- [ ] **Add git hooks to run RuboCop and tests before commit**
+  - **Problem**:
+    - RuboCop violations and test failures are only caught in CI
+    - Developers may commit code that fails CI checks
+    - Wastes CI time on fixes that could be caught locally
+  - **Solution**:
+    - Setup husky + pre-commit hooks (or custom git hooks)
+    - Run on `git commit`:
+      1. `bundle exec rubocop --autocorrect-all` (auto-fix style)
+      2. `bundle exec rake test` (run full test suite)
+      3. Block commit if tests fail
+    - Alternative: Add rake task `rake pre-commit` and document in CONTRIBUTING.md
+  - **Implementation Options**:
+    1. **Husky + lint-staged** (recommended for Node.js projects, but Ruby also works)
+    2. **Direct git hooks** (.git/hooks/pre-commit script)
+    3. **Rake task + documentation** (simplest for Ruby projects)
+  - **Related Files**:
+    - `.git/hooks/pre-commit` (to create or document)
+    - `CONTRIBUTING.md` (to add developer setup instructions)
+    - `Rakefile` (if adding pre-commit task)
+
 ### Restore SimpleCov Coverage Requirements
 
 - [ ] **Restore: Increase SimpleCov minimum coverage back to line: 80, branch: 50**
