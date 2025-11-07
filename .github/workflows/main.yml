@@ -10,7 +10,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: Ruby 3.4
+    name: test
 
     steps:
       - uses: actions/checkout@v4
