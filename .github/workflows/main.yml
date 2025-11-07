@@ -26,7 +26,7 @@ jobs:
         run: bundle exec rake test TEST=test/pra_test.rb
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: success()
+        if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
