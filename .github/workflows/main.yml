@@ -8,9 +8,9 @@ on:
   pull_request:
 
 jobs:
-  test:
+  test-matrix:
     runs-on: ubuntu-latest
-    name: test
+    name: test (${{ matrix.ruby }})
     strategy:
       matrix:
         ruby: ['3.4']
@@ -31,3 +31,16 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
         continue-on-error: true
+
+  test:
+    runs-on: ubuntu-latest
+    name: test
+    needs: [test-matrix]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test-matrix.result }}" = "failure" ]; then
+            echo "Test matrix job failed"
+            exit 1
+          fi
