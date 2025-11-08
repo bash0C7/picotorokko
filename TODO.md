@@ -2,6 +2,14 @@
 
 > **TODO Management Methodology**: See `.claude/skills/project-workflow/SKILL.md` and `CLAUDE.md` ## TODO Management section for task management rules and workflow.
 
+## 🟢 mrbgems Support Feature (Large Feature)
+
+See **[TODO_mrbgems.md](TODO_mrbgems.md)** for comprehensive implementation plan.
+
+**Summary**: Implement `pra mrbgems generate` command and app setup flow to allow users to create application-specific mrbgems (like `App`) with C language code integration. Includes template system, build_config registration, and CMakeLists.txt integration.
+
+---
+
 ## Future Enhancements (Optional)
 
 ### CLI Command Structure Refactoring
