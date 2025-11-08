@@ -25,7 +25,7 @@ desc "Run all quality checks (tests and linting)"
 task quality: %i[test rubocop]
 
 # 開発者向け：pre-commitフック用タスク
-desc "Pre-commit checks: auto-fix RuboCop violations and run tests"
-task "pre-commit": %i[rubocop:auto_correct test] do
+desc "Pre-commit checks: RuboCop linting and tests"
+task "pre-commit": %i[rubocop test] do
   puts "\n✓ Pre-commit checks passed! Ready to commit."
 end

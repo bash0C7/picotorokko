@@ -109,23 +109,33 @@ bundle exec pra device monitor
 - `pra patch apply [ENV_NAME]` - Apply patches to build environment
 - `pra patch diff [ENV_NAME]` - Display differences between working changes and stored patches
 
-### R2P2-ESP32 Task Delegation
+### R2P2-ESP32 Device Operations
 
-The `pra device` command supports **dynamic Rake task delegation**:
+#### Explicit Commands
 
-- `pra device flash [ENV_NAME]` - Flash firmware to ESP32
-- `pra device monitor [ENV_NAME]` - Monitor ESP32 serial output
-- `pra device build [ENV_NAME]` - Build firmware
-- `pra device setup_esp32 [ENV_NAME]` - Setup ESP32 environment
-- `pra device help [ENV_NAME]` - Display available Rake tasks in R2P2-ESP32 build environment
-- `pra device <custom_task> [ENV_NAME]` - Execute any custom Rake task defined in R2P2-ESP32 (e.g., `pra device clean`)
+- `pra device flash [ENV_NAME]` - Flash firmware to ESP32 (delegates to R2P2-ESP32's `rake flash`)
+- `pra device monitor [ENV_NAME]` - Monitor ESP32 serial output (delegates to R2P2-ESP32's `rake monitor`)
+- `pra device build [ENV_NAME]` - Build firmware for ESP32 (delegates to R2P2-ESP32's `rake build`)
+- `pra device setup_esp32 [ENV_NAME]` - Setup ESP32 build environment (delegates to R2P2-ESP32's `rake setup_esp32`)
+- `pra device help [ENV_NAME]` - Show available R2P2-ESP32 tasks for the environment
 
-**Dynamic Task Delegation**: Any undefined command is automatically delegated to R2P2-ESP32's Rake tasks via the `method_missing` mechanism. This allows running custom Rake tasks without explicit `pra device` command definitions.
+#### Dynamic Rake Task Delegation
 
-**Example**: If your R2P2-ESP32 has a custom `rake my_task`, you can run:
+The `pra device` command uses Ruby's `method_missing` to transparently delegate any undefined subcommand to R2P2-ESP32's Rakefile. This allows you to run any Rake task defined in R2P2-ESP32 without explicit `pra device` commands:
+
 ```bash
-bundle exec pra device my_task
+# Run custom Rake tasks directly
+bundle exec pra device <custom_rake_task> [ENV_NAME]
+
+# Examples (assuming these tasks exist in R2P2-ESP32):
+bundle exec pra device custom_task my-env
+bundle exec pra device build_app my-env
 ```
+
+**Usage Pattern**:
+1. Get list of available tasks: `pra device help my-env`
+2. Run any task: `pra device <task_name> my-env`
+3. Default environment: If `[ENV_NAME]` is omitted, uses the current environment (set via `pra env set`)
 
 ### Other
 

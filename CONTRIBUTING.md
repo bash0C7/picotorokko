@@ -20,6 +20,54 @@ Thank you for your interest in contributing to pra!
    bundle exec rake test
    ```
 
+## Setting Up Git Hooks
+
+Git hooks help catch code quality issues before pushing to the remote. The repository includes a pre-commit hook that automatically runs checks on your local machine.
+
+### Automatic Setup
+
+The git hooks are located in `.git/hooks/` and are automatically executable. They will run before each commit.
+
+### Manual Hook Setup (if needed)
+
+If the hooks are not executable, make them executable manually:
+
+```bash
+chmod +x .git/hooks/pre-commit
+```
+
+### What the Pre-Commit Hook Does
+
+Before each commit, the pre-commit hook automatically runs:
+
+1. **RuboCop** - Auto-fix code style violations
+2. **Test Suite** - Run all tests to ensure nothing is broken
+
+If either step fails, the commit is blocked until issues are resolved.
+
+### Running Checks Manually
+
+You can also run the checks manually before committing:
+
+```bash
+# Run RuboCop + tests (same as pre-commit hook)
+bundle exec rake pre-commit
+
+# Or run them separately:
+bundle exec rubocop -A     # Auto-fix style issues
+bundle exec rake test      # Run tests only
+```
+
+### Bypassing the Hook (Not Recommended)
+
+If you need to bypass the pre-commit hook for testing purposes only, use:
+
+```bash
+git commit --no-verify
+```
+
+**Note**: This should only be used in exceptional cases. All commits to the main branch still go through CI checks.
+
 ## Running Tests
 
 We use test-unit for testing. To run the test suite:

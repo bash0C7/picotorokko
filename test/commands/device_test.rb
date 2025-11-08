@@ -241,6 +241,68 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
     end
   end
 
+  # device help/tasks コマンドのテスト
+  sub_test_case "device help/tasks command" do
+    test "raises error when environment not found" do
+      assert_raise(RuntimeError) do
+        capture_stdout do
+          Pra::Commands::Device.start(['tasks', 'nonexistent-env'])
+        end
+      end
+    end
+
+    test "raises error when no current environment is set" do
+      assert_raise(RuntimeError) do
+        capture_stdout do
+          Pra::Commands::Device.start(['tasks'])
+        end
+      end
+    end
+
+    test "shows available tasks for environment" do
+      # テスト用の環境定義を作成
+      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+      # ビルド環境を作成
+      r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
+      esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
+      picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
+      env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+      build_path = Pra::Env.get_build_path(env_hash)
+      r2p2_path = File.join(build_path, 'R2P2-ESP32')
+      FileUtils.mkdir_p(r2p2_path)
+
+      # execute_with_esp_env をスタブ化してコマンド引数をキャプチャ
+      executed_command = nil
+      executed_path = nil
+      original_method = Pra::Env.method(:execute_with_esp_env)
+      Pra::Env.define_singleton_method(:execute_with_esp_env) do |cmd, path|
+        executed_command = cmd
+        executed_path = path
+      end
+
+      begin
+        output = capture_stdout do
+          Pra::Commands::Device.start(['tasks', 'test-env'])
+        end
+
+        # タスク一覧メッセージが出力されることを確認
+        assert_match(/Available R2P2-ESP32 tasks for environment: test-env/, output)
+        assert_match(/=+/, output)
+
+        # 正しいRakeコマンドが実行されることを確認
+        assert_equal('rake -T', executed_command)
+        assert_equal(r2p2_path, executed_path)
+      ensure
+        Pra::Env.define_singleton_method(:execute_with_esp_env, original_method)
+      end
+    end
+  end
+
   # method_missing による動的Rakeタスク委譲のテスト
   sub_test_case "method_missing rake task delegation" do
     test "delegates undefined command to R2P2-ESP32 rake task" do

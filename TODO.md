@@ -27,21 +27,24 @@
 - Task 2.3: Rakefile `rake pre-commit` タスク追加
 
 **実装詳細**:
-- device.rb: help メソッド + environment resolution/validation refactoring
+- device.rb: tasks + help メソッド + show_available_tasks メソッド
+  - `tasks` メソッド: R2P2-ESP32 タスク一覧表示
+  - `help` メソッド: tasks への alias
+  - `show_available_tasks` プライベートメソッド
   - `resolve_env_name` ヘルパーメソッド（cyclomatic complexity削減）
   - `validate_and_get_r2p2_path` ヘルパーメソッド
   - help・delegate_to_r2p2 デュプリケーション除去
-- test/commands/device_test.rb: help コマンドテスト追加
+- test/commands/device_test.rb: help/tasks コマンドテスト追加
 - README.md: 包括的な device コマンド説明追加
-- Rakefile: pre-commit タスク（rubocop:auto_correct + test）
+- Rakefile: pre-commit タスク（rubocop + test）
 - docs/CI_CD_GUIDE.md: コマンド参照の統一（obsolete pra r2p2 除去）
 
 **結果**:
-- デバイス操作コマンド使いやすさ向上（help で available tasks 表示）
+- デバイス操作コマンド使いやすさ向上（help/tasks で available tasks 表示）
 - ドキュメント統一性確保（古い r2p2 コマンド参照削除）
 - 開発者ローカル品質チェック完結（pre-commit タスク）
 - Code complexity 削減（device.rb RuboCop 完全クリア）
-- テスト: 35 tests, 0 failures ✅（device_test.rb に help テスト追加）
+- テスト: 35 tests, 0 failures ✅（device_test.rb に help/tasks テスト追加）
 
 **Phase 2 の効果**: 開発者がコマンド探索容易、ドキュメント整合性確保、ローカル品質チェック完結
 
