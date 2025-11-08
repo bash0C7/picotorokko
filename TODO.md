@@ -61,8 +61,14 @@
   - YAML 例（lines 62-73）と `lib/pra/env.rb` スキーマ整合性確認
 - **詳細**: 🟡 Medium Priority セクション「CI_CD_GUIDE.md YAML Schema Alignment」参照
 
-#### ✅ Task 2.3: Git hooks セットアップ
+#### ✅ Task 2.3: Git hooks セットアップ（完了）
 - **価値**: ⭐⭐ 中 - 開発効率向上、CI 負荷削減
+- **並列性**: ✅ Task 2.1, 2.2 と同時実装可能
+- **実装内容**:
+  - `Rakefile` - `rake pre-commit` タスク追加 ✅
+  - `.git/hooks/pre-commit` - Git hook スクリプト作成 ✅
+  - `CONTRIBUTING.md` - 開発者向けセットアップ手順追記 ✅
+- **詳細**: Commit `dcd2407` で完了
 - **並列性**: ✅ Task 2.2 と同時実装可能
 - **影響ファイル**:
   - `Rakefile` - `rake pre-commit` タスク追加
@@ -150,28 +156,28 @@
     - PR #30 failing CI checks
     - Need to ensure other test files work before expanding test scope
 
-### Setup Git Hooks for Local RuboCop & Test Execution
+### Setup Git Hooks for Local RuboCop & Test Execution ✅ (Completed)
 
-- [ ] **Add git hooks to run RuboCop and tests before commit**
-  - **Problem**:
-    - RuboCop violations and test failures are only caught in CI
-    - Developers may commit code that fails CI checks
-    - Wastes CI time on fixes that could be caught locally
-  - **Solution**:
-    - Setup husky + pre-commit hooks (or custom git hooks)
-    - Run on `git commit`:
-      1. `bundle exec rubocop --autocorrect-all` (auto-fix style)
-      2. `bundle exec rake test` (run full test suite)
-      3. Block commit if tests fail
-    - Alternative: Add rake task `rake pre-commit` and document in CONTRIBUTING.md
-  - **Implementation Options**:
-    1. **Husky + lint-staged** (recommended for Node.js projects, but Ruby also works)
-    2. **Direct git hooks** (.git/hooks/pre-commit script)
-    3. **Rake task + documentation** (simplest for Ruby projects)
+- [x] **Add git hooks to run RuboCop and tests before commit**
+  - **Implementation**: Rake task + Direct git hooks (Option 3)
+  - **What was done**:
+    1. Added `rake pre-commit` task to Rakefile that runs RuboCop + tests
+    2. Created `.git/hooks/pre-commit` script that invokes the Rake task
+    3. Updated CONTRIBUTING.md with setup instructions and usage guide
+  - **Behavior**:
+    - Runs before each `git commit` automatically
+    - Executes `bundle exec rubocop` to check code style
+    - Executes `bundle exec rake test` if RuboCop passes
+    - Blocks commit if either check fails
+    - Developers can bypass with `git commit --no-verify` if needed (documented)
+  - **Benefits**:
+    - Catches style and test failures locally before pushing to CI
+    - Reduces CI load by preventing commits with obvious issues
+    - Simple implementation without external dependencies
   - **Related Files**:
-    - `.git/hooks/pre-commit` (to create or document)
-    - `CONTRIBUTING.md` (to add developer setup instructions)
-    - `Rakefile` (if adding pre-commit task)
+    - `.git/hooks/pre-commit` ✅ Created
+    - `CONTRIBUTING.md` ✅ Updated
+    - `Rakefile` ✅ Updated
 
 ### Restore SimpleCov Coverage Requirements
 

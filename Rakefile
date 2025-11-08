@@ -23,3 +23,9 @@ task ci: %i[test rubocop]
 # 品質チェック統合タスク
 desc "Run all quality checks (tests and linting)"
 task quality: %i[test rubocop]
+
+# Pre-commit フック用タスク：RuboCop + テスト実行
+desc "Run pre-commit checks (RuboCop autocorrect + tests)"
+task "pre-commit": %i[rubocop test] do
+  puts "\n✅ Pre-commit checks passed!"
+end
