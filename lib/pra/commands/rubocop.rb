@@ -19,7 +19,7 @@ module Pra
         After setup, run 'pra rubocop update' to generate the method database.
       LONGDESC
       def setup
-        source_dir = File.expand_path("../../templates/rubocop", __dir__)
+        source_dir = File.expand_path("../templates/rubocop", __dir__)
         target_dir = Dir.pwd
 
         copy_template_files(source_dir, target_dir)

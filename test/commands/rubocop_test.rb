@@ -54,10 +54,11 @@ class PraCommandsRubocopTest < Test::Unit::TestCase
     test "prompts for overwrite when .rubocop.yml exists and user declines" do
       FileUtils.touch(".rubocop.yml")
 
+      rubocop_cmd = Pra::Commands::Rubocop.new
+      rubocop_cmd.define_singleton_method(:yes?) { |_msg| false }
+
       output = capture_stdout do
-        with_stdin("n\n") do
-          Pra::Commands::Rubocop.start(["setup"])
-        end
+        rubocop_cmd.setup
       end
 
       assert_match(/Skipped: \.rubocop\.yml/, output)
@@ -67,10 +68,11 @@ class PraCommandsRubocopTest < Test::Unit::TestCase
       FileUtils.touch(".rubocop.yml")
       File.write(".rubocop.yml", "old content")
 
+      rubocop_cmd = Pra::Commands::Rubocop.new
+      rubocop_cmd.define_singleton_method(:yes?) { |_msg| true }
+
       output = capture_stdout do
-        with_stdin("y\n") do
-          Pra::Commands::Rubocop.start(["setup"])
-        end
+        rubocop_cmd.setup
       end
 
       assert_match(/✅ Copied: \.rubocop\.yml/, output)
@@ -125,9 +127,12 @@ class PraCommandsRubocopTest < Test::Unit::TestCase
       File.write("scripts/update_methods.rb", "#!/usr/bin/env ruby; exit 1")
       File.chmod(0o755, "scripts/update_methods.rb")
 
+      rubocop_cmd = Pra::Commands::Rubocop.new
+      rubocop_cmd.define_singleton_method(:system) { |_cmd| false }
+
       assert_raises(SystemExit) do
         capture_stdout do
-          Pra::Commands::Rubocop.start(["update"])
+          rubocop_cmd.update
         end
       end
     end
@@ -165,10 +170,11 @@ class PraCommandsRubocopTest < Test::Unit::TestCase
       FileUtils.mkdir_p("lib/rubocop/cop/picoruby")
       File.write("lib/rubocop/cop/picoruby/old_cop.rb", "old code")
 
+      rubocop_cmd = Pra::Commands::Rubocop.new
+      rubocop_cmd.define_singleton_method(:yes?) { |_msg| true }
+
       capture_stdout do
-        with_stdin("y\n") do
-          Pra::Commands::Rubocop.start(["setup"])
-        end
+        rubocop_cmd.setup
       end
 
       # Old file should be replaced with new content
