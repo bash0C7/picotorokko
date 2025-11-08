@@ -369,6 +369,47 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
       # respond_to_missing? が false を返すことを確認
       assert_false(device.respond_to?(:_internal_method))
     end
+
+    test "help command displays available tasks" do
+      # テスト用の環境定義を作成
+      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+      # ビルド環境を作成
+      r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
+      esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
+      picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
+      env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+      build_path = Pra::Env.get_build_path(env_hash)
+      r2p2_path = File.join(build_path, 'R2P2-ESP32')
+      FileUtils.mkdir_p(r2p2_path)
+
+      # execute_with_esp_env をスタブ化
+      original_method = Pra::Env.method(:execute_with_esp_env)
+      begin
+        Pra::Env.define_singleton_method(:execute_with_esp_env) do |command, working_dir|
+          if command == 'rake -T'
+            puts "rake build"
+            puts "rake flash"
+            puts "rake monitor"
+          end
+        end
+
+        output = capture_stdout do
+          Pra::Commands::Device.start(['help', 'test-env'])
+        end
+
+        # ヘルプメッセージが表示されることを確認
+        assert_match(/Available tasks in R2P2-ESP32 for environment: test-env/, output)
+        assert_match(/rake build/, output)
+        assert_match(/rake flash/, output)
+        assert_match(/rake monitor/, output)
+      ensure
+        Pra::Env.define_singleton_method(:execute_with_esp_env, original_method)
+      end
+    end
   end
 
   private

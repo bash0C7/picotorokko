@@ -111,8 +111,21 @@ bundle exec pra device monitor
 
 ### R2P2-ESP32 Task Delegation
 
-- `pra device flash [ENV_NAME]` - Flash firmware to ESP32 (delegates to R2P2-ESP32)
-- `pra device monitor [ENV_NAME]` - Monitor ESP32 serial output (delegates to R2P2-ESP32)
+The `pra device` command supports **dynamic Rake task delegation**:
+
+- `pra device flash [ENV_NAME]` - Flash firmware to ESP32
+- `pra device monitor [ENV_NAME]` - Monitor ESP32 serial output
+- `pra device build [ENV_NAME]` - Build firmware
+- `pra device setup_esp32 [ENV_NAME]` - Setup ESP32 environment
+- `pra device help [ENV_NAME]` - Display available Rake tasks in R2P2-ESP32 build environment
+- `pra device <custom_task> [ENV_NAME]` - Execute any custom Rake task defined in R2P2-ESP32 (e.g., `pra device clean`)
+
+**Dynamic Task Delegation**: Any undefined command is automatically delegated to R2P2-ESP32's Rake tasks via the `method_missing` mechanism. This allows running custom Rake tasks without explicit `pra device` command definitions.
+
+**Example**: If your R2P2-ESP32 has a custom `rake my_task`, you can run:
+```bash
+bundle exec pra device my_task
+```
 
 ### Other
 

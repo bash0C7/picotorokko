@@ -37,6 +37,16 @@ module Pra
         puts '✓ ESP32 setup completed'
       end
 
+      desc 'help [ENV_NAME]', 'Display available Rake tasks in R2P2-ESP32'
+      def help(env_name = 'current')
+        actual_env = resolve_env_name(env_name)
+        r2p2_path = validate_and_get_r2p2_path(actual_env)
+
+        puts "Available tasks in R2P2-ESP32 for environment: #{actual_env}\n\n"
+        # ESP-IDF環境でrake -Tを実行して、利用可能なタスク一覧を表示
+        Pra::Env.execute_with_esp_env('rake -T', r2p2_path)
+      end
+
       # 明示的に定義されていないコマンドをRakeタスクに透過的に委譲
       def method_missing(method_name, *args)
         # Thorの内部メソッド呼び出しは無視
@@ -63,17 +73,26 @@ module Pra
 
       # R2P2-ESP32のRakefileにタスクを委譲
       def delegate_to_r2p2(command, env_name)
-        # currentの場合はsymlinkから実環境名を取得
-        if env_name == 'current'
-          current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-          if File.symlink?(current_link)
-            current = Pra::Env.get_current_env
-            env_name = current if current
-          else
-            raise "Error: No current environment set. Use 'pra env set ENV_NAME' first"
-          end
-        end
+        actual_env = resolve_env_name(env_name)
+        r2p2_path = validate_and_get_r2p2_path(actual_env)
 
+        # ESP-IDF環境でR2P2-ESP32のrakeタスクを実行
+        Pra::Env.execute_with_esp_env("rake #{command}", r2p2_path)
+      end
+
+      # 環境名を解決（currentの場合は実環境名に変換）
+      def resolve_env_name(env_name)
+        return env_name unless env_name == 'current'
+
+        current_link = File.join(Pra::Env::BUILD_DIR, 'current')
+        raise "Error: No current environment set. Use 'pra env set ENV_NAME' first" unless File.symlink?(current_link)
+
+        current = Pra::Env.get_current_env
+        current || env_name
+      end
+
+      # 環境を検証してR2P2パスを取得
+      def validate_and_get_r2p2_path(env_name)
         env_config = Pra::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
@@ -87,8 +106,7 @@ module Pra
         r2p2_path = File.join(build_path, 'R2P2-ESP32')
         raise 'Error: R2P2-ESP32 not found in build environment' unless Dir.exist?(r2p2_path)
 
-        # ESP-IDF環境でR2P2-ESP32のrakeタスクを実行
-        Pra::Env.execute_with_esp_env("rake #{command}", r2p2_path)
+        r2p2_path
       end
     end
   end
