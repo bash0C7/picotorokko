@@ -8,29 +8,29 @@
 
 /**
  * <%= class_name %>.version
- * アプリケーション固有mrbgemのバージョン番号を返す。
- * 整数値で返される（例：100 = v1.0.0）
+ * Returns the version number of this application-specific mrbgem.
+ * Returns an integer value (e.g., 100 = v1.0.0).
  */
 static void
 c_<%= c_prefix %>_version(mrbc_vm *vm, mrbc_value *v, int argc)
 {
-  // バージョン番号（整数）を返す
+  // Return the version number as an integer
   mrbc_value ret = mrbc_integer_value(100);
   SET_RETURN(ret);
 }
 
 /**
- * <%= class_name %> mrbgem初期化関数
- * mrbgemがロードされる際に自動呼び出しされる。
- * クラスメソッドをここで登録する。
+ * <%= class_name %> mrbgem initialization function
+ * Automatically called when the mrbgem is loaded.
+ * Register class methods here.
  */
 void
 mrbc_<%= c_prefix %>_init(mrbc_vm *vm)
 {
-  // <%= class_name %>クラスを定義
+  // Define the <%= class_name %> class
   mrbc_class *<%= c_prefix %>_class = mrbc_define_class(vm, "<%= class_name %>", mrbc_class_object);
 
-  // クラスメソッド登録: <%= class_name %>.version
+  // Register class method: <%= class_name %>.version
   mrbc_define_method(vm, <%= c_prefix %>_class, "version", c_<%= c_prefix %>_version);
 }
 

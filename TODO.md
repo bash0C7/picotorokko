@@ -32,6 +32,7 @@
 #### ✅ Task 3.1: ローカル品質基準クリア（RuboCop違反解消） [完了]
 - **実装内容**:
   1. RuboCop自動修正: 98個自動修正（`bundle exec rubocop -A`）
+     - テンプレート英語化による encoding error 解決（PR #36 CI対応、app.c.erb コメント英語化）
   2. 複雑度削減リファクタリング:
      - `lib/pra/commands/device.rb`: `show_available_tasks` メソッドを `resolve_env_name`, `validate_and_get_r2p2_path` に分割
      - `lib/pra/commands/mrbgems.rb`: `generate` メソッドを複数のヘルパーメソッドに分割（7個のメソッド作成）

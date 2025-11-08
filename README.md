@@ -166,25 +166,19 @@ For gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONTRIBUTING.md)
 
 After checking out the repo:
 
-### 1. Configure Bundler for vendor/bundle isolation
-
-```bash
-bundle config set --local path 'vendor/bundle'
-```
-
-### 2. Install dependencies
+### 1. Install dependencies
 
 ```bash
 bundle install
 ```
 
-### 3. Run tests
+### 2. Run tests
 
 ```bash
 bundle exec rake test
 ```
 
-### 4. Code Quality: RuboCop
+### 3. Code Quality: RuboCop
 
 We use RuboCop for code style enforcement:
 
@@ -192,13 +186,13 @@ We use RuboCop for code style enforcement:
 bundle exec rubocop -A
 ```
 
-### 5. Build the gem
+### 4. Build the gem
 
 ```bash
 bundle exec gem build pra.gemspec
 ```
 
-### 6. Test CLI locally
+### 5. Test CLI locally
 
 ```bash
 bundle exec exe/pra --help
