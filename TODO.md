@@ -52,6 +52,18 @@
 #### ✅ Task 2.3: Git hooks セットアップ
 - **価値**: ⭐⭐ 中 - 開発効率向上、CI 負荷削減
 - **並列性**: ✅ Task 2.1 と同時実装可能
+
+#### ✅ Task 2.2: CI_CD_GUIDE.md YAML 検証・修正
+- **価値**: ⭐ 低 - ドキュメント整合性
+- **並列性**: ✅ Task 2.3 と同時実装可能
+- **影響ファイル**:
+  - `docs/CI_CD_GUIDE.md` line 171 - `pra r2p2 flash` → `pra device flash`
+  - YAML 例（lines 62-73）と `lib/pra/env.rb` スキーマ整合性確認
+- **詳細**: 🟡 Medium Priority セクション「CI_CD_GUIDE.md YAML Schema Alignment」参照
+
+#### ✅ Task 2.3: Git hooks セットアップ
+- **価値**: ⭐⭐ 中 - 開発効率向上、CI 負荷削減
+- **並列性**: ✅ Task 2.2 と同時実装可能
 - **影響ファイル**:
   - `Rakefile` - `rake pre-commit` タスク追加
   - `CONTRIBUTING.md` - 開発者向け手順追記

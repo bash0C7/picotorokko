@@ -37,6 +37,16 @@ module Pra
         puts '✓ ESP32 setup completed'
       end
 
+      desc 'tasks [ENV_NAME]', 'Show available R2P2-ESP32 tasks'
+      def tasks(env_name = 'current')
+        show_available_tasks(env_name)
+      end
+
+      desc 'help [ENV_NAME]', 'Show available R2P2-ESP32 tasks (alias for tasks)'
+      def help(env_name = 'current')
+        tasks(env_name)
+      end
+
       # 明示的に定義されていないコマンドをRakeタスクに透過的に委譲
       def method_missing(method_name, *args)
         # Thorの内部メソッド呼び出しは無視
@@ -60,6 +70,38 @@ module Pra
       end
 
       private
+
+      # 利用可能なR2P2-ESP32タスクを表示
+      def show_available_tasks(env_name)
+        # currentの場合はsymlinkから実環境名を取得
+        if env_name == 'current'
+          current_link = File.join(Pra::Env::BUILD_DIR, 'current')
+          if File.symlink?(current_link)
+            current = Pra::Env.get_current_env
+            env_name = current if current
+          else
+            raise "Error: No current environment set. Use 'pra env set ENV_NAME' first"
+          end
+        end
+
+        env_config = Pra::Env.get_environment(env_name)
+        raise "Error: Environment '#{env_name}' not found" if env_config.nil?
+
+        hashes = Pra::Env.compute_env_hash(env_name)
+        raise "Error: Failed to compute environment hash for '#{env_name}'" if hashes.nil?
+
+        _r2p2_hash, _esp32_hash, _picoruby_hash, env_hash = hashes
+        build_path = Pra::Env.get_build_path(env_hash)
+        raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
+
+        r2p2_path = File.join(build_path, 'R2P2-ESP32')
+        raise 'Error: R2P2-ESP32 not found in build environment' unless Dir.exist?(r2p2_path)
+
+        puts "Available R2P2-ESP32 tasks for environment: #{env_name}"
+        puts "=" * 60
+        # ESP-IDF環境でR2P2-ESP32のrakeタスク一覧を表示
+        Pra::Env.execute_with_esp_env('rake -T', r2p2_path)
+      end
 
       # R2P2-ESP32のRakefileにタスクを委譲
       def delegate_to_r2p2(command, env_name)
