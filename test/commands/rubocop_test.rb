@@ -97,7 +97,7 @@ class PraCommandsRubocopTest < Test::Unit::TestCase
     end
   end
 
-  sub_test_case "rubocop update command" do
+  sub_test_case "rubocop update missing script" do
     test "fails if scripts/update_methods.rb does not exist" do
       assert_raises(SystemExit) do
         capture_stdout do
@@ -105,7 +105,9 @@ class PraCommandsRubocopTest < Test::Unit::TestCase
         end
       end
     end
+  end
 
+  sub_test_case "rubocop update script execution" do
     test "executes the update script if it exists" do
       FileUtils.mkdir_p("scripts")
       File.write("scripts/update_methods.rb", '#!/usr/bin/env ruby; puts "test"')
@@ -116,6 +118,63 @@ class PraCommandsRubocopTest < Test::Unit::TestCase
       end
 
       assert_match(/🚀 Running method database update.../, output)
+    end
+
+    test "fails when update script exits with error" do
+      FileUtils.mkdir_p("scripts")
+      File.write("scripts/update_methods.rb", "#!/usr/bin/env ruby; exit 1")
+      File.chmod(0o755, "scripts/update_methods.rb")
+
+      assert_raises(SystemExit) do
+        capture_stdout do
+          Pra::Commands::Rubocop.start(["update"])
+        end
+      end
+    end
+  end
+
+  sub_test_case "rubocop file copy operations" do
+    test "copies single file (.rubocop.yml)" do
+      capture_stdout do
+        Pra::Commands::Rubocop.start(["setup"])
+      end
+
+      assert_true(File.exist?(".rubocop.yml"))
+      content = File.read(".rubocop.yml")
+      assert_match(/AllCops:/, content)
+      assert_match(/require:/, content)
+    end
+  end
+
+  sub_test_case "rubocop directory copy operations" do
+    test "copies directories (lib, scripts, data)" do
+      capture_stdout do
+        Pra::Commands::Rubocop.start(["setup"])
+      end
+
+      assert_true(File.directory?("lib"))
+      assert_true(File.directory?("lib/rubocop"))
+      assert_true(File.directory?("lib/rubocop/cop"))
+      assert_true(File.directory?("lib/rubocop/cop/picoruby"))
+      assert_true(File.directory?("scripts"))
+      assert_true(File.directory?("data"))
+    end
+
+    test "handles deletion of existing directory during overwrite" do
+      # Pre-create lib directory with old content
+      FileUtils.mkdir_p("lib/rubocop/cop/picoruby")
+      File.write("lib/rubocop/cop/picoruby/old_cop.rb", "old code")
+
+      capture_stdout do
+        with_stdin("y\n") do
+          Pra::Commands::Rubocop.start(["setup"])
+        end
+      end
+
+      # Old file should be replaced with new content
+      cop_content = File.read("lib/rubocop/cop/picoruby/unsupported_method.rb")
+      assert_match(/UnsupportedMethod/, cop_content)
+      assert_false(File.exist?("lib/rubocop/cop/picoruby/old_cop.rb"))
     end
   end
 end

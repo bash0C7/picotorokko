@@ -3,6 +3,7 @@ require "simplecov"
 SimpleCov.start do
   add_filter "/test/"
   add_filter "/vendor/"
+  add_filter "/lib/pra/templates/"  # ユーザープロジェクト向けテンプレートは除外
   enable_coverage :branch
   # NOTE: 段階的にカバレッジ要件を引き上げ（Phase 3.2 にて 60% 達成）
   # 最終的には line: 80, branch: 50 に設定（Phase 3.4）
