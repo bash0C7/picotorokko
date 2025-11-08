@@ -212,8 +212,10 @@ module Pra
           content = File.read(patch_file)
           # 既に App の記載があるかチェック
           return if content.include?("conf.gem local: '../../../../mrbgems/App'")
+
           # 末尾に追記
-          File.write(patch_file, content + "\n# Application-specific mrbgem\nconf.gem local: '../../../../mrbgems/App'\n")
+          File.write(patch_file,
+                     content + "\n# Application-specific mrbgem\nconf.gem local: '../../../../mrbgems/App'\n")
         else
           # 新規作成（最小限の内容）
           File.write(patch_file, "# Application-specific mrbgem\nconf.gem local: '../../../../mrbgems/App'\n")
@@ -230,8 +232,10 @@ module Pra
           content = File.read(patch_file)
           # 既に App の記載があるかチェック
           return if content.include?('../../mrbgems/App/src/app.c')
+
           # 末尾に追記（簡潔なフォーマット）
-          File.write(patch_file, content + "\n# Application-specific mrbgem (App)\n${COMPONENT_DIR}/../../mrbgems/App/src/app.c\n")
+          File.write(patch_file,
+                     content + "\n# Application-specific mrbgem (App)\n${COMPONENT_DIR}/../../mrbgems/App/src/app.c\n")
         else
           # 新規作成（最小限の内容）
           File.write(patch_file, "# Application-specific mrbgem (App)\n${COMPONENT_DIR}/../../mrbgems/App/src/app.c\n")

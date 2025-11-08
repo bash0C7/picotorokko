@@ -191,9 +191,9 @@ module Pra
         env_config = get_environment(env_name)
         return nil unless env_config
 
-        r2p2_hash = env_config['R2P2-ESP32']['commit'] + '-' + env_config['R2P2-ESP32']['timestamp']
-        esp32_hash = env_config['picoruby-esp32']['commit'] + '-' + env_config['picoruby-esp32']['timestamp']
-        picoruby_hash = env_config['picoruby']['commit'] + '-' + env_config['picoruby']['timestamp']
+        r2p2_hash = "#{env_config['R2P2-ESP32']['commit']}-#{env_config['R2P2-ESP32']['timestamp']}"
+        esp32_hash = "#{env_config['picoruby-esp32']['commit']}-#{env_config['picoruby-esp32']['timestamp']}"
+        picoruby_hash = "#{env_config['picoruby']['commit']}-#{env_config['picoruby']['timestamp']}"
 
         env_hash = generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
         [r2p2_hash, esp32_hash, picoruby_hash, env_hash]

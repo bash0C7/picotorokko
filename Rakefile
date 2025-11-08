@@ -6,7 +6,17 @@ require "rake/testtask"
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
-  t.test_files = FileList["test/**/*_test.rb"]
+  test_files = FileList["test/**/*_test.rb"]
+
+  # サポート: TEST_EXCLUDE で特定のテストファイルを除外
+  if ENV["TEST_EXCLUDE"]
+    exclude_patterns = ENV["TEST_EXCLUDE"].split(",").map(&:strip)
+    exclude_patterns.each do |pattern|
+      test_files = test_files.exclude(pattern)
+    end
+  end
+
+  t.test_files = test_files
 end
 
 require "rubocop/rake_task"

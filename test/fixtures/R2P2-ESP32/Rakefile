@@ -1,0 +1,32 @@
+# frozen_string_literal: true
+
+# モック R2P2-ESP32 Rakefile
+# テスト用の最小実装：実際のビルドは行わず、タスク存在確認用
+
+desc "Flash firmware to ESP32"
+task :flash do
+  puts "Mock: Flashing ESP32"
+end
+
+desc "Monitor ESP32 serial output"
+task :monitor do
+  puts "Mock: Monitoring ESP32"
+end
+
+desc "Build firmware for ESP32"
+task :build do
+  puts "Mock: Building firmware"
+end
+
+desc "Setup ESP32 build environment"
+task :setup_esp32 do
+  puts "Mock: Setting up ESP32"
+end
+
+desc "List all available tasks"
+task :rake_tasks do
+  puts "rake flash"
+  puts "rake monitor"
+  puts "rake build"
+  puts "rake setup_esp32"
+end
