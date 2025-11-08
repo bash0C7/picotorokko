@@ -168,3 +168,38 @@ All security enhancements below do not change behavior and should only be implem
   - **Solution**: Create `lib/pra/validator.rb` for centralized validation
   - **Testing**: Add path traversal attack test cases
   - **Note**: Current codebase is developer-facing tool with limited attack surface
+
+---
+
+## 🟢 New Feature Implementation
+
+### PicoRuby RuboCop Configuration Template
+
+**Status**: Planning complete. See `TODO_rubocop_picoruby.md` for comprehensive implementation guide.
+
+- [ ] **Implement PicoRuby RuboCop template for static analysis of generated scripts**
+  - **Purpose**: Detect CRuby methods not supported in PicoRuby with warning-level feedback
+  - **Key Design**:
+    - pra gem provides data extraction script (template), NOT data files
+    - Users run `pra rubocop update` to fetch latest PicoRuby definitions from picoruby.github.io
+    - Warning severity (not error) for unsupported methods
+    - Users can disable warnings with `# rubocop:disable PicoRuby/UnsupportedMethod`
+  - **Deliverables**:
+    - Template directory: `lib/pra/templates/rubocop/`
+    - Data extraction script: `lib/pra/templates/rubocop/scripts/update_methods.rb`
+    - Custom Cop: `lib/pra/templates/rubocop/lib/rubocop/cop/picoruby/unsupported_method.rb`
+    - RuboCop config: `lib/pra/templates/rubocop/.rubocop.yml`
+    - Setup guide: `lib/pra/templates/rubocop/README.md`
+    - pra command: `lib/pra/commands/rubocop.rb` with `setup` and `update` subcommands
+    - Tests: `test/pra/commands/rubocop_test.rb`
+  - **User Workflow**:
+    1. `pra rubocop setup` - Deploy template to user's PicoRuby project
+    2. `pra rubocop update` - Generate method database from latest picoruby.github.io
+    3. `bundle exec rubocop` - Run static analysis, warnings shown for unsupported methods
+  - **Details**: See `TODO_rubocop_picoruby.md` for:
+    - Complete implementation guide with code examples
+    - Data flow architecture and design decisions
+    - Investigation results (PicoRuby RBS doc structure, CRuby method extraction, RuboCop patterns)
+    - Step-by-step implementation instructions (Phase 1-7)
+    - Testing and verification procedures
+    - Troubleshooting and limitations
