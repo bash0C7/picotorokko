@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # カバレッジ測定の開始（他のrequireより前に実行）
 require "simplecov"
 SimpleCov.start do

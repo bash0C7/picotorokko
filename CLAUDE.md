@@ -75,6 +75,16 @@ ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビ�
 - ❓ `rake build`, `rake cleanbuild` — Ask first
 - 🚫 `rake init`, `rake update`, `rake buildall` — Never (destructive `git reset --hard`)
 
+## Ruby Version Policy
+
+**Target Ruby: 3.4+** (3.3 partially supported for legacy environments)
+
+- ✅ **Ruby 3.4+ is the primary target** — All string literals default to frozen (no pragma needed)
+- ✅ **Ruby 3.3 partial support** — For development/CI environments still on 3.3
+- 🚫 **NO `# frozen_string_literal: true` pragma** — Not needed in Ruby 3.4+, and would be redundant
+- 📝 **String literal behavior**: In Ruby 3.4+, all string literals are frozen by default; mutations emit deprecation warnings unless `--disable-frozen-string-literal` is specified
+- 📝 **Future: Ruby 4.0** — frozen_string_literal will become strict (FrozenError on mutation attempts)
+
 ## Gem Development
 
 **Dependency Management** (gemspec centralization):

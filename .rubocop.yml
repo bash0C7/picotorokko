@@ -25,6 +25,10 @@ Style/StringLiteralsInInterpolation:
 Style/AsciiComments:
   Enabled: false
 
+# Disable frozen string literal comment requirement (Ruby 3.4+ default)
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
 # Metrics configuration - pragmatic thresholds for this project
 Metrics/MethodLength:
   Max: 30
