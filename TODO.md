@@ -90,6 +90,54 @@
 
 ---
 
+## 🔴 技術的負債（Technical Debt）
+
+### CI テスト除外（device_test.rb）
+
+**負債内容**: Phase 3 で `device_test.rb` を CI から除外（`TEST_EXCLUDE=test/commands/device_test.rb`）
+
+- **根本原因**: `device_test.rb` が R2P2-ESP32 Rake タスク呼び出しに依存
+  - テスト内で `execute_with_esp_env` をスタブ化しているが、完全な依存排除ができていない
+  - CI 環境では ESP-IDF 不在のため、本来は実行不可
+
+- **現在の対応**: テストレイヤー分離（アプローチ B）
+  - ローカル開発: 全 38 tests 実行可能（統合テスト検証）
+  - CI: 66 tests 実行（device_test.rb 除外）
+
+- **将来の改善案** (推奨):
+  1. **アプローチ A（推奨）**: `lib/pra/env.rb` に CI 環境検出を追加
+     ```ruby
+     def execute_with_esp_env(command, working_dir)
+       return system(command, chdir: working_dir) if ENV["CI"]  # CI では skip
+       # ESP-IDF setup...
+     end
+     ```
+     - メリット: シンプル、全テストを CI で実行可能
+     - 実装: 1 行追加のみ
+
+  2. **代替案**: device_test.rb を完全モック化
+     - R2P2-ESP32 Rakefile 依存を Mock オブジェクトで完全置換
+     - 複雑度は高いが、テスト独立性が向上
+
+- **削除予定**: アプローチ A 実装後、`TEST_EXCLUDE` は不要
+
+### テストのモック・スタブ処理
+
+**負債内容**: device_test.rb で `execute_with_esp_env` をメソッド再定義でスタブ化
+
+- **ファイル**: `test/commands/device_test.rb:379-420`（4 個のヘルパーメソッド）
+  - `with_stubbed_esp_env`
+  - `with_failing_esp_env`
+  - `with_tasks_list_esp_env`
+  - `setup_test_environment`, `setup_test_environment_with_current`
+
+- **対応方針**:
+  - 現状のテスト実装は有効（重複コード削減）
+  - アプローチ A 実装後も、ローカルテストのモック化は保持可能
+  - CI では `execute_with_esp_env` が自動的に skip される
+
+---
+
 ## Future Enhancements (Optional)
 
 ### CLI Command Structure Refactoring
