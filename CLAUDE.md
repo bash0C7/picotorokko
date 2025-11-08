@@ -37,6 +37,10 @@ ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビ�
 - **Proactive**: Implement without asking. Commit immediately (use `commit` subagent), user verifies after.
 - **Evidence-Based**: Never speculate. Read files first; use `explore` subagent for investigation.
 - **Parallel Tools**: Read/grep multiple files in parallel when independent. Never use placeholders.
+- **Small Cycles**: Tidy First (Kent Beck) + TDD (t-wada style) with RuboCop integration
+  - Red → Green → Refactor → Commit (1-5 minutes each iteration)
+  - All quality gates must pass: Tests + RuboCop + Coverage
+  - Never add `# rubocop:disable` or fake tests
 
 ## TODO Management
 
@@ -86,4 +90,23 @@ ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビ�
 
 ## Testing & Quality
 
+Development workflow: Red → Green (rubocop -A) → Refactor → Commit
+
+**Quality Gates (ALL must pass before commit)**:
+- ✅ Tests pass: `bundle exec rake test`
+- ✅ RuboCop: 0 violations: `bundle exec rubocop`
+- ✅ Coverage ≥ 80% line, ≥ 50% branch (in CI): `bundle exec rake ci`
+
+**Absolutely Forbidden**:
+- 🚫 Add `# rubocop:disable` comments (refactor instead)
+- 🚫 Write fake tests (empty, trivial assertions)
+- 🚫 Commit with RuboCop violations
+- 🚫 Lower coverage thresholds
+
+**When stuck**: Ask user for guidance on refactoring strategy.
+
+### Detailed Guides
+
 @import .claude/docs/testing-guidelines.md
+
+@import .claude/docs/tdd-rubocop-cycle.md
