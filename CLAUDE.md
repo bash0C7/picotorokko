@@ -98,6 +98,30 @@ ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビ�
   ```
 - 🚫 **Never duplicate dependencies in Gemfile** — Causes version conflicts and management overhead
 
+## R2P2-ESP32 Runtime Integration
+
+**CRITICAL: pra gem has ZERO knowledge of ESP-IDF**
+
+The `pra` gem is a **build tool only**. It knows:
+- ✅ R2P2-ESP32 project directory structure (location via env/config)
+- ✅ R2P2-ESP32 Rakefile exists and has callable tasks
+- ✅ How to invoke Rake in that directory: `bundle exec rake <task>`
+
+The `pra` gem does **NOT** know:
+- 🚫 Where ESP-IDF is located
+- 🚫 How to source `export.sh`
+- 🚫 ESP-IDF environment variables or setup
+- 🚫 Specific Rake task names (they may change)
+
+**Implementation Rule**:
+- When `pra` needs to build/flash/monitor, it **delegates to R2P2-ESP32 Rakefile**
+- Example: `system("cd #{r2p2_dir} && bundle exec rake flash")`
+- The Rakefile in R2P2-ESP32 handles all ESP-IDF setup internally
+
+**Reference**:
+- R2P2-ESP32: https://github.com/picoruby/R2P2-ESP32
+- R2P2-ESP32 Rakefile is responsible for ESP-IDF environment
+
 ## Testing & Quality
 
 Development workflow: Red → Green (rubocop -A) → Refactor → Commit

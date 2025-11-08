@@ -221,50 +221,18 @@ module Pra
         File.readlink(link)
       end
 
-      # ESP-IDF環境変数設定
-      def setup_esp_idf_env
-        homebrew_openssl = '/opt/homebrew/opt/openssl'
-        esp_idf_path = ENV['IDF_PATH'] || "#{ENV['HOME']}/esp/esp-idf"
-
-        env_vars = {
-          'PATH' => "#{homebrew_openssl}/bin:#{ENV['PATH']}",
-          'LDFLAGS' => "-L#{homebrew_openssl}/lib #{ENV['LDFLAGS']}",
-          'CPPFLAGS' => "-I#{homebrew_openssl}/include #{ENV['CPPFLAGS']}",
-          'CFLAGS' => "-I#{homebrew_openssl}/include #{ENV['CFLAGS']}",
-          'PKG_CONFIG_PATH' => "#{homebrew_openssl}/lib/pkgconfig:#{ENV['PKG_CONFIG_PATH']}",
-          'GRPC_PYTHON_BUILD_SYSTEM_OPENSSL' => '1',
-          'GRPC_PYTHON_BUILD_SYSTEM_ZLIB' => '1',
-          'ESPBAUD' => '115200',
-          'IDF_PATH' => esp_idf_path
-        }
-
-        env_vars.each { |key, value| ENV[key] = value }
-      end
-
-      # ESP-IDF環境でコマンド実行
+      # R2P2-ESP32 Rakefile でコマンド実行
+      # NOTE: ESP-IDF 環境のセットアップは R2P2-ESP32 Rakefile が責任を持つ
+      # pra gem は R2P2-ESP32 ディレクトリで Rake コマンドを実行するのみ
+      # （直接 ESP-IDF に依存しない - CI 環境で ESP-IDF がない場合も対応可能）
       def execute_with_esp_env(command, working_dir = nil)
-        esp_idf_path = ENV['IDF_PATH'] || "#{ENV['HOME']}/esp/esp-idf"
-
-        setup_script = <<~SCRIPT
-          export PATH="/opt/homebrew/opt/openssl/bin:$PATH"
-          export LDFLAGS="-L/opt/homebrew/opt/openssl/lib $LDFLAGS"
-          export CPPFLAGS="-I/opt/homebrew/opt/openssl/include $CPPFLAGS"
-          export CFLAGS="-I/opt/homebrew/opt/openssl/include $CFLAGS"
-          export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH"
-          export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
-          export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
-          export ESPBAUD=115200
-          . #{Shellwords.escape(esp_idf_path)}/export.sh
-          #{command}
-        SCRIPT
-
         if working_dir
           Dir.chdir(working_dir) do
-            success = system('bash', '-c', setup_script)
+            success = system(command)
             raise "Command failed: #{command}" unless success
           end
         else
-          success = system('bash', '-c', setup_script)
+          success = system(command)
           raise "Command failed: #{command}" unless success
         end
       end
