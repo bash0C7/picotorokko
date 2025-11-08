@@ -168,7 +168,7 @@ bundle exec pra build setup
 cp downloaded-artifacts/*.bin .cache/*/r2p2-esp32/build/
 
 # Flash using pra
-bundle exec pra r2p2 flash --port /dev/ttyUSB0
+bundle exec pra device flash --port /dev/ttyUSB0
 ```
 
 ### Customization Options
