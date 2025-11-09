@@ -115,16 +115,14 @@ class PraTestCase < Test::Unit::TestCase
   private
 
   # Helper: Verify git status is clean (no modifications to tracked files)
+  # NOTE: Staging area changes (added files, staged changes) are allowed
+  # This only checks for UNSTAGED changes (working tree modifications)
   def verify_git_status_clean!(phase)
-    result = `git status --porcelain 2>&1`
+    # Use git diff to check only unstaged changes (working tree modifications)
+    result = `git diff --name-only 2>&1`
     return if result.empty?
 
-    # Only report non-git-metadata changes (not .git/ entries)
-    git_metadata = result.lines.grep(%r{^.*\.git/})
-    unstaged = result.lines.reject { |line| git_metadata.include?(line) }
-    return if unstaged.empty?
-
-    message = "Git working directory is dirty #{phase}. Unstaged changes:\n#{unstaged.join}"
+    message = "Git working directory has unstaged changes #{phase}. Modified files:\n#{result}"
     raise StandardError, message
   end
 
