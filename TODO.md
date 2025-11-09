@@ -31,8 +31,19 @@ For detailed implementation guide and architecture design of the PicoRuby RuboCo
   - **Issue**: `bundle exec rake test` returns exit code 1 even though all tests pass (0 failures, 0 errors)
   - **Root Cause**: SimpleCov error: "Stopped processing SimpleCov as a previous error not related to SimpleCov has been detected"
   - **Impact**: CI pipeline fails due to non-zero exit code despite test success
-  - **Action**: Investigate SimpleCov configuration and fix error handling
-  - **Priority**: Medium (blocking CI/CD automation)
+  - **Current Status**: This state was inadvertently caused by previous sessions; must fix to restore CI/CD reliability
+  - **Action**:
+    1. Investigate SimpleCov configuration and fix error handling
+    2. Verify `bundle exec rake test` exits with code 0 (not 1)
+    3. Ensure **ALL THREE** succeed together before any commit:
+       - Tests pass: `bundle exec rake test` (exit 0)
+       - RuboCop clean: `bundle exec rubocop` (0 violations)
+       - Coverage passes: SimpleCov reports without exit code error
+  - **Critical Requirement**: **Tests + RuboCop + SimpleCov must ALL succeed before commit**
+    - Never commit with non-zero exit codes, even if tests technically "pass"
+    - Non-zero exit codes indicate system state corruption that breaks CI/CD
+    - This is a quality gate that cannot be bypassed
+  - **Priority**: High (blocking CI/CD automation and system reliability)
 
 - [ ] **Prevent tests from modifying git-managed files**
   - **Issue**: Test execution modifies `.picoruby-env.yml.example` (git-managed template file)
