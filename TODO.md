@@ -22,29 +22,32 @@
     - Env names: User-defined (no "current" symlink), defaults to `development`
     - Tests: Use `Dir.mktmpdir` to keep gem root clean
 
-- [ ] **AST-Based Template Engine (Optional Enhancement)**
-  - **Status**: Planning Phase (Deferred, non-blocking)
+- [ ] **AST-Based Template Engine** ✅ **APPROVED**
+  - **Status**: Approved for Implementation (Post-picotorokko)
   - **Full Specification**: [docs/PICOTOROKKO_REFACTORING_SPEC.md](docs/PICOTOROKKO_REFACTORING_SPEC.md#template-strategy-ast-based-template-engine)
   - **Scope**: Replace ERB-based template generation with AST-based approach (Parse → Modify → Dump)
-  - **Why**: Enable semantic code generation, maintain template validity, improve IDE support
-  - **Benefits**:
-    - Templates become valid, parseable code (Ruby, YAML)
-    - Full IDE support (syntax highlighting, completion)
-    - Type-safe transformations via AST manipulation
-    - Better maintainability and testability
-  - **Key components**:
+  - **Timing**: Execute AFTER picotorokko refactoring is complete (independent task)
+  - **Estimated Effort**: 8-12 days
+  - **Key Decisions Made**:
+    - ✅ Ruby templates: Placeholder Constants (e.g., `TEMPLATE_CLASS_NAME`)
+    - ✅ YAML templates: Special placeholder keys (e.g., `__PTRK_TEMPLATE_*__`), comments NOT preserved
+    - ✅ C templates: String replacement (e.g., `TEMPLATE_C_PREFIX`)
+    - ✅ ERB removal: Complete migration, no hybrid period
+    - ✅ **Critical requirement**: All templates MUST be valid code before substitution
+  - **Key Components**:
     - `Ptrk::Template::Engine` - Unified template interface
-    - `RubyTemplateEngine` - Prism-based Ruby template processor
-    - `YamlTemplateEngine` - Psych-based YAML template processor
-    - `CTemplateEngine` - String-based C template processor (fallback)
-  - **Research required** (Web search strategy documented in spec):
+    - `RubyTemplateEngine` - Prism-based (Visitor pattern for ConstantReadNode)
+    - `YamlTemplateEngine` - Psych-based (recursive placeholder replacement)
+    - `CTemplateEngine` - String gsub-based (simple identifier substitution)
+  - **Migration Phases**:
+    1. PoC (2-3 days): ONE template + validation
+    2. Complete Rollout (3-5 days): ALL templates converted
+    3. ERB Removal (1 day): Delete .erb files
+  - **Web Search Required** (before implementation):
     - Prism unparse/format capabilities
-    - YAML comment preservation (Psych limitations, alternative gems)
-    - tree-sitter-c gem evaluation
-    - AST-based template engine patterns
-  - **Migration strategy**: 3-phase (PoC → Gradual rollout → Deprecation)
-  - **Decision criteria**: Benefits vs. migration cost, prototype validation
-  - **Priority**: Low (nice-to-have, not blocking picotorokko refactoring)
+    - Prism location offset API verification
+    - RuboCop autocorrect patterns for learning
+  - **Priority**: High (approved, post-picotorokko)
 
 ---
 

@@ -986,9 +986,13 @@ end
 
 **Template Annotation Strategy**:
 
-Option A: **Placeholder Constants** (Recommended)
+**✅ DECISION: Option A (Placeholder Constants)** — Adopted
+
+**Critical Requirement**: Templates MUST be valid Ruby code before substitution.
+
 ```ruby
 # Template: lib/ptrk/templates/mrbgem_app/mrblib/app.rb
+# ✅ This code is valid Ruby (TEMPLATE_* are uninitialized constants, but parseable)
 class TEMPLATE_CLASS_NAME
   def version
     TEMPLATE_VERSION
@@ -996,9 +1000,14 @@ class TEMPLATE_CLASS_NAME
 end
 ```
 
-Option B: **Comment Annotations**
+**Why Option A**:
+- ✅ Prism can detect `ConstantReadNode` easily
+- ✅ Template remains valid Ruby syntax (constants are parseable)
+- ✅ Simple implementation (visitor pattern)
+- ✅ No runtime evaluation needed
+
+~~Option B: **Comment Annotations**~~ (Rejected)
 ```ruby
-# Template: lib/ptrk/templates/mrbgem_app/mrblib/app.rb
 # @ptrk_template: class_name
 class TemplateClassName
   # @ptrk_template: version
@@ -1007,6 +1016,7 @@ class TemplateClassName
   end
 end
 ```
+Reason for rejection: More complex parsing, no clear advantage over Option A
 
 **Implementation** (Option A: Placeholder Constants):
 
@@ -1095,17 +1105,25 @@ output = Ptrk::Template::Engine.render('app.rb', variables)
 
 **Challenge**: Psych does NOT preserve comments during round-trip (parse → modify → dump).
 
-**Solution Options**:
+**✅ DECISION: Option A (Special Placeholder Keys)** — Adopted
 
-**Option A: Special Placeholder Keys** (Recommended for picotorokko)
+**Trade-off Accepted**: YAML comments will be lost during template rendering. This is acceptable for picotorokko use cases (GitHub Actions workflow templates).
+
 ```yaml
 # Template: docs/github-actions/esp32-build.yml
+# ⚠️ NOTE: Comments in template files will NOT be preserved in output
 name: __PTRK_TEMPLATE_WORKFLOW_NAME__
 on:
   push:
     branches:
       - __PTRK_TEMPLATE_MAIN_BRANCH__
 ```
+
+**Why Option A**:
+- ✅ No external dependencies (Psych is stdlib)
+- ✅ Simple implementation
+- ✅ Comments not critical for GitHub Actions YAML (structure is self-documenting)
+- ✅ Template remains valid YAML
 
 Implementation:
 ```ruby
@@ -1141,34 +1159,44 @@ class YamlTemplateEngine
 end
 ```
 
-**Option B: External Gem for Comment Preservation**
-
-Research needed (see Web Search Strategy below):
+~~**Option B: External Gem for Comment Preservation**~~ (Rejected)
 - `yamllint-rb` - May preserve comments?
 - `ya2yaml` - Alternative YAML library
 - Custom parser using Psych + manual comment tracking
 
-**Option C: Hybrid Approach** (YAML + ERB for comments only)
+Reason for rejection: Additional dependencies not justified for this use case
+
+~~**Option C: Hybrid Approach**~~ (Rejected)
 - Use Psych for structure
 - Preserve specific comment blocks using ERB-like markers
 - Requires custom parser
+
+Reason for rejection: Too complex for limited benefit
 
 #### 4. C Template Engine
 
 **Challenge**: No standard C parser in Ruby stdlib.
 
-**Solution Options**:
+**✅ DECISION: Option A (String Placeholder Replacement)** — Adopted
 
-**Option A: String Placeholder Replacement** (Recommended)
+**Critical Requirement**: Templates MUST be valid C code before substitution.
+
 ```c
 // Template: lib/ptrk/templates/mrbgem_app/src/app.c
+// ✅ Valid C code (TEMPLATE_* are treated as identifiers)
 void mrbc_TEMPLATE_C_PREFIX_init(mrbc_vm *vm) {
   mrbc_class *TEMPLATE_C_PREFIX_class =
     mrbc_define_class(vm, "TEMPLATE_CLASS_NAME", mrbc_class_object);
 }
 ```
 
-Simple regex/string replacement:
+**Why Option A**:
+- ✅ C templates are simple (function names, class names only)
+- ✅ No AST parsing needed for this limited use case
+- ✅ No external dependencies
+- ✅ Template remains valid C syntax (identifiers are valid)
+
+Simple string replacement:
 ```ruby
 class CTemplateEngine
   def render
@@ -1184,29 +1212,41 @@ class CTemplateEngine
 end
 ```
 
-**Option B: tree-sitter-c gem** (Advanced, requires dependency)
+~~**Option B: tree-sitter-c gem**~~ (Rejected)
 - Pros: Full C AST parsing, semantic modifications
-- Cons: Additional gem dependency, complexity
+- Cons: Additional gem dependency, complexity, native extensions
+
+Reason for rejection: Overkill for simple identifier substitution
 
 ### Migration Strategy
 
-**Phase 1: Proof of Concept** (Non-blocking)
+**✅ DECISION: Complete Migration after picotorokko Refactoring**
+
+**Timing**: Independent task, executed AFTER picotorokko (pra → ptrk) refactoring is complete.
+
+**Phase 1: Proof of Concept** (Validation)
 1. Implement `Ptrk::Template::Engine` module
 2. Create `RubyTemplateEngine` with Prism
 3. Convert ONE template (e.g., `mrblib/app.rb.erb` → `mrblib/app.rb`)
 4. Add tests for template rendering
-5. Keep existing ERB system running in parallel
+5. Validate: Template validity before/after substitution
+6. **Quality Gate**: PoC must pass all tests and maintain RuboCop compliance
 
-**Phase 2: Gradual Rollout**
-1. Convert Ruby templates (`.rb.erb` → `.rb`)
-2. Convert Rake templates (`.rake.erb` → `.rake`)
-3. Convert YAML templates (if needed)
-4. Update `lib/ptrk/commands/mrbgems.rb` to use new engine
+**Phase 2: Complete Rollout** (No parallel operation)
+1. Convert ALL Ruby templates (`.rb.erb` → `.rb`)
+2. Convert ALL Rake templates (`.rake.erb` → `.rake`)
+3. Convert ALL YAML templates (`.yml.erb` → `.yml`)
+4. Convert ALL C templates (`.c.erb` → `.c`)
+5. Update `lib/ptrk/commands/mrbgems.rb` to use new engine
+6. Update all template generation code
 
-**Phase 3: Deprecation**
-1. Remove `.erb` files
-2. Remove ERB dependency from codebase
+**Phase 3: ERB Removal** (Immediate)
+1. Delete ALL `.erb` files (no preservation)
+2. Remove `require "erb"` from codebase
 3. Update documentation
+4. Update tests to reflect new template system
+
+**No Hybrid Period**: ERB will be completely removed after Phase 2 completion.
 
 ### Web Search Strategy
 
@@ -1439,16 +1479,36 @@ end
 - ⚠️ If comments not critical: Use Psych + placeholder keys
 - ⚠️ If comments critical: Keep ERB or research ya2yaml gem
 
-### Next Steps (Planning Phase)
+### Implementation Decisions Summary
 
-1. **Research**: Execute web searches listed above
-2. **Prototype**: Implement `RubyTemplateEngine` for ONE template
-3. **Validate**: Ensure Prism approach works with all Ruby template patterns
-4. **Document**: Update this spec with findings
-5. **Decide**: Go/no-go decision based on prototype results
-6. **Implement**: Full rollout if benefits confirmed
+| Decision Point | Choice | Rationale |
+|----------------|--------|-----------|
+| **Proceed with migration?** | ✅ Yes | Benefits justify migration cost |
+| **Timing** | After picotorokko refactoring | Independent work, non-blocking |
+| **Ruby templates** | Placeholder Constants | Simple, Prism-friendly, valid syntax |
+| **YAML templates** | Special placeholder keys, no comments | Psych limitation accepted |
+| **C templates** | String replacement | Sufficient for simple use case |
+| **ERB removal** | Complete (no hybrid) | Clean cut, no technical debt |
+| **Template validity** | **MANDATORY** | Templates must parse before substitution |
 
-**Status**: ⏸️ Deferred (not blocking picotorokko refactoring)
+### Next Steps (Implementation Phase)
+
+**Prerequisites**:
+1. ✅ picotorokko refactoring MUST be complete
+2. ✅ All tests passing, RuboCop clean
+3. ✅ Branch: picotorokko merged to main
+
+**Execution**:
+1. **Research** (1-2 days): Execute web searches for Prism unparse capabilities
+2. **Prototype** (2-3 days): Implement `RubyTemplateEngine` for ONE template
+3. **Validate** (1 day): Verify template validity, test coverage, RuboCop compliance
+4. **Full Rollout** (3-5 days): Convert all templates, update commands
+5. **ERB Removal** (1 day): Delete .erb files, update docs
+6. **Quality Verification** (1 day): Full test suite, coverage, RuboCop
+
+**Estimated Total Effort**: 8-12 days
+
+**Status**: ✅ Approved for Implementation (Post-picotorokko)
 
 ---
 
