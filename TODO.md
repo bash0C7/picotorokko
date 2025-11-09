@@ -26,17 +26,27 @@ For detailed implementation guide and architecture design of the PicoRuby RuboCo
 
 ### Refactor Test Temporary File Handling
 
-- [ ] **Migrate tests from setup/teardown to block-based temp file creation**
-  - **Files**: `test/commands/rubocop_test.rb`, `build_test.rb`, `mrbgems_test.rb`
-  - **Pattern A (preferred)**: Use `Tempfile.open` with block for file operations
-  - **Pattern B (when needed)**: Use `Dir.mktmpdir` with block for directory structures
-  - **Security Benefits**: Prevent symlink attacks (per IPA security guidelines)
-  - **Safety Guarantee**: Guaranteed cleanup on block exit (even on exceptions)
-  - **References**:
-    - https://docs.ruby-lang.org/ja/latest/class/Tempfile.html
-    - https://docs.ruby-lang.org/ja/latest/method/Dir/s/mktmpdir.html
-    - https://magazine.rubyist.net/articles/0029/0029-BundledLibraries.html
-  - **Note**: Separate session task (quality improvement, not urgent)
+- [x] **Completed Phase 1: Migrate 3 files to block-based temp file creation**
+  - [x] `test/commands/rubocop_test.rb` - 11 tests refactored
+  - [x] `test/commands/build_test.rb` - 9 tests refactored
+  - [x] `test/commands/mrbgems_test.rb` - 10 tests refactored
+  - [x] Updated `.rubocop.yml`: Excluded test files from BlockLength metric (needed for nested blocks)
+  - **Pattern Used**: `Dir.mktmpdir` with block for directory structures (Ruby standard pattern)
+
+- [ ] **Phase 2: Migrate remaining 5 test files**
+  - [ ] `test/commands/device_test.rb` - ~11 tests
+  - [ ] `test/commands/ci_test.rb` - ~5 tests
+  - [ ] `test/commands/patch_test.rb` - ~9 tests
+  - [ ] `test/commands/cache_test.rb` - ~9 tests
+  - [ ] `test/commands/env_test.rb` - ~12 tests
+  - **Pattern**: Same as Phase 1 (`Dir.mktmpdir` with block)
+  - **Benefit**: Automatic cleanup on block exit, better test isolation
+  - **Security**: Implicit: `Dir.mktmpdir` uses secure temporary directory creation
+
+- **Design Decision**: Chose direct `Dir.mktmpdir { ... }` pattern over helper method
+  - Pro: Standard Ruby knowledge, no project-specific complexity
+  - Con: Repeat pattern in each test (~6 lines per test)
+  - Rationale: Simplicity wins over DRY when readability is maintained
 
 ---
 

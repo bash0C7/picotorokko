@@ -42,3 +42,8 @@ Metrics/AbcSize:
 
 Metrics/ParameterLists:
   Max: 5
+
+# Test files have deeper nesting due to Dir.mktmpdir block + begin/ensure structure
+Metrics/BlockLength:
+  Exclude:
+    - "test/**/*"
