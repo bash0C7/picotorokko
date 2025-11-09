@@ -154,6 +154,7 @@ class PraCommandsBuildTest < Test::Unit::TestCase
         end
       end
     end
+
   end
 
   # build list コマンドのテスト

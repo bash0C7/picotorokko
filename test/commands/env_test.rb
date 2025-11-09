@@ -688,4 +688,62 @@ class PraCommandsEnvTest < Test::Unit::TestCase
       end
     end
   end
+
+  # Pra::Env Git operation tests
+  sub_test_case "Env module git operations" do
+    test "fetch_remote_commit returns commit hash on success" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          stub_git_operations do |context|
+            result = Pra::Env.fetch_remote_commit('https://github.com/picoruby/R2P2-ESP32.git')
+            assert_equal('abc1234', result)
+            assert_equal(1, context[:call_count][:fetch])
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "fetch_remote_commit returns nil on network failure" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          stub_git_operations(fail_fetch: true) do |context|
+            result = Pra::Env.fetch_remote_commit('https://github.com/picoruby/R2P2-ESP32.git')
+            assert_nil(result)
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "clone_repo skips clone if destination already exists" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          dest_path = File.join(tmpdir, 'existing_repo')
+          FileUtils.mkdir_p(dest_path)
+
+          stub_git_operations do |context|
+            output = capture_stdout do
+              Pra::Env.clone_repo('https://github.com/picoruby/R2P2-ESP32.git', dest_path, 'abc1234')
+            end
+
+            # No "Cloning" message should appear
+            assert_equal('', output)
+            # clone should not be called
+            assert_equal(0, context[:call_count][:clone])
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
 end
