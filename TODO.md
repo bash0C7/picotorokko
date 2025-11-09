@@ -34,6 +34,18 @@ For detailed implementation guide and architecture design of the PicoRuby RuboCo
   - **Action**: Investigate SimpleCov configuration and fix error handling
   - **Priority**: Medium (blocking CI/CD automation)
 
+- [ ] **Prevent tests from modifying git-managed files**
+  - **Issue**: Test execution modifies `.picoruby-env.yml.example` (git-managed template file)
+  - **Root Cause**: Test cleanup may be incomplete; tests interact with .example file during setup/teardown
+  - **Impact**: Git working directory becomes dirty after test runs; violates test isolation principle
+  - **Problem**: This is a fundamental test design failure - tests should never modify repository resources
+  - **Action**:
+    1. Investigate why `.example` file is being modified during test execution
+    2. Ensure test isolation uses temporary directories completely separate from repo
+    3. Add pre-test verification: `git status` must be clean before tests
+    4. Add post-test verification: `git status` must be clean after tests
+  - **Priority**: High (critical for test reliability and CI/CD safety)
+
 ### Development Workflow Standardization
 
 - [ ] **Enforce RuboCop auto-correction in TDD cycle**
