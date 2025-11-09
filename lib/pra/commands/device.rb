@@ -1,5 +1,6 @@
 
 require 'thor'
+require 'prism'
 
 module Pra
   module Commands
@@ -68,10 +69,25 @@ module Pra
         return super if method_name.to_s.start_with?('_')
 
         env_name = args.first || 'current'
-        puts "Delegating to R2P2-ESP32 task: #{method_name}"
-        delegate_to_r2p2(method_name.to_s, env_name)
-      rescue StandardError
-        # Rakeタスクが存在しない場合など
+        actual_env = resolve_env_name(env_name)
+        r2p2_path = validate_and_get_r2p2_path(actual_env)
+
+        # Get whitelist of available tasks
+        available_tasks = available_rake_tasks(r2p2_path)
+        task_name = method_name.to_s
+
+        # If whitelist exists and task not in it, reject
+        unless available_tasks.empty? || available_tasks.include?(task_name)
+          raise Thor::UndefinedCommandError.new(
+            task_name,
+            self.class.all_commands.keys + available_tasks,
+            self.class.namespace
+          )
+        end
+
+        puts "Delegating to R2P2-ESP32 task: #{task_name}"
+        delegate_to_r2p2(task_name, env_name)
+      rescue Errno::ENOENT, RuntimeError
         raise Thor::UndefinedCommandError.new(
           method_name.to_s,
           self.class.all_commands.keys,
@@ -132,6 +148,157 @@ module Pra
         raise 'Error: R2P2-ESP32 not found in build environment' unless Dir.exist?(r2p2_path)
 
         r2p2_path
+      end
+
+      # Rakefileから利用可能なタスクを取得
+      def available_rake_tasks(r2p2_path)
+        rakefile_path = File.join(r2p2_path, 'Rakefile')
+        return [] unless File.exist?(rakefile_path)
+
+        source = File.read(rakefile_path)
+        result = Prism.parse(source)
+
+        extractor = RakeTaskExtractor.new
+        result.value.accept(extractor)
+
+        extractor.tasks.uniq.sort
+      rescue StandardError => e
+        warn "Warning: Failed to parse Rakefile: #{e.message}" if ENV['DEBUG']
+        []
+      end
+    end
+
+    # AST-based Rake task extractor for secure, static analysis
+    class RakeTaskExtractor < Prism::Visitor
+      attr_reader :tasks
+
+      def initialize
+        super
+        @tasks = []
+      end
+
+      def visit_call_node(node)
+        case node.name
+        when :task
+          handle_task_definition(node)
+        when :each
+          handle_each_block_with_task_generation(node)
+        end
+
+        super
+      end
+
+      private
+
+      # Standard task definition: task :name or task "name"
+      def handle_task_definition(node)
+        return unless node.arguments&.arguments&.any?
+
+        task_name = extract_task_name(node.arguments.arguments[0])
+        @tasks << task_name if task_name
+      end
+
+      # Dynamic task generation: %w[...].each do |var| task "name_#{var}" end
+      def handle_each_block_with_task_generation(node)
+        # Only handle array literals (not constants, method calls)
+        return unless node.receiver.is_a?(Prism::ArrayNode)
+
+        # Extract array elements
+        array_elements = extract_array_elements(node.receiver)
+        return if array_elements.empty?
+
+        # Get block parameter name
+        block_param_name = extract_block_parameter(node.block)
+        return unless block_param_name
+
+        # Find task definitions inside block
+        task_patterns = extract_task_patterns_from_block(node.block, block_param_name)
+
+        # Expand patterns for each array element
+        task_patterns.each do |pattern|
+          array_elements.each do |element|
+            expanded_name = expand_pattern(pattern, element)
+            @tasks << expanded_name
+          end
+        end
+      end
+
+      # Extract string values from array literal
+      def extract_array_elements(array_node)
+        array_node.elements.filter_map do |elem|
+          elem.unescaped if elem.is_a?(Prism::StringNode)
+        end
+      end
+
+      # Get block parameter name from |var| syntax
+      def extract_block_parameter(block_node)
+        params = block_node&.parameters&.parameters
+        return unless params&.requireds&.any?
+
+        params.requireds[0].name
+      end
+
+      # Find all task definitions within a block and extract their patterns
+      def extract_task_patterns_from_block(block_node, param_name)
+        body = block_node&.body&.body
+        return [] unless body
+
+        task_statements = body.select { |stmt| task_call?(stmt) }
+        task_statements.filter_map { |stmt| extract_task_pattern(stmt.arguments.arguments[0], param_name) }
+      end
+
+      # Check if statement is a task() call with arguments
+      def task_call?(stmt)
+        stmt.is_a?(Prism::CallNode) && stmt.name == :task && stmt.arguments&.arguments&.any?
+      end
+
+      # Extract pattern from interpolated string like "setup_#{name}"
+      # Returns array of { type: :string/:variable, value: ... } hashes
+      def extract_task_pattern(arg_node, param_name)
+        return unless arg_node.is_a?(Prism::InterpolatedStringNode)
+
+        parts = arg_node.parts.filter_map do |part|
+          case part
+          when Prism::StringNode
+            { type: :string, value: part.unescaped }
+          when Prism::EmbeddedStatementsNode
+            extract_embedded_variable(part, param_name)
+          end
+        end
+        parts unless parts.empty?
+      end
+
+      # Extract variable from embedded statement if it matches the block parameter
+      def extract_embedded_variable(stmt_node, param_name)
+        var = stmt_node.statements.body[0]
+        return unless var.is_a?(Prism::LocalVariableReadNode)
+        return unless var.name == param_name
+
+        { type: :variable }
+      end
+
+      # Expand pattern by replacing :variable placeholders with actual values
+      # Example: [{ type: :string, value: "setup_" }, { type: :variable }] + "esp32" → "setup_esp32"
+      def expand_pattern(pattern, value)
+        pattern.map do |part|
+          case part[:type]
+          when :string
+            part[:value]
+          when :variable
+            value
+          end
+        end.join
+      end
+
+      # Extract simple task name from string or symbol node
+      def extract_task_name(arg_node)
+        case arg_node
+        when Prism::StringNode, Prism::SymbolNode
+          arg_node.unescaped
+        when Prism::InterpolatedStringNode
+          # Cannot expand runtime interpolation, skip
+          nil
+        end
       end
     end
   end
