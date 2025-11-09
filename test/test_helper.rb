@@ -5,9 +5,10 @@ SimpleCov.start do
   add_filter "/vendor/"
   add_filter "/lib/pra/templates/" # ユーザープロジェクト向けテンプレートは除外
   enable_coverage :branch
-  # NOTE: 段階的にカバレッジ要件を引き上げ（Phase 3.2 にて 60% 達成）
-  # 最終的には line: 80, branch: 50 に設定（Phase 3.4）
-  minimum_coverage line: 60, branch: 30 if ENV["CI"]
+  # NOTE: 段階的にカバレッジ要件を引き上げ
+  # Phase 3.2: 60% 達成
+  # Phase 4: line 85%, branch 60% 目標設定
+  minimum_coverage line: 85, branch: 60 if ENV["CI"]
 end
 
 # Codecov v4対応: Cobertura XML形式で出力
