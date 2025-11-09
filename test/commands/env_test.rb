@@ -618,4 +618,74 @@ class PraCommandsEnvTest < Test::Unit::TestCase
       end
     end
   end
+
+  # Pra::Env git utilities tests
+  sub_test_case "Env module git utilities" do
+    test "has_submodules? returns true when .gitmodules exists" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          File.write('.gitmodules', '[submodule "test"]\n  path = test\n  url = https://example.com/test.git')
+          result = Pra::Env.has_submodules?(tmpdir)
+          assert_true(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "has_submodules? returns false when .gitmodules does not exist" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          result = Pra::Env.has_submodules?(tmpdir)
+          assert_false(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  # Pra::Env build path resolution tests
+  sub_test_case "Env module build path resolution" do
+    test "get_environment returns nil for non-existent environment" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          result = Pra::Env.get_environment('non-existent')
+          assert_nil(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "set_environment stores and retrieves environment data correctly" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          r2p2_info = { 'commit' => 'r2p2abc', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'esp32def', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'pico999', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('custom-env', r2p2_info, esp32_info, picoruby_info, notes: 'Custom notes')
+
+          env_config = Pra::Env.get_environment('custom-env')
+          assert_not_nil(env_config)
+          assert_equal('r2p2abc', env_config['R2P2-ESP32']['commit'])
+          assert_equal('Custom notes', env_config['notes'])
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
 end
