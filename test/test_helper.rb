@@ -19,3 +19,43 @@ $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "pra"
 
 require "test-unit"
+
+# テスト用基底クラス：PROJECT_ROOT のリセットを処理
+class PraTestCase < Test::Unit::TestCase
+  # setup: 各テスト開始時に PROJECT_ROOT をリセット
+  def setup
+    super
+    # PROJECT_ROOT を現在の作業ディレクトリに基づいてリセット
+    begin
+      Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
+    rescue NameError
+      # 定数がまだ定義されていない場合は無視
+    end
+  end
+
+  # Dir.chdir(tmpdir) 後に PROJECT_ROOT をリセットするヘルパー
+  def with_fresh_project_root
+    original_dir = Dir.pwd
+    begin
+      yield
+    ensure
+      Dir.chdir(original_dir)
+      # PROJECT_ROOT をリセット（現在の Dir.pwd を基準に）
+      begin
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
+      rescue NameError
+        # Ignore
+      end
+    end
+  end
+
+  # teardown: テスト終了後に PROJECT_ROOT を確実にリセット
+  def teardown
+    super
+    begin
+      Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd) if Dir.pwd
+    rescue StandardError
+      # Silently ignore teardown errors
+    end
+  end
+end

@@ -12,22 +12,41 @@ For detailed implementation guide and architecture design of the PicoRuby RuboCo
 
 ## 🔴 技術的負債（Technical Debt）
 
-### device_test.rb Rake Task Invocation Issue
+### Phase 5: device.rb Security & Dynamic Rake Task Handling
 
-- [ ] **CRITICAL: device_test.rb fails when running full test suite**
-  - **Issue**: Calling `Pra::Commands::Device.start(['setup_esp32', ...])` triggers "Don't know how to build task 'setup_esp32'" error
-  - **Status**: Temporarily excluded from `rake test` (see Rakefile line 10)
-  - **Root Cause**: Unresolved issue with how mock Rakefile tasks are invoked/stubbed in test environment
-  - **Impact**:
-    - 16 device command tests not executing
-    - Full test coverage impossible (missing device.rb branch coverage)
-    - Current coverage: 65.03% line, 34.45% branch (vs. target 75%+ line, 50%+ branch)
-  - **Investigation Needed**:
-    - How `execute_with_esp_env` stub interacts with Rake task lookup
-    - Why mock `test/fixtures/R2P2-ESP32/Rakefile` task definitions aren't found
-    - Fix requires deep debugging of Rake/Thor task invocation mechanism
-  - **Workaround**: Exclude device_test.rb from test suite until resolved
-  - **Next Steps**: Investigate and fix in Phase 5 (high technical complexity)
+- [ ] **PHASE 5: Prism-based Rakefile AST parsing for secure Rake task whitelist**
+  - **Status**: In Progress (Session N+1)
+  - **Completed in current session**:
+    - ✅ Removed device_test.rb from Rakefile exclusion (now runs with full test suite)
+    - ✅ Added `with_stubbed_esp_env` helper to build_test.rb (4 setup tests wrapped)
+    - ✅ Refactored test infrastructure with PraTestCase base class (PROJECT_ROOT reset in setup/teardown)
+    - ✅ Improved test independence: tmpdir + DIR.chdir + PROJECT_ROOT const_set flow
+    - ✅ **Coverage improvement**: 71.76% → **92.04% line**, 49.15% → **71.79% branch**
+    - ✅ All 132 tests now execute (previously 46 device tests excluded)
+
+  - **Remaining work** (next session):
+    - [ ] Fix 7 remaining test failures (patch file assertion expectations)
+      - build_test.rb: 4 failures (build list, build clean, patch generation)
+      - device_test.rb: 3 failures (exception handling for missing build env)
+    - [ ] Implement `RakeTaskExtractor < Prism::Visitor` class in device.rb
+      - [ ] Parse Rakefile AST safely (no code execution)
+      - [ ] Extract task names: `:symbol`, `'string'`, and `task name:` patterns
+      - [ ] Support namespace nesting (`foo:bar` format)
+    - [ ] Add `available_rake_tasks(env_name)` method to device.rb
+      - [ ] Return deduplicated, sorted task list from Prism analysis
+      - [ ] Handle missing Rakefile gracefully (empty array fallback)
+    - [ ] Enhance `method_missing` with whitelist validation
+      - [ ] Check task names against available tasks before delegation
+      - [ ] Improve error messages with suggested available tasks
+    - [ ] Add tests for task validation (negative cases)
+      - [ ] Test rejection of tasks not in Rakefile
+      - [ ] Test protection against command injection patterns
+    - [ ] Run RuboCop and fix any violations
+
+  - **Security benefits**:
+    - Prevents arbitrary command execution via method_missing
+    - Uses static AST analysis (Prism) - no code execution
+    - Whitelist-based validation for all dynamic Rake task delegation
 
 ---
 

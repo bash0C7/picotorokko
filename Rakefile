@@ -5,9 +5,6 @@ Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
   test_files = FileList["test/**/*_test.rb"]
-  # Temporary: device_test.rb is excluded due to unresolved Rake task invocation issues
-  # See TODO.md for details
-  test_files.exclude("test/commands/device_test.rb")
 
   t.test_files = test_files
 

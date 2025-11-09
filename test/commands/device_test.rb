@@ -3,16 +3,16 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
-class PraCommandsDeviceTest < Test::Unit::TestCase
+class PraCommandsDeviceTest < PraTestCase
   # device flash コマンドのテスト
   sub_test_case "device flash command" do
     test "raises error when environment not found" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -20,18 +20,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "raises error when no current environment is set" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -39,18 +40,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "raises error when build environment not found" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           # テスト用の環境定義を作成するが、ビルド環境は作成しない
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -65,18 +67,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "shows message when flashing" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment('test-env')
 
@@ -90,21 +93,22 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             assert_match(/✓ Flash completed/, output)
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
+    end
     end
   end
 
   # device monitor コマンドのテスト
   sub_test_case "device monitor command" do
     test "raises error when environment not found" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -112,18 +116,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "raises error when no current environment is set" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -131,18 +136,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "shows message when monitoring" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment('test-env')
 
@@ -156,21 +162,22 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             assert_match(/Press Ctrl\+C to exit/, output)
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
+    end
     end
   end
 
   # device build コマンドのテスト
   sub_test_case "device build command" do
     test "raises error when environment not found" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -178,18 +185,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "shows message when building" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment('test-env')
 
@@ -203,21 +211,22 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             assert_match(/✓ Build completed/, output)
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
+    end
     end
   end
 
   # device setup_esp32 コマンドのテスト
   sub_test_case "device setup_esp32 command" do
     test "raises error when environment not found" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -225,18 +234,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "shows message when setting up ESP32" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment('test-env')
 
@@ -250,21 +260,22 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             assert_match(/✓ ESP32 setup completed/, output)
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
+    end
     end
   end
 
   # device help/tasks コマンドのテスト
   sub_test_case "device help/tasks command" do
     test "raises error when environment not found" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -272,18 +283,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "raises error when no current environment is set" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -291,18 +303,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "shows available tasks for environment" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment('test-env')
 
@@ -316,21 +329,22 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             assert_match(/=+/, output)
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
+    end
     end
   end
 
   # method_missing による動的Rakeタスク委譲のテスト
   sub_test_case "method_missing rake task delegation" do
     test "delegates undefined command to R2P2-ESP32 rake task" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment('test-env')
 
@@ -343,18 +357,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             assert_match(/Delegating to R2P2-ESP32 task: custom_task/, output)
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "raises error when rake task does not exist" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment('test-env')
 
@@ -366,18 +381,19 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             end
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
     end
+    end
 
     test "uses default env_name when not provided" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment_with_current('test-env')
 
@@ -390,9 +406,10 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             assert_match(/Delegating to R2P2-ESP32 task: custom_task/, output)
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
+    end
     end
 
     test "does not delegate Thor internal methods" do
@@ -404,12 +421,12 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
     end
 
     test "help command displays available tasks" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
+      with_fresh_project_root do
+        Dir.mktmpdir do |tmpdir|
+          Dir.chdir(tmpdir)
+        Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
           setup_test_environment('test-env')
 
@@ -422,9 +439,10 @@ class PraCommandsDeviceTest < Test::Unit::TestCase
             assert_match(/Available R2P2-ESP32 tasks for environment: test-env/, output)
           end
         ensure
-          Dir.chdir(original_dir)
+          # Directory change is handled by with_fresh_project_root
         end
       end
+    end
     end
   end
 
