@@ -91,10 +91,10 @@ class PraCommandsRubocopTest < Test::Unit::TestCase
 
       assert_true(File.exist?("lib/rubocop/cop/picoruby/unsupported_method.rb"))
 
-      cop_content = File.read("lib/rubocop/cop/picoruby/unsupported_method.rb")
+      cop_content = File.read("lib/rubocop/cop/picoruby/unsupported_method.rb", encoding: "UTF-8")
       assert_match(/class UnsupportedMethod/, cop_content)
 
-      script_content = File.read("scripts/update_methods.rb")
+      script_content = File.read("scripts/update_methods.rb", encoding: "UTF-8")
       assert_match(/MethodDatabaseUpdater/, script_content)
     end
   end

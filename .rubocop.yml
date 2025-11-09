@@ -9,6 +9,7 @@ AllCops:
     - ".cache/**/*"
     - "patch/**/*"
     - "storage/**/*"
+    - "lib/pra/templates/**/*" # User-facing templates, not core gem code
 
 plugins:
   - rubocop-performance
