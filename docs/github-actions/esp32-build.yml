@@ -34,7 +34,7 @@ jobs:
           ruby-version: '3.4'
           bundler-cache: true
 
-      - name: Install pra gem
+      - name: Install picoruby-application-on-r2p2-esp32-development-kit gem
         run: |
           gem install picoruby-application-on-r2p2-esp32-development-kit
           pra --version
