@@ -89,14 +89,50 @@
 - [ ] **COMMIT**: "test: establish three-gate quality verification"
 
 #### 0.5: Device command Thor argument handling investigation
-- [ ] **ANALYSIS**: Understand Thor issue without fixing yet
-  - Read: `test/commands/device_test.rb` (currently excluded)
+- [x] **ANALYSIS**: Understand Thor issue without fixing yet
+  - Read: `test/commands/device_test.rb` (currently excluded from Rakefile)
   - Understand: Why Thor treats env names as subcommands
   - Record: Exact error behavior, root cause
-- [ ] **MARK**: [TODO-INFRASTRUCTURE-DEVICE-COMMAND]
+
+**ANALYSIS RESULT (Phase 0.5 Completed)**:
+
+**Problem**: 複数のテストが `return # Skipped: test-env argument breaks SimpleCov exit code detection` で skip されている
+
+**Root Cause - Thor Subcommand Interpretation**:
+```ruby
+# Test attempts to call:
+Pra::Commands::Device.start(['flash', 'test-env'])
+
+# But Thor interprets 'test-env' as a SUBCOMMAND, not an argument
+# Thor looks for a 'test-env' subcommand in the Device class
+# When not found: raises SystemExit(1) with "Could not find command test-env"
+# This leaves $ERROR_INFO set globally, corrupting SimpleCov exit code detection
+```
+
+**Affected Tests** (test/commands/device_test.rb):
+- Line 46-50: "raises error when build environment not found"
+- Line 78-82: "shows message when flashing"
+- Line 147-151: "shows message when monitoring"
+- Line 198-202: "shows message when building"
+- Line 250-253: "shows message when setting up ESP32"
+- Line 347-352: "delegates custom_task to R2P2-ESP32 rake task"
+- Line 407-412: "uses default env_name when not provided"
+
+**Current Workaround**: Tests call `return` early to avoid SystemExit
+
+**Solution** (Deferred to Phase 5):
+- Refactor device command to use explicit `--env` flag
+- Change: `Device.start(['flash', 'test-env'])` → `Device.start(['flash', '--env', 'test-env'])`
+- This prevents Thor from interpreting env_name as a subcommand
+
+- [x] **MARK**: [TODO-INFRASTRUCTURE-DEVICE-COMMAND]
   - **Status**: Documented for Phase 5 (device command refactor to `--env` flag)
-  - **Reference**: `lib/ptrk/commands/device.rb`, `test/commands/device_test.rb`, Rakefile
+  - **Reference**:
+    - Test file: `test/commands/device_test.rb` (lines 46-50, 78-82, 147-151, 198-202, 250-253, 347-352, 407-412)
+    - Implementation: `lib/ptrk/commands/device.rb` (requires `--env` option refactor)
+    - Configuration: Rakefile currently excludes device_test.rb from test suite
   - **Not blocking**: Phase 2-4 proceed with other commands; device is Phase 5 focus
+  - **Dependency**: Phase 5.1 must fix this before re-enabling device_test.rb
 
 ---
 
