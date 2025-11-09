@@ -159,7 +159,30 @@ The `pra` gem does **NOT** know:
 
 ## Testing & Quality
 
-Development workflow: Red → Green (rubocop -A) → Refactor → Commit
+### Development Workflow: TDD with RuboCop Auto-Correction
+
+**Standard Cycle**: Red → Green → `rubocop -A` → Refactor → Commit (1-5 minutes per iteration)
+
+**Enforce RuboCop auto-correction at each phase**:
+
+1. **After RED phase** (test fails):
+   - Run test: `bundle exec rake test` (should fail)
+   - DO NOT run RuboCop yet (test code is incomplete)
+
+2. **After GREEN phase** (test passes):
+   - Test code is now complete: `bundle exec rake test` (should pass)
+   - **RUN IMMEDIATELY**: `bundle exec rubocop -A` (auto-correct all violations)
+   - This ensures test code follows project style standards automatically
+
+3. **Refactor phase** (improve code quality):
+   - Refactor implementation for clarity and simplicity
+   - Do NOT refactor during Red/Green phases (focus on functionality first)
+   - After refactoring: **RUN AGAIN**: `bundle exec rubocop -A` (re-check style)
+
+4. **Before every commit**:
+   - Verify `bundle exec rubocop` returns **0 violations** (exit 0)
+   - Verify `bundle exec rake test` passes (exit 0)
+   - If any violations remain after `-A`, refactor instead of adding `# rubocop:disable`
 
 **Quality Gates (ALL must pass before commit)**:
 - ✅ Tests pass: `bundle exec rake test`

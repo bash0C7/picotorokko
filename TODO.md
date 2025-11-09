@@ -4,24 +4,6 @@
 
 ---
 
-## 🎯 Immediate Priority: Pre-Refactoring Setup
-
-### Development Workflow Standardization
-
-**WHY FIRST**: These practices must be in place BEFORE Major Refactoring begins. The refactoring will be done in TDD cycles, and all quality gates (Tests + RuboCop + SimpleCov) must pass at each step.
-
-- [ ] **Enforce RuboCop auto-correction in TDD cycle**
-  - **Objective**: Eliminate manual RuboCop violation fixes by making auto-correction a standard step in Red-Green-Refactor cycle
-  - **Implementation**: Update CLAUDE.md development guidelines with strict requirements:
-    1. **After every RED/GREEN transition**: Run `bundle exec rubocop -A` immediately
-    2. **After test code reaches GREEN**: Run `bundle exec rubocop -A` on test files before commit
-    3. **Before every commit**: Verify `bundle exec rubocop` returns 0 violations
-    4. **Rationale**: Prevents violations from accumulating and ensures code style consistency without manual effort
-  - **Success Criteria**: All commits pass RuboCop without violations; no `# rubocop:disable` comments in codebase
-  - **Priority**: Critical (prerequisite for Major Refactoring)
-
----
-
 ## 🚀 Core: Major Refactoring - picotorokko (ptrk)
 
 **Status**: Planning Complete, Ready for Implementation
@@ -190,31 +172,3 @@
 
 For detailed implementation guide and architecture design of the PicoRuby RuboCop Custom Cop, see [docs/RUBOCOP_PICORUBY_GUIDE.md](docs/RUBOCOP_PICORUBY_GUIDE.md).
 
----
-
-## ✅ Completed Tasks (Historical Reference)
-
-### Phase 5: device.rb Security & Dynamic Rake Task Handling — COMPLETED
-- Prism-based Rakefile AST parsing with whitelist validation
-- RakeTaskExtractor class with Prism::Visitor pattern
-- All 130 tests passing, 88.0% line coverage, 60.47% branch coverage
-- See [Phase_5_Prism_Implementation_Guide.md](Phase_5_Prism_Implementation_Guide.md) for details
-
-### Prevent tests from modifying git-managed files — COMPLETED
-- Implemented git status verification in PraTestCase.setup and teardown methods
-- Added `verify_git_status_clean!(phase)` helper method to check for unstaged changes
-- Pre-test verification: Ensures git status is clean before each test
-- Post-test verification: Ensures git status is clean after each test
-- All 130 tests pass with git verification enabled
-- Changes: `test/test_helper.rb` — Added 21 lines of verification code
-- See commit: "test: Add git status verification to prevent tests from modifying git-managed files"
-
----
-
-## 🗑️ Removed/Obsolete Tasks
-
-The following tasks have been removed from TODO as they are addressed by the Major Refactoring design:
-
-- **CLI Command Structure Refactoring**: Covered by Major Refactoring command simplification
-- **Symbolic Link Race Condition Prevention**: Not needed (new design doesn't use symbolic links)
-- **Path Traversal Input Validation**: Not needed (env names validated with fixed character set: `/^[a-z0-9_-]+$/`)
