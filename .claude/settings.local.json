@@ -23,7 +23,8 @@
       "Bash(curl:*)",
       "Bash(ruby -e:*)",
       "Bash(ruby:*)",
-      "Bash(gh pr diff:*)"
+      "Bash(gh pr diff:*)",
+      "Bash(bundle exec ruby:*)"
     ],
     "deny": [],
     "ask": []

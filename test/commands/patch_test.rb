@@ -4,77 +4,84 @@ require "fileutils"
 require "stringio"
 
 class PraCommandsPatchTest < Test::Unit::TestCase
-  # テスト用の一時ディレクトリ
-  def setup
-    @original_dir = Dir.pwd
-    @tmpdir = Dir.mktmpdir
-    Dir.chdir(@tmpdir)
-
-    # 各テスト前にENV_FILEとPATCH_DIRをクリーンアップ
-    FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-    FileUtils.rm_rf(Pra::Env::PATCH_DIR) if Dir.exist?(Pra::Env::PATCH_DIR)
-    FileUtils.rm_rf(Pra::Env::BUILD_DIR) if Dir.exist?(Pra::Env::BUILD_DIR)
-  end
-
-  def teardown
-    Dir.chdir(@original_dir)
-    FileUtils.rm_rf(@tmpdir)
-  end
-
   # patch export コマンドのテスト
   sub_test_case "patch export command" do
     test "exports changes from build environment to patch directory" do
-      # テスト用の環境定義を作成
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+          # テスト用の環境定義を作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
 
-      # ビルドディレクトリとファイルを作成
-      r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
-      esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
-      picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
-      env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-      build_path = Pra::Env.get_build_path(env_hash)
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
 
-      # git リポジトリとして初期化
-      r2p2_work = File.join(build_path, 'R2P2-ESP32')
-      FileUtils.mkdir_p(r2p2_work)
-      Dir.chdir(r2p2_work) do
-        system('git init > /dev/null 2>&1')
-        system('git config user.email "test@example.com" > /dev/null 2>&1')
-        system('git config user.name "Test User" > /dev/null 2>&1')
-        File.write('test.txt', 'initial')
-        system('git add . > /dev/null 2>&1')
-        system('git commit -m "initial" > /dev/null 2>&1')
-        File.write('test.txt', 'modified')
+          # ビルドディレクトリとファイルを作成
+          r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
+          esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
+          picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
+          env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+          build_path = Pra::Env.get_build_path(env_hash)
+
+          # git リポジトリとして初期化
+          r2p2_work = File.join(build_path, 'R2P2-ESP32')
+          FileUtils.mkdir_p(r2p2_work)
+          Dir.chdir(r2p2_work) do
+            system('git init > /dev/null 2>&1')
+            system('git config user.email "test@example.com" > /dev/null 2>&1')
+            system('git config user.name "Test User" > /dev/null 2>&1')
+            File.write('test.txt', 'initial')
+            system('git add . > /dev/null 2>&1')
+            system('git commit -m "initial" > /dev/null 2>&1')
+            File.write('test.txt', 'modified')
+          end
+
+          output = capture_stdout do
+            Pra::Commands::Patch.start(['export', 'test-env'])
+          end
+
+          # 出力を確認
+          assert_match(/Exporting patches from: test-env/, output)
+          assert_match(/✓ Patches exported/, output)
+
+          # パッチディレクトリが作成されたことを確認
+          patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
+          assert_true(Dir.exist?(patch_dir))
+        ensure
+          Dir.chdir(original_dir)
+        end
       end
-
-      output = capture_stdout do
-        Pra::Commands::Patch.start(['export', 'test-env'])
-      end
-
-      # 出力を確認
-      assert_match(/Exporting patches from: test-env/, output)
-      assert_match(/✓ Patches exported/, output)
-
-      # パッチディレクトリが作成されたことを確認
-      patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
-      assert_true(Dir.exist?(patch_dir))
     end
 
     test "raises error when build environment not found" do
-      # テスト用の環境定義を作成するが、ビルド環境は作成しない
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+          # テスト用の環境定義を作成するが、ビルド環境は作成しない
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
 
-      assert_raise(RuntimeError) do
-        capture_stdout do
-          Pra::Commands::Patch.start(['export', 'test-env'])
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Pra::Commands::Patch.start(['export', 'test-env'])
+            end
+          end
+        ensure
+          Dir.chdir(original_dir)
         end
       end
     end
@@ -83,111 +90,159 @@ class PraCommandsPatchTest < Test::Unit::TestCase
   # patch apply コマンドのテスト
   sub_test_case "patch apply command" do
     test "applies patches to build environment" do
-      # テスト用の環境定義を作成
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+          # テスト用の環境定義を作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
 
-      # ビルドディレクトリを作成
-      r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
-      esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
-      picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
-      env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-      build_path = Pra::Env.get_build_path(env_hash)
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
 
-      r2p2_work = File.join(build_path, 'R2P2-ESP32')
-      FileUtils.mkdir_p(r2p2_work)
+          # ビルドディレクトリを作成
+          r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
+          esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
+          picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
+          env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+          build_path = Pra::Env.get_build_path(env_hash)
 
-      # パッチファイルを作成
-      patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
-      FileUtils.mkdir_p(patch_dir)
-      File.write(File.join(patch_dir, 'patch.txt'), 'patched content')
+          r2p2_work = File.join(build_path, 'R2P2-ESP32')
+          FileUtils.mkdir_p(r2p2_work)
 
-      output = capture_stdout do
-        Pra::Commands::Patch.start(['apply', 'test-env'])
+          # パッチファイルを作成
+          patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
+          FileUtils.mkdir_p(patch_dir)
+          File.write(File.join(patch_dir, 'patch.txt'), 'patched content')
+
+          output = capture_stdout do
+            Pra::Commands::Patch.start(['apply', 'test-env'])
+          end
+
+          # 出力を確認
+          assert_match(/Applying patches/, output)
+          assert_match(/✓ Patches applied/, output)
+
+          # パッチが適用されたことを確認
+          assert_true(File.exist?(File.join(r2p2_work, 'patch.txt')))
+          assert_equal('patched content', File.read(File.join(r2p2_work, 'patch.txt')))
+        ensure
+          Dir.chdir(original_dir)
+        end
       end
-
-      # 出力を確認
-      assert_match(/Applying patches/, output)
-      assert_match(/✓ Patches applied/, output)
-
-      # パッチが適用されたことを確認
-      assert_true(File.exist?(File.join(r2p2_work, 'patch.txt')))
-      assert_equal('patched content', File.read(File.join(r2p2_work, 'patch.txt')))
     end
 
     test "skips patch apply when no current environment is set" do
-      output = capture_stdout do
-        Pra::Commands::Patch.start(['apply'])
-      end
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
-      # 出力を確認
-      assert_match(/No current environment - skipping patch apply/, output)
+          output = capture_stdout do
+            Pra::Commands::Patch.start(['apply'])
+          end
+
+          # 出力を確認
+          assert_match(/No current environment - skipping patch apply/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
     end
   end
 
   # patch diff コマンドのテスト
   sub_test_case "patch diff command" do
     test "displays patch differences" do
-      # テスト用の環境定義を作成
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+          # テスト用の環境定義を作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
 
-      # ビルドディレクトリを作成
-      r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
-      esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
-      picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
-      env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-      build_path = Pra::Env.get_build_path(env_hash)
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
 
-      r2p2_work = File.join(build_path, 'R2P2-ESP32')
-      FileUtils.mkdir_p(r2p2_work)
+          # ビルドディレクトリを作成
+          r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
+          esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
+          picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
+          env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+          build_path = Pra::Env.get_build_path(env_hash)
 
-      # git リポジトリとして初期化
-      Dir.chdir(r2p2_work) do
-        system('git init > /dev/null 2>&1')
-        system('git config user.email "test@example.com" > /dev/null 2>&1')
-        system('git config user.name "Test User" > /dev/null 2>&1')
-        File.write('test.txt', 'initial')
-        system('git add . > /dev/null 2>&1')
-        system('git commit -m "initial" > /dev/null 2>&1')
+          r2p2_work = File.join(build_path, 'R2P2-ESP32')
+          FileUtils.mkdir_p(r2p2_work)
+
+          # git リポジトリとして初期化
+          Dir.chdir(r2p2_work) do
+            system('git init > /dev/null 2>&1')
+            system('git config user.email "test@example.com" > /dev/null 2>&1')
+            system('git config user.name "Test User" > /dev/null 2>&1')
+            File.write('test.txt', 'initial')
+            system('git add . > /dev/null 2>&1')
+            system('git commit -m "initial" > /dev/null 2>&1')
+          end
+
+          # パッチディレクトリを作成
+          patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
+          FileUtils.mkdir_p(patch_dir)
+          File.write(File.join(patch_dir, 'patch.txt'), 'patched content')
+
+          # currentシンボリックリンクを作成
+          current_link = File.join(Pra::Env::BUILD_DIR, 'current')
+          Pra::Env.create_symlink(File.basename(build_path), current_link)
+          Pra::Env.set_current_env('test-env')
+
+          output = capture_stdout do
+            Pra::Commands::Patch.start(['diff', 'test-env'])
+          end
+
+          # 出力を確認
+          assert_match(/=== Patch Differences ===/, output)
+          assert_match(/Stored patches:/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
       end
-
-      # パッチディレクトリを作成
-      patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
-      FileUtils.mkdir_p(patch_dir)
-      File.write(File.join(patch_dir, 'patch.txt'), 'patched content')
-
-      # currentシンボリックリンクを作成
-      current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-      Pra::Env.create_symlink(File.basename(build_path), current_link)
-      Pra::Env.set_current_env('test-env')
-
-      output = capture_stdout do
-        Pra::Commands::Patch.start(['diff', 'test-env'])
-      end
-
-      # 出力を確認
-      assert_match(/=== Patch Differences ===/, output)
-      assert_match(/Stored patches:/, output)
     end
 
     test "raises error when no current environment is set" do
-      # テスト用の環境定義を作成
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+          # テスト用の環境定義を作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
 
-      assert_raise(RuntimeError) do
-        capture_stdout do
-          Pra::Commands::Patch.start(['diff'])
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Pra::Commands::Patch.start(['diff'])
+            end
+          end
+        ensure
+          Dir.chdir(original_dir)
         end
       end
     end

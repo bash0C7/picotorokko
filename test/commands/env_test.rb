@@ -4,203 +4,297 @@ require "fileutils"
 require "stringio"
 
 class PraCommandsEnvTest < Test::Unit::TestCase
-  # テスト用の一時ディレクトリ
-  def setup
-    @original_dir = Dir.pwd
-    @tmpdir = Dir.mktmpdir
-    Dir.chdir(@tmpdir)
-
-    # 各テスト前にENV_FILEとBUILD_DIRをクリーンアップ
-    FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-    FileUtils.rm_rf(Pra::Env::BUILD_DIR) if Dir.exist?(Pra::Env::BUILD_DIR)
-  end
-
-  def teardown
-    Dir.chdir(@original_dir)
-    FileUtils.rm_rf(@tmpdir)
-  end
-
   # env show コマンドのテスト
   sub_test_case "env show command" do
     test "shows '(not set)' when no environment is configured" do
-      output = capture_stdout do
-        Pra::Commands::Env.start(['show'])
-      end
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
-      assert_match(/Current environment definition: \(not set\)/, output)
-      assert_match(/Run 'pra env set ENV_NAME' to set an environment definition/, output)
+          output = capture_stdout do
+            Pra::Commands::Env.start(['show'])
+          end
+
+          assert_match(/Current environment definition: \(not set\)/, output)
+          assert_match(/Run 'pra env set ENV_NAME' to set an environment definition/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
     end
 
     test "shows error when environment is set but not found in config" do
-      # current環境を設定するが、定義は作成しない
-      Pra::Env.set_current_env('missing-env')
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
-      output = capture_stdout do
-        Pra::Commands::Env.start(['show'])
+          # current環境を設定するが、定義は作成しない
+          Pra::Env.set_current_env('missing-env')
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['show'])
+          end
+
+          assert_match(/Error: Environment 'missing-env' not found/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
       end
-
-      assert_match(/Error: Environment 'missing-env' not found/, output)
     end
 
     test "shows environment details when properly configured" do
-      # テスト用の環境を作成
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info, notes: 'Test environment')
-      Pra::Env.set_current_env('test-env')
+          # テスト用の環境を作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
 
-      output = capture_stdout do
-        Pra::Commands::Env.start(['show'])
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info, notes: 'Test environment')
+          Pra::Env.set_current_env('test-env')
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['show'])
+          end
+
+          assert_match(/Current environment definition: test-env/, output)
+          assert_match(/Repo versions:/, output)
+          assert_match(/R2P2-ESP32: abc1234 \(20250101_120000\)/, output)
+          assert_match(/picoruby-esp32: def5678 \(20250102_120000\)/, output)
+          assert_match(/picoruby: ghi9012 \(20250103_120000\)/, output)
+          assert_match(/Notes: Test environment/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
       end
-
-      assert_match(/Current environment definition: test-env/, output)
-      assert_match(/Repo versions:/, output)
-      assert_match(/R2P2-ESP32: abc1234 \(20250101_120000\)/, output)
-      assert_match(/picoruby-esp32: def5678 \(20250102_120000\)/, output)
-      assert_match(/picoruby: ghi9012 \(20250103_120000\)/, output)
-      assert_match(/Notes: Test environment/, output)
     end
 
     test "shows symlink information when available" do
-      # テスト用の環境とシンボリックリンクを作成
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
-      Pra::Env.set_current_env('test-env')
+          # テスト用の環境とシンボリックリンクを作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
 
-      # BUILD_DIRとcurrentシンボリックリンクを作成（正しいenv_hashを使用）
-      r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
-      esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
-      picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
-      env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+          Pra::Env.set_current_env('test-env')
 
-      FileUtils.mkdir_p(Pra::Env::BUILD_DIR)
-      target = File.join(Pra::Env::BUILD_DIR, env_hash)
-      FileUtils.mkdir_p(target)
-      current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-      FileUtils.ln_s(env_hash, current_link)
+          # BUILD_DIRとcurrentシンボリックリンクを作成（正しいenv_hashを使用）
+          r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
+          esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
+          picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
+          env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
 
-      output = capture_stdout do
-        Pra::Commands::Env.start(['show'])
+          FileUtils.mkdir_p(Pra::Env::BUILD_DIR)
+          target = File.join(Pra::Env::BUILD_DIR, env_hash)
+          FileUtils.mkdir_p(target)
+          current_link = File.join(Pra::Env::BUILD_DIR, 'current')
+          FileUtils.ln_s(env_hash, current_link)
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['show'])
+          end
+
+          assert_match(/Symlink: current -> #{Regexp.escape(env_hash)}\//, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
       end
-
-      assert_match(/Symlink: current -> #{Regexp.escape(env_hash)}\//, output)
     end
   end
 
   # env set コマンドのテスト
   sub_test_case "env set command" do
     test "raises error when environment does not exist" do
-      assert_raise(RuntimeError) do
-        capture_stdout do
-          Pra::Commands::Env.start(['set', 'non-existent'])
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Pra::Commands::Env.start(['set', 'non-existent'])
+            end
+          end
+        ensure
+          Dir.chdir(original_dir)
         end
       end
     end
 
     test "shows error when build directory does not exist" do
-      # 環境定義は作成するが、ビルドディレクトリは作成しない
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+          # 環境定義は作成するが、ビルドディレクトリは作成しない
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
 
-      output = capture_stdout do
-        Pra::Commands::Env.start(['set', 'test-env'])
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['set', 'test-env'])
+          end
+
+          assert_match(/Error: Build environment not found/, output)
+          assert_match(/Run 'pra build setup test-env' first/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
       end
-
-      assert_match(/Error: Build environment not found/, output)
-      assert_match(/Run 'pra build setup test-env' first/, output)
     end
 
     test "successfully switches environment when build exists" do
-      # 環境定義を作成
-      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
-      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
-      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+          # 環境定義を作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
 
-      # ビルドディレクトリを作成
-      r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
-      esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
-      picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
-      env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-      build_path = Pra::Env.get_build_path(env_hash)
-      FileUtils.mkdir_p(build_path)
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
 
-      output = capture_stdout do
-        Pra::Commands::Env.start(['set', 'test-env'])
+          # ビルドディレクトリを作成
+          r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
+          esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
+          picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
+          env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+          build_path = Pra::Env.get_build_path(env_hash)
+          FileUtils.mkdir_p(build_path)
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['set', 'test-env'])
+          end
+
+          assert_match(/Switching to environment definition: test-env/, output)
+          assert_match(/✓ Switched to environment definition 'test-env'/, output)
+
+          # currentが正しく設定されていることを確認
+          assert_equal('test-env', Pra::Env.get_current_env)
+
+          # シンボリックリンクが作成されていることを確認
+          current_link = File.join(Pra::Env::BUILD_DIR, 'current')
+          assert_true(File.symlink?(current_link))
+        ensure
+          Dir.chdir(original_dir)
+        end
       end
-
-      assert_match(/Switching to environment definition: test-env/, output)
-      assert_match(/✓ Switched to environment definition 'test-env'/, output)
-
-      # currentが正しく設定されていることを確認
-      assert_equal('test-env', Pra::Env.get_current_env)
-
-      # シンボリックリンクが作成されていることを確認
-      current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-      assert_true(File.symlink?(current_link))
     end
   end
 
   # env latest コマンドのテスト
   sub_test_case "env latest command" do
     test "fetches latest commits and creates environment" do
-      # Git操作をモック化
-      stub_git_operations do |stubs|
-        output = capture_stdout do
-          Pra::Commands::Env.start(['latest'])
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # Git操作をモック化
+          stub_git_operations do |stubs|
+            output = capture_stdout do
+              Pra::Commands::Env.start(['latest'])
+            end
+
+            # 出力確認
+            assert_match(/Fetching latest commits from GitHub/, output)
+            assert_match(/Checking R2P2-ESP32/, output)
+            assert_match(/Checking picoruby-esp32/, output)
+            assert_match(/Checking picoruby/, output)
+            assert_match(/✓ R2P2-ESP32: abc1234 \(20250101_120000\)/, output)
+            assert_match(/✓ picoruby-esp32: def5678 \(20250102_120000\)/, output)
+            assert_match(/✓ picoruby: ghi9012 \(20250103_120000\)/, output)
+            assert_match(/Saving as environment definition 'latest'/, output)
+            assert_match(/✓ Environment definition 'latest' created successfully/, output)
+
+            # 環境が正しく保存されているか確認
+            env_config = Pra::Env.get_environment('latest')
+            assert_not_nil(env_config)
+            assert_equal('abc1234', env_config['R2P2-ESP32']['commit'])
+            assert_equal('20250101_120000', env_config['R2P2-ESP32']['timestamp'])
+            assert_equal('def5678', env_config['picoruby-esp32']['commit'])
+            assert_equal('20250102_120000', env_config['picoruby-esp32']['timestamp'])
+            assert_equal('ghi9012', env_config['picoruby']['commit'])
+            assert_equal('20250103_120000', env_config['picoruby']['timestamp'])
+            assert_equal('Auto-generated latest versions', env_config['notes'])
+          end
+        ensure
+          Dir.chdir(original_dir)
         end
-
-        # 出力確認
-        assert_match(/Fetching latest commits from GitHub/, output)
-        assert_match(/Checking R2P2-ESP32/, output)
-        assert_match(/Checking picoruby-esp32/, output)
-        assert_match(/Checking picoruby/, output)
-        assert_match(/✓ R2P2-ESP32: abc1234 \(20250101_120000\)/, output)
-        assert_match(/✓ picoruby-esp32: def5678 \(20250102_120000\)/, output)
-        assert_match(/✓ picoruby: ghi9012 \(20250103_120000\)/, output)
-        assert_match(/Saving as environment definition 'latest'/, output)
-        assert_match(/✓ Environment definition 'latest' created successfully/, output)
-
-        # 環境が正しく保存されているか確認
-        env_config = Pra::Env.get_environment('latest')
-        assert_not_nil(env_config)
-        assert_equal('abc1234', env_config['R2P2-ESP32']['commit'])
-        assert_equal('20250101_120000', env_config['R2P2-ESP32']['timestamp'])
-        assert_equal('def5678', env_config['picoruby-esp32']['commit'])
-        assert_equal('20250102_120000', env_config['picoruby-esp32']['timestamp'])
-        assert_equal('ghi9012', env_config['picoruby']['commit'])
-        assert_equal('20250103_120000', env_config['picoruby']['timestamp'])
-        assert_equal('Auto-generated latest versions', env_config['notes'])
       end
     end
 
     test "handles fetch failure gracefully" do
-      # Git操作をモック化（失敗させる）
-      stub_git_operations(fail_fetch: true) do |stubs|
-        assert_raise(RuntimeError) do
-          capture_stdout do
-            Pra::Commands::Env.start(['latest'])
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # Git操作をモック化（失敗させる）
+          stub_git_operations(fail_fetch: true) do |stubs|
+            assert_raise(RuntimeError) do
+              capture_stdout do
+                Pra::Commands::Env.start(['latest'])
+              end
+            end
           end
+        ensure
+          Dir.chdir(original_dir)
         end
       end
     end
 
     test "handles clone failure gracefully" do
-      # Git操作をモック化（cloneを失敗させる）
-      stub_git_operations(fail_clone: true) do |stubs|
-        assert_raise(RuntimeError) do
-          capture_stdout do
-            Pra::Commands::Env.start(['latest'])
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # Git操作をモック化（cloneを失敗させる）
+          stub_git_operations(fail_clone: true) do |stubs|
+            assert_raise(RuntimeError) do
+              capture_stdout do
+                Pra::Commands::Env.start(['latest'])
+              end
+            end
           end
+        ensure
+          Dir.chdir(original_dir)
         end
       end
     end

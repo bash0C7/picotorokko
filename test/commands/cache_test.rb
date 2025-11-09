@@ -11,8 +11,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           # テスト用の環境定義を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -70,8 +70,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -89,8 +89,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           # テスト用の環境定義を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -142,8 +142,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           output = capture_stdout do
             Pra::Commands::Cache.start(['list'])
@@ -163,8 +163,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           # テスト用のキャッシュディレクトリを作成
           FileUtils.mkdir_p(File.join(Pra::Env::CACHE_DIR, 'R2P2-ESP32', 'abc1234-20250101_120000'))
@@ -195,8 +195,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           output = capture_stdout do
             Pra::Commands::Cache.start(['clean', 'R2P2-ESP32'])
@@ -214,8 +214,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           # テスト用のキャッシュディレクトリを作成
           cache_path = File.join(Pra::Env::CACHE_DIR, 'R2P2-ESP32')
@@ -245,8 +245,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           # テスト用の環境を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -292,8 +292,8 @@ class PraCommandsCacheTest < Test::Unit::TestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::CACHE_DIR) if Dir.exist?(Pra::Env::CACHE_DIR)
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::CACHE_DIR)
 
           output = capture_stdout do
             Pra::Commands::Cache.start(['prune'])
