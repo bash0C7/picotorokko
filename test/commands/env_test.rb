@@ -3,7 +3,7 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
-class PraCommandsEnvTest < Test::Unit::TestCase
+class PraCommandsEnvTest < PraTestCase
   # env show コマンドのテスト
   sub_test_case "env show command" do
     test "shows '(not set)' when no environment is configured" do

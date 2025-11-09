@@ -3,7 +3,7 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
-class PraCommandsRubocopTest < Test::Unit::TestCase
+class PraCommandsRubocopTest < PraTestCase
   def capture_stdout
     original_stdout = $stdout
     $stdout = StringIO.new

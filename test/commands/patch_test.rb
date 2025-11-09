@@ -3,7 +3,7 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
-class PraCommandsPatchTest < Test::Unit::TestCase
+class PraCommandsPatchTest < PraTestCase
   # patch export コマンドのテスト
   sub_test_case "patch export command" do
     test "exports changes from build environment to patch directory" do
@@ -13,7 +13,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           # テスト用の環境定義を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -66,7 +65,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           # テスト用の環境定義を作成するが、ビルド環境は作成しない
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -93,7 +91,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
@@ -145,7 +142,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
@@ -204,7 +200,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
@@ -250,7 +245,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           # テスト用の環境定義を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -298,7 +292,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           output = capture_stdout do
             Pra::Commands::Patch.start(['apply'])
@@ -319,7 +312,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
@@ -366,7 +358,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
@@ -407,7 +398,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -430,7 +420,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           # テスト用の環境定義を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -489,7 +478,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           # テスト用の環境定義を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -516,7 +504,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
@@ -573,7 +560,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
@@ -620,7 +606,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
@@ -655,7 +640,6 @@ class PraCommandsPatchTest < Test::Unit::TestCase
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
           FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-          FileUtils.rm_rf(Pra::Env::PATCH_DIR)
 
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
           esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }

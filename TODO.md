@@ -18,6 +18,57 @@ For detailed implementation guide and architecture design of the PicoRuby RuboCo
 - All 130 tests passing, 88.0% line coverage, 60.47% branch coverage
 - See [Phase_5_Prism_Implementation_Guide.md](Phase_5_Prism_Implementation_Guide.md) for details
 
+### Test Infrastructure Issues
+
+- [ ] **Investigate `bundle exec rake test` test count discrepancy**
+  - **Issue**: When running tests via `bundle exec rake test`, test count drops from ~130 (individual test runs) to ~62
+  - **Current Status**: All tests pass individually when run via `bundle exec ruby -I lib:test test/**/*_test.rb`
+  - **Impact**: Test artifacts (build/, patch/, .cache/, .picoruby-env.yml) are properly cleaned up by PraTestCase.teardown
+  - **Action**: Investigate why Rake test loader loads fewer tests; may be related to test discovery or suite filtering
+  - **Priority**: Low (all tests pass, cleanup is working)
+
+- [ ] **Fix SimpleCov exit code issue in CI**
+  - **Issue**: `bundle exec rake test` returns exit code 1 even though all tests pass (0 failures, 0 errors)
+  - **Root Cause**: SimpleCov error: "Stopped processing SimpleCov as a previous error not related to SimpleCov has been detected"
+  - **Impact**: CI pipeline fails due to non-zero exit code despite test success
+  - **Current Status**: This state was inadvertently caused by previous sessions; must fix to restore CI/CD reliability
+  - **Action**:
+    1. Investigate SimpleCov configuration and fix error handling
+    2. Verify `bundle exec rake test` exits with code 0 (not 1)
+    3. Ensure **ALL THREE** succeed together before any commit:
+       - Tests pass: `bundle exec rake test` (exit 0)
+       - RuboCop clean: `bundle exec rubocop` (0 violations)
+       - Coverage passes: SimpleCov reports without exit code error
+  - **Critical Requirement**: **Tests + RuboCop + SimpleCov must ALL succeed before commit**
+    - Never commit with non-zero exit codes, even if tests technically "pass"
+    - Non-zero exit codes indicate system state corruption that breaks CI/CD
+    - This is a quality gate that cannot be bypassed
+  - **Priority**: High (blocking CI/CD automation and system reliability)
+
+- [ ] **Prevent tests from modifying git-managed files**
+  - **Issue**: Test execution modifies `.picoruby-env.yml.example` (git-managed template file)
+  - **Root Cause**: Test cleanup may be incomplete; tests interact with .example file during setup/teardown
+  - **Impact**: Git working directory becomes dirty after test runs; violates test isolation principle
+  - **Problem**: This is a fundamental test design failure - tests should never modify repository resources
+  - **Action**:
+    1. Investigate why `.example` file is being modified during test execution
+    2. Ensure test isolation uses temporary directories completely separate from repo
+    3. Add pre-test verification: `git status` must be clean before tests
+    4. Add post-test verification: `git status` must be clean after tests
+  - **Priority**: High (critical for test reliability and CI/CD safety)
+
+### Development Workflow Standardization
+
+- [ ] **Enforce RuboCop auto-correction in TDD cycle**
+  - **Objective**: Eliminate manual RuboCop violation fixes by making auto-correction a standard step in Red-Green-Refactor cycle
+  - **Implementation**: Update CLAUDE.md development guidelines with strict requirements:
+    1. **After every RED/GREEN transition**: Run `bundle exec rubocop -A` immediately
+    2. **After test code reaches GREEN**: Run `bundle exec rubocop -A` on test files before commit
+    3. **Before every commit**: Verify `bundle exec rubocop` returns 0 violations
+    4. **Rationale**: Prevents violations from accumulating and ensures code style consistency without manual effort
+  - **Success Criteria**: All commits pass RuboCop without violations; no `# rubocop:disable` comments in codebase
+  - **Priority**: Medium (improves code quality and developer workflow)
+
 ---
 
 ## Future Enhancements (Optional)

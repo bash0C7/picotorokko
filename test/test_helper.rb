@@ -58,13 +58,37 @@ class PraTestCase < Test::Unit::TestCase
     end
   end
 
-  # teardown: テスト終了後に PROJECT_ROOT を確実にリセット
+  # teardown: テスト終了後にテスト作成物をクリーンアップ
   def teardown
     super
     begin
       Pra::Env.const_set(:PROJECT_ROOT, Dir.pwd) if Dir.pwd
     rescue StandardError
       # Silently ignore teardown errors
+    end
+
+    # テスト中に作成された一時ファイル・ディレクトリを確実にクリーンアップ
+    # （.gitignore されているものだけを削除するため、リポジトリ管理物は損壊しない）
+    begin
+      dirs_to_cleanup = [
+        Pra::Env::BUILD_DIR,   # build/
+        Pra::Env::PATCH_DIR,   # patch/
+        Pra::Env::CACHE_DIR    # .cache/
+      ]
+
+      files_to_cleanup = [
+        Pra::Env::ENV_FILE     # .picoruby-env.yml
+      ]
+
+      dirs_to_cleanup.each do |dir|
+        FileUtils.rm_rf(dir)
+      end
+
+      files_to_cleanup.each do |file|
+        FileUtils.rm_f(file)
+      end
+    rescue StandardError
+      # Silently ignore cleanup errors
     end
   end
 end

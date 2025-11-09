@@ -3,7 +3,7 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
-class PraCommandsCacheTest < Test::Unit::TestCase
+class PraCommandsCacheTest < PraTestCase
   # cache fetch コマンドのテスト
   sub_test_case "cache fetch command" do
     test "fetches environment and caches repositories" do
