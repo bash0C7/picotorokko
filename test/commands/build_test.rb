@@ -316,6 +316,25 @@ class PraCommandsBuildTest < Test::Unit::TestCase
         end
       end
     end
+
+    test "shows message when no current environment to clean" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE) if File.exist?(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR) if Dir.exist?(Pra::Env::BUILD_DIR)
+
+          output = capture_stdout do
+            Pra::Commands::Build.start(['clean', 'current'])
+          end
+
+          assert_match(/No current environment to clean/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
   end
 
   private
