@@ -15,7 +15,7 @@ For detailed implementation guide and architecture design of the PicoRuby RuboCo
 ### Phase 5: device.rb Security & Dynamic Rake Task Handling
 
 - [ ] **PHASE 5: Prism-based Rakefile AST parsing for secure Rake task whitelist**
-  - **Status**: In Progress (Session N+1)
+  - **Status**: Investigation Complete, Implementation Ready (Next Session)
   - **Completed in current session**:
     - ✅ Removed device_test.rb from Rakefile exclusion (now runs with full test suite)
     - ✅ Added `with_stubbed_esp_env` helper to build_test.rb (4 setup tests wrapped)
@@ -23,30 +23,40 @@ For detailed implementation guide and architecture design of the PicoRuby RuboCo
     - ✅ Improved test independence: tmpdir + DIR.chdir + PROJECT_ROOT const_set flow
     - ✅ **Coverage improvement**: 71.76% → **92.04% line**, 49.15% → **71.79% branch**
     - ✅ All 132 tests now execute (previously 46 device tests excluded)
+    - ✅ **Complete technical investigation** of 7 test failures with root cause analysis
+    - ✅ **Prism parser design** for standard task patterns + `.each` dynamic generation
+    - ✅ **RakeTaskExtractor class** implementation with full code examples
+
+  - **Implementation Details**: See [Phase_5_Prism_Implementation_Guide.md](Phase_5_Prism_Implementation_Guide.md)
+    - Complete RakeTaskExtractor implementation with Prism::Visitor pattern
+    - Support for dynamic task generation: `%w[...].each do |var| task "name_#{var}" end`
+    - Test failure root cause analysis with specific line numbers and fixes
+    - 4-phase implementation roadmap with verification steps
 
   - **Remaining work** (next session):
-    - [ ] Fix 7 remaining test failures (patch file assertion expectations)
-      - build_test.rb: 4 failures (build list, build clean, patch generation)
-      - device_test.rb: 3 failures (exception handling for missing build env)
-    - [ ] Implement `RakeTaskExtractor < Prism::Visitor` class in device.rb
-      - [ ] Parse Rakefile AST safely (no code execution)
-      - [ ] Extract task names: `:symbol`, `'string'`, and `task name:` patterns
-      - [ ] Support namespace nesting (`foo:bar` format)
-    - [ ] Add `available_rake_tasks(env_name)` method to device.rb
-      - [ ] Return deduplicated, sorted task list from Prism analysis
-      - [ ] Handle missing Rakefile gracefully (empty array fallback)
-    - [ ] Enhance `method_missing` with whitelist validation
-      - [ ] Check task names against available tasks before delegation
-      - [ ] Improve error messages with suggested available tasks
-    - [ ] Add tests for task validation (negative cases)
-      - [ ] Test rejection of tasks not in Rakefile
-      - [ ] Test protection against command injection patterns
-    - [ ] Run RuboCop and fix any violations
+    - [ ] **Phase 1**: Fix 7 test failures (build.rb, test_helper.rb, device.rb)
+      - [ ] build.rb: Add symlink deletion to clean command
+      - [ ] test_helper.rb: Add build/ directory cleanup to ensure block
+      - [ ] device.rb: Add environment validation to flash, monitor, build, tasks methods
+      - [ ] Verify: `bundle exec rake test` → all 132 tests pass, 0 failures
+    - [ ] **Phase 2**: Implement Prism parser
+      - [ ] Add RakeTaskExtractor class (complete code in guide)
+      - [ ] Add available_rake_tasks method
+      - [ ] Enhance method_missing with whitelist validation
+    - [ ] **Phase 3**: Add tests for task validation
+      - [ ] New file: test/rake_task_extractor_test.rb
+      - [ ] Enhance: test/commands/device_test.rb with whitelist tests
+    - [ ] **Phase 4**: Quality assurance
+      - [ ] RuboCop: `bundle exec rubocop` → 0 violations
+      - [ ] Tests: `bundle exec rake test` → all pass
+      - [ ] Coverage: `bundle exec rake ci` → line 85%+, branch 60%+
+      - [ ] Commit with message referencing Prism parser addition
 
   - **Security benefits**:
     - Prevents arbitrary command execution via method_missing
     - Uses static AST analysis (Prism) - no code execution
     - Whitelist-based validation for all dynamic Rake task delegation
+    - Supports R2P2-ESP32 dynamic tasks: setup_esp32, setup_esp32c3, etc.
 
 ---
 
