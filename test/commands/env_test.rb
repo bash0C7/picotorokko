@@ -397,4 +397,295 @@ class PraCommandsEnvTest < Test::Unit::TestCase
       assert_true(Pra::Commands::Env.exit_on_failure?)
     end
   end
+
+  # Pra::Env module utility method tests
+  sub_test_case "Env module utility methods" do
+    test "generate_env_hash combines three hashes correctly" do
+      r2p2_hash = 'abc1234-20250101_120000'
+      esp32_hash = 'def5678-20250102_120000'
+      picoruby_hash = 'ghi9012-20250103_120000'
+
+      result = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
+      expected = "#{r2p2_hash}_#{esp32_hash}_#{picoruby_hash}"
+      assert_equal(expected, result)
+    end
+
+    test "get_cache_path returns correct path for repo cache" do
+      cache_path = Pra::Env.get_cache_path('R2P2-ESP32', 'abc1234-20250101_120000')
+      assert_match(/\.cache\/R2P2-ESP32\/abc1234-20250101_120000$/, cache_path)
+    end
+
+    test "get_build_path returns correct path for build environment" do
+      build_path = Pra::Env.get_build_path('env_hash_value')
+      assert_match(/build\/env_hash_value$/, build_path)
+    end
+  end
+
+  # Pra::Env symlink operations tests
+  sub_test_case "Env module symlink operations" do
+    test "create_symlink and read_symlink work correctly" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.mkdir_p('target_dir')
+          link_path = 'symlink_link'
+
+          # Create symlink
+          Pra::Env.create_symlink('target_dir', link_path)
+          assert_true(File.symlink?(link_path))
+
+          # Read symlink
+          target = Pra::Env.read_symlink(link_path)
+          assert_equal('target_dir', target)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "create_symlink overwrites existing symlink" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.mkdir_p('target_dir1')
+          FileUtils.mkdir_p('target_dir2')
+          link_path = 'symlink_link'
+
+          # Create initial symlink
+          Pra::Env.create_symlink('target_dir1', link_path)
+          assert_equal('target_dir1', Pra::Env.read_symlink(link_path))
+
+          # Overwrite with new symlink
+          Pra::Env.create_symlink('target_dir2', link_path)
+          assert_equal('target_dir2', Pra::Env.read_symlink(link_path))
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "read_symlink returns nil for non-symlink path" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.mkdir_p('regular_dir')
+          result = Pra::Env.read_symlink('regular_dir')
+          assert_nil(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  # Pra::Env environment file operations tests
+  sub_test_case "Env module environment file operations" do
+    test "load_env_file returns empty hash when file does not exist" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          result = Pra::Env.load_env_file
+          assert_equal({}, result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "save_env_file and load_env_file round-trip correctly" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          test_data = { 'environments' => { 'test-env' => { 'data' => 'value' } }, 'current' => 'test-env' }
+          Pra::Env.save_env_file(test_data)
+
+          loaded = Pra::Env.load_env_file
+          assert_equal(test_data, loaded)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "get_current_env returns nil when not set" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          result = Pra::Env.get_current_env
+          assert_nil(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  # Pra::Env hash computation tests
+  sub_test_case "Env module hash computation" do
+    test "compute_env_hash with valid environment" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+          hashes = Pra::Env.compute_env_hash('test-env')
+          assert_not_nil(hashes)
+
+          r2p2_hash, esp32_hash, picoruby_hash, env_hash = hashes
+          assert_equal('abc1234-20250101_120000', r2p2_hash)
+          assert_equal('def5678-20250102_120000', esp32_hash)
+          assert_equal('ghi9012-20250103_120000', picoruby_hash)
+          assert_match(/abc1234-20250101_120000_def5678-20250102_120000_ghi9012-20250103_120000/, env_hash)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "compute_env_hash returns nil for non-existent environment" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          result = Pra::Env.compute_env_hash('non-existent')
+          assert_nil(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  # Pra::Env error handling tests
+  sub_test_case "Env module error handling" do
+    test "execute_with_esp_env raises error when command fails" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          assert_raise(RuntimeError) do
+            Pra::Env.execute_with_esp_env('false') # `false` command always fails
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "execute_with_esp_env succeeds with true command" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          # Should not raise
+          Pra::Env.execute_with_esp_env('true')
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "execute_with_esp_env works with working_dir parameter" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.mkdir_p('test_dir')
+
+          # Should execute in the specified directory
+          Pra::Env.execute_with_esp_env('test -d .', File.join(tmpdir, 'test_dir'))
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  # Pra::Env git utilities tests
+  sub_test_case "Env module git utilities" do
+    test "has_submodules? returns true when .gitmodules exists" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          File.write('.gitmodules', '[submodule "test"]\n  path = test\n  url = https://example.com/test.git')
+          result = Pra::Env.has_submodules?(tmpdir)
+          assert_true(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "has_submodules? returns false when .gitmodules does not exist" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          result = Pra::Env.has_submodules?(tmpdir)
+          assert_false(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  # Pra::Env build path resolution tests
+  sub_test_case "Env module build path resolution" do
+    test "get_environment returns nil for non-existent environment" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          result = Pra::Env.get_environment('non-existent')
+          assert_nil(result)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "set_environment stores and retrieves environment data correctly" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          r2p2_info = { 'commit' => 'r2p2abc', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'esp32def', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'pico999', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('custom-env', r2p2_info, esp32_info, picoruby_info, notes: 'Custom notes')
+
+          env_config = Pra::Env.get_environment('custom-env')
+          assert_not_nil(env_config)
+          assert_equal('r2p2abc', env_config['R2P2-ESP32']['commit'])
+          assert_equal('Custom notes', env_config['notes'])
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
 end

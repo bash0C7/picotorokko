@@ -49,3 +49,4 @@ Metrics/ParameterLists:
 Metrics/BlockLength:
   Exclude:
     - "test/**/*"
+    - "pra.gemspec" # Gem specification file with standard DSL structure
