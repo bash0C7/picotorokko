@@ -88,7 +88,7 @@ ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビ�
 ## Gem Development
 
 **Dependency Management** (gemspec centralization):
-- ✅ **All dependencies go in `pra.gemspec`** — Single source of truth
+- ✅ **All dependencies go in `picoruby-application-on-r2p2-esp32-development-kit.gemspec`** — Single source of truth
   - Runtime: `spec.add_dependency`
   - Development: `spec.add_development_dependency` (rake, test-unit, rubocop, etc.)
 - ✅ **Gemfile must be minimal** — Only `source` + `gemspec` directive

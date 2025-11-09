@@ -48,7 +48,7 @@ For detailed implementation guide and architecture design of the PicoRuby RuboCo
     - Extracted `resolve_work_path()` helper to reduce duplication
     - Extracted `export_repo_changes()` private method for export logic
     - Extracted `show_repo_diff()` private method for diff display logic
-    - Updated `.rubocop.yml`: Added pra.gemspec to BlockLength exclusions (standard DSL pattern)
+    - Updated `.rubocop.yml`: Added picoruby-application-on-r2p2-esp32-development-kit.gemspec to BlockLength exclusions (standard DSL pattern)
   - **Final metrics** (as of Phase 4):
     - ✅ Line coverage: **85.11%** (663/779 lines) - EXCEEDS 75% target by 10.11%
     - ✅ Branch coverage: **62.82%** (147/234 branches) - EXCEEDS 50% target by 12.82%

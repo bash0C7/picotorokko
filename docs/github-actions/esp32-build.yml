@@ -36,7 +36,7 @@ jobs:
 
       - name: Install pra gem
         run: |
-          gem install pra
+          gem install picoruby-application-on-r2p2-esp32-development-kit
           pra --version
 
       - name: Setup ESP-IDF environment

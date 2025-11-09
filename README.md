@@ -31,7 +31,7 @@ This project uses specific terminology to distinguish between different concepts
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'pra'
+gem 'picoruby-application-on-r2p2-esp32-development-kit'
 ```
 
 And then execute:
@@ -43,7 +43,7 @@ bundle install
 Or install it yourself as:
 
 ```bash
-gem install pra
+gem install picoruby-application-on-r2p2-esp32-development-kit
 ```
 
 ## Quick Start
@@ -196,7 +196,7 @@ bundle exec rubocop -A
 ### 4. Build the gem
 
 ```bash
-bundle exec gem build pra.gemspec
+bundle exec gem build picoruby-application-on-r2p2-esp32-development-kit.gemspec
 ```
 
 ### 5. Test CLI locally

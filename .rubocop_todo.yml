@@ -11,20 +11,20 @@
 # SupportedStyles: Gemfile, gems.rb, gemspec
 Gemspec/DevelopmentDependencies:
   Exclude:
-    - 'pra.gemspec'
+    - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: TreatCommentsAsGroupSeparators, ConsiderPunctuation.
 Gemspec/OrderedDependencies:
   Exclude:
-    - 'pra.gemspec'
+    - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'
 
 # Offense count: 1
 # Configuration parameters: Severity.
 Gemspec/RequiredRubyVersion:
   Exclude:
-    - 'pra.gemspec'
+    - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'
 
 # Offense count: 3
 # This cop supports safe autocorrection (--autocorrect).
@@ -53,7 +53,7 @@ Layout/LeadingEmptyLines:
     - 'lib/pra/commands/patch.rb'
     - 'lib/pra/env.rb'
     - 'lib/pra/version.rb'
-    - 'pra.gemspec'
+    - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'
 
 # Offense count: 17
 # This cop supports unsafe autocorrection (--autocorrect-all).
@@ -235,7 +235,7 @@ Style/FrozenStringLiteralComment:
     - 'lib/pra/commands/patch.rb'
     - 'lib/pra/env.rb'
     - 'lib/pra/version.rb'
-    - 'pra.gemspec'
+    - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'
 
 # Offense count: 4
 # This cop supports safe autocorrection (--autocorrect).
@@ -367,4 +367,4 @@ Layout/LineLength:
   Exclude:
     - 'lib/pra/commands/cache.rb'
     - 'lib/pra/commands/env.rb'
-    - 'pra.gemspec'
+    - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'

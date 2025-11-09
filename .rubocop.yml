@@ -49,4 +49,4 @@ Metrics/ParameterLists:
 Metrics/BlockLength:
   Exclude:
     - "test/**/*"
-    - "pra.gemspec" # Gem specification file with standard DSL structure
+    - "picoruby-application-on-r2p2-esp32-development-kit.gemspec" # Gem specification file with standard DSL structure

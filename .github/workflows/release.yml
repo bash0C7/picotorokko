@@ -52,7 +52,7 @@ jobs:
         run: bundle exec rake test
 
       - name: Build gem
-        run: gem build pra.gemspec
+        run: gem build picoruby-application-on-r2p2-esp32-development-kit.gemspec
 
       - name: Commit version bump
         if: ${{ !inputs.dry_run }}
@@ -76,7 +76,7 @@ jobs:
           echo "---" > ~/.gem/credentials
           echo ":rubygems_api_key: ${GEM_HOST_API_KEY}" >> ~/.gem/credentials
           chmod 0600 ~/.gem/credentials
-          gem push pra-${{ inputs.version }}.gem
+          gem push picoruby-application-on-r2p2-esp32-development-kit-${{ inputs.version }}.gem
 
       - name: Create GitHub Release
         if: ${{ !inputs.dry_run }}
@@ -86,12 +86,12 @@ jobs:
           gh release create "v${{ inputs.version }}" \
             --title "v${{ inputs.version }}" \
             --generate-notes \
-            pra-${{ inputs.version }}.gem
+            picoruby-application-on-r2p2-esp32-development-kit-${{ inputs.version }}.gem
 
       - name: Dry run summary
         if: ${{ inputs.dry_run }}
         run: |
           echo "::notice::Dry run completed successfully"
           echo "::notice::Version would be bumped to ${{ inputs.version }}"
-          echo "::notice::Gem built: pra-${{ inputs.version }}.gem"
-          ls -lh pra-${{ inputs.version }}.gem
+          echo "::notice::Gem built: picoruby-application-on-r2p2-esp32-development-kit-${{ inputs.version }}.gem"
+          ls -lh picoruby-application-on-r2p2-esp32-development-kit-${{ inputs.version }}.gem

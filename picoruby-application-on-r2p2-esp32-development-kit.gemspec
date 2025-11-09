@@ -2,7 +2,7 @@
 require_relative "lib/pra/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "pra"
+  spec.name = "picoruby-application-on-r2p2-esp32-development-kit"
   spec.version = Pra::VERSION
   spec.authors = ["bash0C7"]
   spec.email = ["ksb.4038.nullpointer+github@gmail.com"]
