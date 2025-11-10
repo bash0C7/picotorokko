@@ -144,12 +144,12 @@ class PraTestCase < Test::Unit::TestCase
   # Creates a clean git repo with one commit in the current directory
   # Usage: Dir.mktmpdir { |dir| Dir.chdir(dir) { setup_test_git_repo; ... } }
   def setup_test_git_repo
-    system('git init', out: File::NULL) || raise('git init failed')
+    system("git init", out: File::NULL) || raise("git init failed")
     system('git config user.email "test@example.com"')
     system('git config user.name "Test User"')
-    system('git config commit.gpgsign false') # Disable commit signing for tests
-    File.write('test.txt', 'test')
-    system('git add .') || raise('git add failed')
-    system('git commit -m "test"', out: File::NULL) || raise('git commit failed')
+    system("git config commit.gpgsign false") # Disable commit signing for tests
+    File.write("test.txt", "test")
+    system("git add .") || raise("git add failed")
+    system('git commit -m "test"', out: File::NULL) || raise("git commit failed")
   end
 end
