@@ -504,3 +504,50 @@ Pra::Commands::Device.start(['flash', 'test-env'])
 
 For detailed implementation guide and architecture design of the PicoRuby RuboCop Custom Cop, see [docs/RUBOCOP_PICORUBY_GUIDE.md](docs/RUBOCOP_PICORUBY_GUIDE.md).
 
+---
+
+## 🔬 Code Quality: Test Coverage Improvement (Low Priority)
+
+**Current Status**: Phase 4.1完了時点
+- Line Coverage: 80.61% (474 / 588)
+- Branch Coverage: 57.98% (109 / 188)
+- CI Threshold: line 75%, branch 55% ✅ (達成)
+
+**Target Goals** (低優先度):
+- Line Coverage: **85%** (目標 +4.4%, 約26行)
+- Branch Coverage: **65%** (目標 +7%, 約13分岐)
+
+**未カバー領域の特定** (Phase 4.1時点):
+1. **lib/pra/env.rb** (64.81% → 要改善)
+   - `get_timestamp`: Git timestamp取得（テスト環境でgitコミット作成が不安定）
+   - `traverse_submodules_and_validate`: 3段階サブモジュールトラバース
+   - `get_commit_hash`: コミット情報から hash形式生成（未使用の可能性）
+   - `clone_with_submodules`: サブモジュール初期化エラーハンドリング
+
+2. **lib/pra/commands/device.rb** (55.48% → Phase 5で対応予定)
+   - device_test.rbが除外されているため（Thor引数処理問題）
+   - Phase 5.1で`--env`フラグリファクタリング後にテスト再有効化
+
+**実装アプローチ** (TDD cycle):
+1. **RED**: 未カバー箇所のテストを作成
+   - Git操作のモック化改善（`get_timestamp`, `traverse_submodules_and_validate`）
+   - エラーケースの網羅（`clone_with_submodules`失敗シナリオ）
+   - 条件分岐の全パターンテスト（branch coverage向上）
+
+2. **GREEN**: 既存実装を変更せずテストをパス
+   - テスト環境でのgit操作安定化
+   - スタブ/モックの適切な設計
+
+3. **RUBOCOP**: `bundle exec rubocop -A`
+
+4. **COMMIT**: "test: improve coverage to 85%/65%"
+
+**優先順位**: **低** (Phase 6以降、他の機能実装が完了後)
+
+**見積もり**: 1-2日
+
+**備考**:
+- device.rbのカバレッジはPhase 5.1で自然に向上する
+- 現在の75%/55%基準で品質は十分保証されている
+- 85%/65%は理想的な目標値であり、必須要件ではない
+
