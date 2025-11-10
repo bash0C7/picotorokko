@@ -248,6 +248,38 @@ The `pra` gem does **NOT** know:
 
 **When stuck**: Ask user for guidance on refactoring strategy.
 
+### Push & Coverage Validation
+
+**Automatic Pre-Push Verification**:
+- A Git pre-push hook (`.git/hooks/pre-push`) automatically runs `bundle exec rake ci` before any push
+- This verifies:
+  - ✅ All tests pass (156 tests)
+  - ✅ RuboCop: 0 violations
+  - ✅ SimpleCov report generated
+- If any check **fails**, hook displays **⚠️ WARNING** but **allows push to proceed** (non-blocking)
+- Hook always exits with success (exit 0) to prevent blocking pushes
+
+**Coverage Thresholds** (defined in `test/test_helper.rb`):
+- **Line coverage minimum**: 85% (currently: 85.84%)
+- **Branch coverage minimum**: 60% (currently: 66.67%)
+
+**Workflow**:
+1. Commit your changes locally
+2. Run `git push origin <branch>`
+3. Pre-push hook automatically runs `bundle exec rake ci`
+4. If coverage or tests are problematic:
+   - Hook displays ⚠️ WARNING with details
+   - Push proceeds (hook is non-blocking)
+   - **You are responsible** for fixing issues before PR/merge:
+     - Expand test coverage in relevant files
+     - Re-run `bundle exec rake test` to verify locally
+     - Push fix commits
+
+**Manual Coverage Check** (without pushing):
+```bash
+bundle exec rake ci  # Runs: test → rubocop → coverage_validation
+```
+
 ### Detailed Guides
 
 @import .claude/docs/testing-guidelines.md
