@@ -1,5 +1,6 @@
 require "bundler/gem_tasks"
 require "rake/testtask"
+require "English"
 
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
@@ -18,7 +19,17 @@ end
 
 require "rubocop/rake_task"
 
-RuboCop::RakeTask.new
+RuboCop::RakeTask.new do |task|
+  # CI用：チェックのみ（自動修正なし）
+  task.options = []
+end
+
+# 開発者向け：RuboCop自動修正タスク
+desc "Run RuboCop with auto-correction"
+task "rubocop:fix" do
+  system("bundle exec rubocop --auto-correct-all")
+  exit $CHILD_STATUS.exitstatus unless $CHILD_STATUS.success?
+end
 
 # 開発時のデフォルトタスク：クイックにテストのみ実行
 task default: %i[test]
@@ -31,16 +42,16 @@ task :coverage_validation do
   puts "✓ SimpleCov coverage report validated: #{coverage_file}"
 end
 
-# CI専用タスク：テスト + コード品質チェック + カバレッジ検証
-desc "Run tests with coverage checks and RuboCop linting (for CI)"
+# CI専用タスク：テスト + RuboCop（チェックのみ） + カバレッジ検証
+desc "Run tests, RuboCop checks, and validate coverage (for CI)"
 task ci: %i[test rubocop coverage_validation]
 
 # 品質チェック統合タスク
-desc "Run all quality checks (tests and linting)"
-task quality: %i[test rubocop]
+desc "Run all quality checks with RuboCop auto-correction and retest"
+task quality: %i[test rubocop:fix test]
 
 # 開発者向け：pre-commitフック用タスク
-desc "Pre-commit checks: RuboCop linting and tests"
-task "pre-commit": %i[rubocop test] do
+desc "Pre-commit checks: run tests, auto-fix RuboCop violations, and run tests again"
+task "pre-commit": %i[test rubocop:fix test] do
   puts "\n✓ Pre-commit checks passed! Ready to commit."
 end
