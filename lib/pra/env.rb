@@ -19,11 +19,13 @@ module Pra
 
     # ルートディレクトリ
     PROJECT_ROOT = Dir.pwd
-    CACHE_DIR = File.join(PROJECT_ROOT, '.cache')
-    BUILD_DIR = File.join(PROJECT_ROOT, 'build')
-    PATCH_DIR = File.join(PROJECT_ROOT, 'patch')
+    # ptrk_env/ consolidated directory structure (Phase 4)
+    CACHE_DIR = File.join(PROJECT_ROOT, ENV_DIR, '.cache')
+    PATCH_DIR = File.join(PROJECT_ROOT, ENV_DIR, 'patch')
     STORAGE_HOME = File.join(PROJECT_ROOT, 'storage', 'home')
-    ENV_FILE = File.join(PROJECT_ROOT, '.picoruby-env.yml')
+    ENV_FILE = File.join(PROJECT_ROOT, ENV_DIR, '.picoruby-env.yml')
+    # Temporary: BUILD_DIR for backward compatibility (to be removed in Phase 4.2)
+    BUILD_DIR = File.join(PROJECT_ROOT, ENV_DIR)
 
     # リポジトリ定義
     REPOS = {
@@ -210,8 +212,10 @@ module Pra
       end
 
       # ビルド環境ディレクトリパスを取得（ワーキングディレクトリの場所）
-      def get_build_path(env_hash)
-        File.join(BUILD_DIR, env_hash)
+      def get_build_path(env_name)
+        # Phase 4: Build path uses env_name instead of env_hash
+        # Pattern: ptrk_env/{env_name} instead of build/{env_hash}
+        File.join(PROJECT_ROOT, ENV_DIR, env_name)
       end
 
       # Symlink操作

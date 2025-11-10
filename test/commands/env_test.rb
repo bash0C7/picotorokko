@@ -694,7 +694,8 @@ class PraCommandsEnvTest < PraTestCase
 
     test "get_build_path returns correct path for build environment" do
       build_path = Pra::Env.get_build_path('env_hash_value')
-      assert_match(/build\/env_hash_value$/, build_path)
+      # Phase 4.1: Path changed from build/ to ptrk_env/
+      assert_match(/ptrk_env\/env_hash_value$/, build_path)
     end
   end
 

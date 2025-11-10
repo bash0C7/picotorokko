@@ -32,4 +32,44 @@ class EnvConstantsTest < PraTestCase
     assert_no_match pattern, "test/env", "should not match with slash"
     assert_no_match pattern, "test.env", "should not match with dot"
   end
+
+  def test_ptrk_env_directory_structure
+    # Phase 4.1: Verify ptrk_env/ consolidated directory structure
+    # All paths should use ptrk_env/ prefix
+
+    # Cache directory
+    expected_cache = File.join(Pra::Env::PROJECT_ROOT, "ptrk_env", ".cache")
+    assert_equal expected_cache, Pra::Env::CACHE_DIR,
+                 "CACHE_DIR should be ptrk_env/.cache"
+
+    # Environment file
+    expected_env_file = File.join(Pra::Env::PROJECT_ROOT, "ptrk_env", ".picoruby-env.yml")
+    assert_equal expected_env_file, Pra::Env::ENV_FILE,
+                 "ENV_FILE should be ptrk_env/.picoruby-env.yml"
+
+    # Patch directory
+    expected_patch = File.join(Pra::Env::PROJECT_ROOT, "ptrk_env", "patch")
+    assert_equal expected_patch, Pra::Env::PATCH_DIR,
+                 "PATCH_DIR should be ptrk_env/patch"
+  end
+
+  def test_build_path_uses_env_name
+    # Phase 4.1: Build paths should use env_name instead of env_hash
+    # Pattern: ptrk_env/{env_name}/ instead of build/{env_hash}/
+    env_name = "test-env"
+    build_path = Pra::Env.get_build_path(env_name)
+
+    expected_path = File.join(Pra::Env::PROJECT_ROOT, "ptrk_env", env_name)
+    assert_equal expected_path, build_path,
+                 "Build path should be ptrk_env/{env_name}"
+  end
+
+  def test_no_current_symlink_logic
+    # Phase 4.1: Verify no "current" symlink is created or used
+    # All operations should use explicit env_name
+
+    # get_current_env should return nil (no implicit current)
+    assert_nil Pra::Env.get_current_env,
+               "get_current_env should return nil (no implicit current environment)"
+  end
 end
