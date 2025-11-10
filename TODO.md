@@ -281,6 +281,13 @@ Pra::Commands::Device.start(['flash', 'test-env'])
 
 ### Phase 4: Directory Structure - TDD Approach (3-4 days)
 
+**⚠️ CRITICAL POLICY: No Backward Compatibility Required**
+- This is an **unreleased gem** (version 0.x) with **zero users**
+- Breaking changes are **fully acceptable** and **encouraged** for cleaner design
+- Do NOT add compatibility layers, deprecated constants, or migration paths
+- Remove old logic completely and update all references immediately
+- Focus on the final, clean design without compromise
+
 **⚠️ Start**: Check for [TODO-INFRASTRUCTURE-*] markers from Phase 3.
   - [TODO-INFRASTRUCTURE-ENV-PATHS]: Verify env directory structure
   - [TODO-INFRASTRUCTURE-ENV-SET-PATHS]: Verify env set creates correct structure

@@ -32,21 +32,16 @@ module Pra
         end
       end
 
-      desc 'show [ENV_NAME]', 'Display environment definition (current or specified) from .picoruby-env.yml'
-      def show(env_name = nil)
-        # Use provided env name, or fall back to current environment
-        target_env = env_name || Pra::Env.get_current_env
+      desc 'show ENV_NAME', 'Display environment definition from .picoruby-env.yml'
+      def show(env_name)
+        env_config = Pra::Env.get_environment(env_name)
+        return show_env_not_found(env_name) if env_config.nil?
 
-        return show_no_env if target_env.nil?
-
-        env_config = Pra::Env.get_environment(target_env)
-        return show_env_not_found(target_env) if env_config.nil?
-
-        show_env_details(target_env, env_config, env_name)
+        show_env_details(env_name, env_config)
       end
 
-      desc 'set ENV_NAME', 'Switch to specified environment or create new with options'
-      option :commit, type: :string, desc: 'R2P2-ESP32 commit hash for new environment'
+      desc 'set ENV_NAME', 'Create new environment with options'
+      option :commit, type: :string, desc: 'R2P2-ESP32 commit hash for new environment', required: true
       option :branch, type: :string, desc: 'Git branch reference'
       def set(env_name)
         # validate environment name
@@ -54,42 +49,17 @@ module Pra
           raise "Error: Invalid environment name '#{env_name}'. Must match pattern: #{Pra::Env::ENV_NAME_PATTERN}"
         end
 
-        # Mode 1: Create new environment with commit option
-        if options[:commit]
-          r2p2_info = { 'commit' => options[:commit], 'timestamp' => Time.now.strftime('%Y%m%d_%H%M%S') }
-          # For now, use placeholder values for esp32 and picoruby
-          esp32_info = { 'commit' => 'placeholder', 'timestamp' => Time.now.strftime('%Y%m%d_%H%M%S') }
-          picoruby_info = { 'commit' => 'placeholder', 'timestamp' => Time.now.strftime('%Y%m%d_%H%M%S') }
+        # Create new environment
+        r2p2_info = { 'commit' => options[:commit], 'timestamp' => Time.now.strftime('%Y%m%d_%H%M%S') }
+        # For now, use placeholder values for esp32 and picoruby
+        esp32_info = { 'commit' => 'placeholder', 'timestamp' => Time.now.strftime('%Y%m%d_%H%M%S') }
+        picoruby_info = { 'commit' => 'placeholder', 'timestamp' => Time.now.strftime('%Y%m%d_%H%M%S') }
 
-          notes = "Created with R2P2-ESP32 commit: #{options[:commit]}"
-          notes += ", branch: #{options[:branch]}" if options[:branch]
+        notes = "Created with R2P2-ESP32 commit: #{options[:commit]}"
+        notes += ", branch: #{options[:branch]}" if options[:branch]
 
-          Pra::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info, notes: notes)
-          puts "✓ Environment definition '#{env_name}' created with commit #{options[:commit]}"
-          return
-        end
-
-        # Mode 2: Switch to existing environment (original behavior)
-        env_config = Pra::Env.get_environment(env_name)
-        raise "Error: Environment definition '#{env_name}' not found in .picoruby-env.yml" if env_config.nil?
-
-        # ビルド環境が存在するか確認
-        hashes = Pra::Env.compute_env_hash(env_name)
-        raise "Error: Failed to compute environment hash for '#{env_name}'" if hashes.nil?
-
-        _r2p2_hash, _esp32_hash, _picoruby_hash, env_hash = hashes
-        build_path = Pra::Env.get_build_path(env_hash)
-
-        if Dir.exist?(build_path)
-          puts "Switching to environment definition: #{env_name}"
-          current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-          Pra::Env.create_symlink(File.basename(build_path), current_link)
-          Pra::Env.set_current_env(env_name)
-          puts "✓ Switched to environment definition '#{env_name}' (build/current symlink updated)"
-        else
-          puts "Error: Build environment not found at #{build_path}"
-          puts "Run 'pra build setup #{env_name}' first"
-        end
+        Pra::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info, notes: notes)
+        puts "✓ Environment definition '#{env_name}' created with commit #{options[:commit]}"
       end
 
       desc 'reset ENV_NAME', 'Remove and recreate environment definition'
@@ -122,11 +92,8 @@ module Pra
         env_config = Pra::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
-        hashes = Pra::Env.compute_env_hash(env_name)
-        raise "Error: Failed to compute environment hash for '#{env_name}'" if hashes.nil?
-
-        _r2p2_hash, _esp32_hash, _picoruby_hash, env_hash = hashes
-        build_path = Pra::Env.get_build_path(env_hash)
+        # Phase 4.1: Build path uses env_name directly
+        build_path = Pra::Env.get_build_path(env_name)
         raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
 
         puts "Exporting patches from: #{env_name}"
@@ -146,11 +113,8 @@ module Pra
         env_config = Pra::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
-        hashes = Pra::Env.compute_env_hash(env_name)
-        raise "Error: Failed to compute environment hash for '#{env_name}'" if hashes.nil?
-
-        _r2p2_hash, _esp32_hash, _picoruby_hash, env_hash = hashes
-        build_path = Pra::Env.get_build_path(env_hash)
+        # Phase 4.1: Build path uses env_name directly
+        build_path = Pra::Env.get_build_path(env_name)
         raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
 
         puts '  Applying patches...'
@@ -183,11 +147,8 @@ module Pra
         env_config = Pra::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
-        hashes = Pra::Env.compute_env_hash(env_name)
-        raise "Error: Failed to compute environment hash for '#{env_name}'" if hashes.nil?
-
-        _r2p2_hash, _esp32_hash, _picoruby_hash, env_hash = hashes
-        build_path = Pra::Env.get_build_path(env_hash)
+        # Phase 4.1: Build path uses env_name directly
+        build_path = Pra::Env.get_build_path(env_name)
         raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
 
         puts "=== Patch Differences ===\n"
@@ -262,33 +223,14 @@ module Pra
 
       private
 
-      def show_no_env
-        puts 'Current environment definition: (not set)'
-        puts "Run 'pra env set ENV_NAME' to set an environment definition"
-      end
-
       def show_env_not_found(env_name)
         puts "Error: Environment '#{env_name}' not found in .picoruby-env.yml"
       end
 
-      def show_env_details(target_env, env_config, env_name)
-        # Display label based on whether we're showing current or specified env
-        label = env_name ? 'Environment definition' : 'Current environment definition'
-        puts "#{label}: #{target_env}"
-
-        # Symlink情報（ビルド環境）- only for current environment
-        show_symlink_info unless env_name
-
+      def show_env_details(env_name, env_config)
+        puts "Environment: #{env_name}"
         display_repo_versions(env_config)
         display_metadata(env_config)
-      end
-
-      def show_symlink_info
-        current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-        return unless File.symlink?(current_link)
-
-        target = File.readlink(current_link)
-        puts "Symlink: #{File.basename(current_link)} -> #{File.basename(target)}/"
       end
 
       def display_repo_versions(env_config)

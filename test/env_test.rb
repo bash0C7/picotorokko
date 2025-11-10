@@ -71,29 +71,6 @@ class PraEnvTest < Test::Unit::TestCase
     end
   end
 
-  # カレント環境のテスト
-  sub_test_case "Current environment" do
-    test "get_current_env returns nil when not set" do
-      result = Pra::Env.get_current_env
-      assert_nil(result)
-    end
-
-    test "set_current_env and get_current_env work together" do
-      Pra::Env.set_current_env('my-env')
-
-      current = Pra::Env.get_current_env
-      assert_equal('my-env', current)
-    end
-
-    test "set_current_env updates existing current value" do
-      Pra::Env.set_current_env('env1')
-      assert_equal('env1', Pra::Env.get_current_env)
-
-      Pra::Env.set_current_env('env2')
-      assert_equal('env2', Pra::Env.get_current_env)
-    end
-  end
-
   # ユーティリティメソッドのテスト
   sub_test_case "Utility methods" do
     test "generate_env_hash creates correct format" do
@@ -115,9 +92,10 @@ class PraEnvTest < Test::Unit::TestCase
     end
 
     test "get_build_path returns correct path" do
-      env_hash = 'abc1234-20250101_120000_def5678-20250101_120000_ghi9012-20250101_120000'
-      result = Pra::Env.get_build_path(env_hash)
-      expected = File.join(Pra::Env::BUILD_DIR, env_hash)
+      # Phase 4.1: Build path uses env_name instead of env_hash
+      env_name = 'test-env'
+      result = Pra::Env.get_build_path(env_name)
+      expected = File.join(Pra::Env::PROJECT_ROOT, Pra::Env::ENV_DIR, env_name)
 
       assert_equal(expected, result)
     end

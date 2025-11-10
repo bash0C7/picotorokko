@@ -19,13 +19,11 @@ module Pra
 
     # ルートディレクトリ
     PROJECT_ROOT = Dir.pwd
-    # ptrk_env/ consolidated directory structure (Phase 4)
+    # ptrk_env/ consolidated directory structure (Phase 4.1)
     CACHE_DIR = File.join(PROJECT_ROOT, ENV_DIR, '.cache')
     PATCH_DIR = File.join(PROJECT_ROOT, ENV_DIR, 'patch')
     STORAGE_HOME = File.join(PROJECT_ROOT, 'storage', 'home')
     ENV_FILE = File.join(PROJECT_ROOT, ENV_DIR, '.picoruby-env.yml')
-    # Temporary: BUILD_DIR for backward compatibility (to be removed in Phase 4.2)
-    BUILD_DIR = File.join(PROJECT_ROOT, ENV_DIR)
 
     # リポジトリ定義
     REPOS = {
@@ -78,17 +76,16 @@ module Pra
         save_env_file(data)
       end
 
-      # 現在の環境定義名を取得（.picoruby-env.yml の 'current' フィールド）
+      # Phase 4.1: Current環境ロジック廃止
+      # get_current_env は常にnilを返す（暗黙のカレント環境は存在しない）
       def get_current_env
-        data = load_env_file
-        data['current']
+        nil
       end
 
-      # 現在の環境定義名を設定（.picoruby-env.yml の 'current' フィールドを更新）
-      def set_current_env(env_name)
-        data = load_env_file
-        data['current'] = env_name
-        save_env_file(data)
+      # Phase 4.1: Current環境ロジック廃止
+      # set_current_env は何もしない（後方互換性のためメソッドのみ残す）
+      def set_current_env(_env_name)
+        # No-op: current environment logic removed in Phase 4.1
       end
 
       # ====== Git操作 ======
