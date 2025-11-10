@@ -845,41 +845,31 @@ class PraCommandsEnvTest < PraTestCase
   # Pra::Env Git operation tests
   sub_test_case "Env module git operations" do
     test "get_timestamp returns formatted timestamp" do
-      original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
+        Dir.chdir(tmpdir) do
           # Create a minimal git repository with a commit
-          system('git init > /dev/null 2>&1')
-          system('git config user.email "test@example.com" > /dev/null 2>&1')
-          system('git config user.name "Test User" > /dev/null 2>&1')
+          system('git init', out: File::NULL, err: File::NULL) || raise('git init failed')
+          system('git config user.email "test@example.com"', out: File::NULL, err: File::NULL)
+          system('git config user.name "Test User"', out: File::NULL, err: File::NULL)
           File.write('test.txt', 'test')
-          system('git add . > /dev/null 2>&1')
-          system('git commit -m "test" > /dev/null 2>&1')
+          system('git add .', out: File::NULL, err: File::NULL) || raise('git add failed')
+          system('git commit -m "test"', out: File::NULL, err: File::NULL) || raise('git commit failed')
 
           result = Pra::Env.get_timestamp(tmpdir)
           # Should return timestamp in YYYYMMDD_HHMMSS format
           assert_match(/^\d{8}_\d{6}$/, result)
-        ensure
-          Dir.chdir(original_dir)
         end
       end
     end
 
     test "get_timestamp raises error when git command fails" do
-      original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create a directory without git repository
-          # This will cause git command to fail and return empty string
-          error = assert_raise(RuntimeError) do
-            Pra::Env.get_timestamp(tmpdir)
-          end
-          assert_match(/Failed to get timestamp/, error.message)
-        ensure
-          Dir.chdir(original_dir)
+        # Create a directory without git repository
+        # This will cause git command to fail and return empty string
+        error = assert_raise(RuntimeError) do
+          Pra::Env.get_timestamp(tmpdir)
         end
+        assert_match(/Failed to get timestamp/, error.message)
       end
     end
 
