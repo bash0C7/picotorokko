@@ -166,11 +166,7 @@ module Pra
         env_config = Pra::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
-        hashes = Pra::Env.compute_env_hash(env_name)
-        raise "Error: Failed to compute environment hash for '#{env_name}'" if hashes.nil?
-
-        _r2p2_hash, _esp32_hash, _picoruby_hash, env_hash = hashes
-        build_path = Pra::Env.get_build_path(env_hash)
+        build_path = Pra::Env.get_build_path(env_name)
         raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
 
         r2p2_path = File.join(build_path, 'R2P2-ESP32')
