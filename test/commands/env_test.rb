@@ -873,9 +873,10 @@ class PraCommandsEnvTest < PraTestCase
         begin
           # Create a directory without git repository
           # This will cause git command to fail and return empty string
-          assert_raise(RuntimeError, /Failed to get timestamp/) do
+          error = assert_raise(RuntimeError) do
             Pra::Env.get_timestamp(tmpdir)
           end
+          assert_match(/Failed to get timestamp/, error.message)
         ensure
           Dir.chdir(original_dir)
         end
