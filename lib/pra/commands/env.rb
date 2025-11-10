@@ -11,6 +11,26 @@ module Pra
         true
       end
 
+      desc 'list', 'List all defined environments'
+      def list
+        env_file = Pra::Env.load_env_file
+        environments = env_file['environments'] || {}
+
+        if environments.empty?
+          puts 'No environments defined yet.'
+          puts "Run 'pra env latest' to create one automatically"
+        else
+          puts 'Available environments:'
+          environments.each do |env_name, env_config|
+            puts "  - #{env_name}"
+            if env_config.is_a?(Hash)
+              puts "    Created: #{env_config['created_at']}"
+              puts "    R2P2-ESP32: #{env_config['R2P2-ESP32']['commit']}" if env_config['R2P2-ESP32']
+            end
+          end
+        end
+      end
+
       desc 'show', 'Display current environment definition from .picoruby-env.yml'
       def show
         current = Pra::Env.get_current_env
