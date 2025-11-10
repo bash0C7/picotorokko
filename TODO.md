@@ -3,20 +3,32 @@
 ## 📋 Outstanding Issues
 
 ### [TODO-INFRASTRUCTURE-DEVICE-TEST-FRAMEWORK]
-**Status**: BLOCKING - device_test.rb cannot be included in main test suite
-**Problem**: Including device_test.rb in Rake::TestTask causes test framework interaction that prevents other test files from loading correctly
+**Status**: ROOT CAUSE IDENTIFIED - device_test.rb uses global singleton method mocking
+**Problem**: Including device_test.rb in Rake::TestTask causes test framework interaction due to global state pollution
 - When device_test.rb excluded: 148 tests load and pass
-- When device_test.rb included: Only 59 tests load
-- Device tests pass independently: All 19 tests pass when run separately
+- When device_test.rb included: Only 59 tests load (test framework interference)
+- Device tests pass independently: All 17 tests pass when run separately
 - Impact: Cannot run full device test coverage in CI pipeline
 
-**Investigation Steps**:
-1. Check if device_test.rb or device.rb has side effects on test loading
-2. Check if Ruby version differences affect test discovery
-3. Check if FileList pattern in Rakefile is somehow affected by device_test.rb content
-4. Consider moving device_test.rb to separate test suite or task
+**Root Cause**:
+- device_test.rb uses `Pra::Env.define_singleton_method(:execute_with_esp_env)` to mock system commands
+- Singleton method redefinition causes **global state pollution** across test files
+- This interferes with test-unit's file loading mechanism in Rake::TestTask
 
-**Workaround**: device_test.rb tests pass when run independently; documented in Rakefile
+**Solution**: Refactor device_test.rb to use **Refinements-based system() mocking**
+1. Follow pattern in `test/commands/env_test.rb:SystemCommandMocking` module
+2. Create `DeviceCommandMocking` module with `SystemRefinement`
+3. Mock `system()` calls instead of `Pra::Env.execute_with_esp_env`
+4. Use thread-local storage (`Thread.current[:system_mock_context]`) for mock state
+5. Apply refinement with `using DeviceCommandMocking::SystemRefinement`
+
+**Benefits**:
+- No global state pollution (refinements are lexically scoped)
+- CI-compatible (no test framework interference)
+- Can verify exact commands being executed (better test coverage)
+- Consistent with env_test.rb mocking strategy
+
+**Priority**: HIGH - Blocks device.rb coverage expansion (currently 51.35%)
 
 ---
 
