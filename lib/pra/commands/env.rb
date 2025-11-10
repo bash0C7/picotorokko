@@ -44,10 +44,7 @@ module Pra
       option :commit, type: :string, desc: 'R2P2-ESP32 commit hash for new environment', required: true
       option :branch, type: :string, desc: 'Git branch reference'
       def set(env_name)
-        # validate environment name
-        unless env_name.match?(Pra::Env::ENV_NAME_PATTERN)
-          raise "Error: Invalid environment name '#{env_name}'. Must match pattern: #{Pra::Env::ENV_NAME_PATTERN}"
-        end
+        Pra::Env.validate_env_name!(env_name)
 
         # Create new environment
         r2p2_info = { 'commit' => options[:commit], 'timestamp' => Time.now.strftime('%Y%m%d_%H%M%S') }
@@ -64,10 +61,7 @@ module Pra
 
       desc 'reset ENV_NAME', 'Remove and recreate environment definition'
       def reset(env_name)
-        # validate environment name
-        unless env_name.match?(Pra::Env::ENV_NAME_PATTERN)
-          raise "Error: Invalid environment name '#{env_name}'. Must match pattern: #{Pra::Env::ENV_NAME_PATTERN}"
-        end
+        Pra::Env.validate_env_name!(env_name)
 
         # Check if environment exists
         env_config = Pra::Env.get_environment(env_name)

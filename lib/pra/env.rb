@@ -39,6 +39,17 @@ module Pra
     }.freeze
 
     class << self
+      # ====== 環境名検証 ======
+
+      # 環境名が有効なパターンか検証
+      # @param name [String] 検証する環境名
+      # @raise [RuntimeError] 無効な環境名の場合
+      def validate_env_name!(name)
+        unless name.match?(ENV_NAME_PATTERN)
+          raise "Error: Invalid environment name '#{name}'. Must match pattern: #{ENV_NAME_PATTERN}"
+        end
+      end
+
       # ====== 環境定義（YAML）操作 ======
 
       # .picoruby-env.yml を読み込み（環境定義のメタデータ）
