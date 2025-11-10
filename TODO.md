@@ -197,49 +197,52 @@ Pra::Commands::Device.start(['flash', 'test-env'])
 
 **Strategy**: Each command = Red (test) → Green (impl) → RuboCop -A → Refactor → Commit
 
-#### 3.1: env list command (Red → Green → RuboCop → Commit)
-- [ ] **RED**: Write test for `ptrk env list`
-  - Test file: `test/commands/env_test.rb`
-  - Assertion: Lists all environments in ptrk_user_root
-  - Assertion: Shows env name, path, status
-- [ ] **GREEN**: Implement in `lib/ptrk/commands/env.rb`
-  - Add `list` method with output formatting
-- [ ] **RUBOCOP**: `bundle exec rubocop -A`
-- [ ] **REFACTOR**: Ensure clean output logic
-- [ ] **COMMIT**: "feat: implement ptrk env list command"
+#### 3.1: env list command (Red → Green → RuboCop → Commit) ✅ COMPLETED
+- [x] **RED**: Write test for `ptrk env list`
+  - Test file: `test/commands/env_test.rb` ✅
+  - Assertion: Lists all environments in ptrk_user_root ✅
+  - Assertion: Shows env name, path, status ✅
+- [x] **GREEN**: Implement in `lib/ptrk/commands/env.rb` ✅
+  - Add `list` method with output formatting ✅
+- [x] **RUBOCOP**: `bundle exec rubocop -A` ✅
+- [x] **REFACTOR**: Ensure clean output logic ✅
+- [x] **COMMIT**: "feat: implement ptrk env list command" (597e52e) ✅
 
-#### 3.2: env set command with options (Red → Green → RuboCop → Commit)
-- [ ] **RED**: Test `ptrk env set <name> [--commit <sha>] [--branch <name>]`
-  - Assertion: Creates environment directory structure
-  - Assertion: Stores commit/branch if provided
-  - Assertion: Validates env name against pattern
-- [ ] **GREEN**: Implement in `lib/ptrk/commands/env.rb`
-  - Add `set` method with option parsing
-  - Create directory structure in ptrk_env/{env_name}
-- [ ] **RUBOCOP**: `bundle exec rubocop -A`
-- [ ] **REFACTOR**: Simplify if possible
-- [ ] **COMMIT**: "feat: implement ptrk env set with options"
-- [ ] **NOTE**: [TODO-INFRASTRUCTURE-ENV-SET-PATHS] - Directory structure verified in Phase 4
+#### 3.2: env set command with options (Red → Green → RuboCop → Commit) ✅ COMPLETED
+- [x] **RED**: Test `ptrk env set <name> [--commit <sha>] [--branch <name>]` ✅
+  - Assertion: Creates environment with options ✅
+  - Assertion: Stores commit/branch if provided ✅
+  - Assertion: Validates env name against pattern ✅
+- [x] **GREEN**: Implement in `lib/ptrk/commands/env.rb` ✅
+  - Add `set` method with option parsing ✅
+  - Support both create and switch modes ✅
+- [x] **RUBOCOP**: `bundle exec rubocop -A` ✅ (1 auto-correction: unless modifier)
+- [x] **REFACTOR**: Simplify logic ✅
+- [x] **COMMIT**: "feat: enhance ptrk env set with --commit and --branch options" (d731858) ✅
 
-#### 3.3: env reset command (Red → Green → RuboCop → Commit)
-- [ ] **RED**: Test `ptrk env reset <name>`
-  - Assertion: Removes and recreates environment
-  - Assertion: Preserves commit/branch metadata
-- [ ] **GREEN**: Implement in `lib/ptrk/commands/env.rb`
-  - Add `reset` method
-- [ ] **RUBOCOP**: `bundle exec rubocop -A`
-- [ ] **REFACTOR**: N/A
-- [ ] **COMMIT**: "feat: implement ptrk env reset command"
+#### 3.3: env reset command (Red → Green → RuboCop → Commit) ✅ COMPLETED
+- [x] **RED**: Test `ptrk env reset <name>` ✅
+  - Assertion: Removes and recreates environment ✅
+  - Assertion: Preserves metadata (notes) ✅
+- [x] **GREEN**: Implement in `lib/ptrk/commands/env.rb` ✅
+  - Add `reset` method ✅
+- [x] **RUBOCOP**: `bundle exec rubocop -A` ✅
+- [x] **REFACTOR**: N/A ✅
+- [x] **COMMIT**: "feat: implement ptrk env reset command" (68e6226) ✅
 
-#### 3.4: env show command (Red → Green → RuboCop → Commit)
-- [ ] **RED**: Test `ptrk env show <name>`
-  - Assertion: Displays environment details (commit, branch, path, etc.)
-  - Assertion: Works with user-provided env names
-- [ ] **GREEN**: Implement enhancement in `lib/ptrk/commands/env.rb`
-  - Update `show` to include version details
-- [ ] **RUBOCOP**: `bundle exec rubocop -A`
-- [ ] **REFACTOR**: Ensure clarity
-- [ ] **COMMIT**: "feat: enhance ptrk env show with details"
+#### 3.4: env show command (Red → Green → RuboCop → Commit) ✅ COMPLETED
+- [x] **RED**: Test `ptrk env show [ENV_NAME]` ✅
+  - Assertion: Displays specific environment details ✅
+  - Assertion: Works with user-provided env names ✅
+  - Assertion: Shows error for missing environments ✅
+- [x] **GREEN**: Implement enhancement in `lib/ptrk/commands/env.rb` ✅
+  - Update `show` to accept optional env name parameter ✅
+  - Extract display logic into helper methods ✅
+- [x] **RUBOCOP**: `bundle exec rubocop -A` ✅ (0 violations after refactoring)
+- [x] **REFACTOR**: Extract helper methods to reduce nesting ✅
+- [x] **COMMIT**: "feat: enhance ptrk env show to accept optional environment name" (d7478c0) ✅
+
+**Phase 3.1-3.4 Status**: 4 commits (597e52e, d731858, 68e6226, d7478c0) successfully pushed to origin/claude/execute-todo-items-011CUynGmL5qMprB2AGpc5Jc and merged into main
 
 #### 3.5: env patch operations (Red → Green → RuboCop → Commit)
 - [ ] **RED**: Test `ptrk env patch_export`, `patch_apply`, `patch_diff`
