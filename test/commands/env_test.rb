@@ -4,6 +4,85 @@ require "fileutils"
 require "stringio"
 
 class PraCommandsEnvTest < PraTestCase
+  # env list コマンドのテスト
+  sub_test_case "env list command" do
+    test "lists all environments in ptrk_user_root" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # 複数の環境を作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('staging', r2p2_info, esp32_info, picoruby_info)
+          Pra::Env.set_environment('production', r2p2_info, esp32_info, picoruby_info)
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['list'])
+          end
+
+          # 両方の環境がリストアップされていることを確認
+          assert_match(/staging/, output)
+          assert_match(/production/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "shows empty message when no environments exist" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['list'])
+          end
+
+          # 環境がない場合のメッセージを確認
+          assert_match(/No environments defined|empty/i, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "displays environment name, path and status in list" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # テスト環境を作成
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['list'])
+          end
+
+          # 環境名が表示されていることを確認
+          assert_match(/test-env/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
   # env show コマンドのテスト
   sub_test_case "env show command" do
     test "shows '(not set)' when no environment is configured" do
@@ -118,6 +197,56 @@ class PraCommandsEnvTest < PraTestCase
         end
       end
     end
+
+    test "shows specific environment when name is provided" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # Create multiple environments
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('staging', r2p2_info, esp32_info, picoruby_info, notes: 'Staging environment')
+          Pra::Env.set_environment('production', r2p2_info, esp32_info, picoruby_info, notes: 'Production environment')
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['show', 'staging'])
+          end
+
+          # Verify staging environment details are shown
+          assert_match(/staging/, output)
+          assert_match(/Staging environment/, output)
+          assert_match(/Repo versions:/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "shows error when requested environment name does not exist" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['show', 'missing-env'])
+          end
+
+          # Verify error message is shown
+          assert_match(/Error: Environment 'missing-env' not found|not found/i, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
   end
 
   # env set コマンドのテスト
@@ -204,6 +333,154 @@ class PraCommandsEnvTest < PraTestCase
           # シンボリックリンクが作成されていることを確認
           current_link = File.join(Pra::Env::BUILD_DIR, 'current')
           assert_true(File.symlink?(current_link))
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "validates environment name against pattern" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # Invalid env name (contains uppercase)
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Pra::Commands::Env.start(['set', 'InvalidEnv', '--commit', 'abc1234'])
+            end
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "creates environment with commit option" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # set with --commit option
+          output = capture_stdout do
+            Pra::Commands::Env.start(['set', 'custom-env', '--commit', 'abc1234def567'])
+          end
+
+          # Verify environment was created
+          env_config = Pra::Env.get_environment('custom-env')
+          assert_not_nil(env_config)
+          assert_equal('abc1234def567', env_config['R2P2-ESP32']['commit'])
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "creates environment with commit and branch options" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # set with --commit and --branch options
+          output = capture_stdout do
+            Pra::Commands::Env.start(['set', 'branch-env', '--commit', 'abc1234', '--branch', 'develop'])
+          end
+
+          # Verify environment was created with options
+          env_config = Pra::Env.get_environment('branch-env')
+          assert_not_nil(env_config)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  # env reset コマンドのテスト
+  sub_test_case "env reset command" do
+    test "removes and recreates environment" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # Create environment with initial data
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info, notes: 'Original environment')
+
+          # Reset the environment
+          output = capture_stdout do
+            Pra::Commands::Env.start(['reset', 'test-env'])
+          end
+
+          # Verify environment still exists
+          env_config = Pra::Env.get_environment('test-env')
+          assert_not_nil(env_config)
+          # Original data should be gone (recreated with placeholder)
+          assert_equal('placeholder', env_config['R2P2-ESP32']['commit'])
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "preserves environment name after reset" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          # Create initial environment
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('preserve-test', r2p2_info, esp32_info, picoruby_info)
+
+          # Reset
+          output = capture_stdout do
+            Pra::Commands::Env.start(['reset', 'preserve-test'])
+          end
+
+          # Check that environment still exists with same name
+          env_config = Pra::Env.get_environment('preserve-test')
+          assert_not_nil(env_config)
+          assert_match(/preserve-test/, output)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "raises error when environment does not exist" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Pra::Commands::Env.start(['reset', 'non-existent'])
+            end
+          end
         ensure
           Dir.chdir(original_dir)
         end
