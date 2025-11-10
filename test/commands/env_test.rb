@@ -12,7 +12,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # 複数の環境を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -41,7 +40,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           output = capture_stdout do
             Pra::Commands::Env.start(['list'])
@@ -61,7 +59,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # テスト環境を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -85,55 +82,12 @@ class PraCommandsEnvTest < PraTestCase
 
   # env show コマンドのテスト
   sub_test_case "env show command" do
-    test "shows '(not set)' when no environment is configured" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-
-          output = capture_stdout do
-            Pra::Commands::Env.start(['show'])
-          end
-
-          assert_match(/Current environment definition: \(not set\)/, output)
-          assert_match(/Run 'pra env set ENV_NAME' to set an environment definition/, output)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "shows error when environment is set but not found in config" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-
-          # current環境を設定するが、定義は作成しない
-          Pra::Env.set_current_env('missing-env')
-
-          output = capture_stdout do
-            Pra::Commands::Env.start(['show'])
-          end
-
-          assert_match(/Error: Environment 'missing-env' not found/, output)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
     test "shows environment details when properly configured" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # テスト用の環境を作成
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -141,57 +95,17 @@ class PraCommandsEnvTest < PraTestCase
           picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
 
           Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info, notes: 'Test environment')
-          Pra::Env.set_current_env('test-env')
 
           output = capture_stdout do
-            Pra::Commands::Env.start(['show'])
+            Pra::Commands::Env.start(['show', 'test-env'])
           end
 
-          assert_match(/Current environment definition: test-env/, output)
+          assert_match(/Environment: test-env/, output)
           assert_match(/Repo versions:/, output)
           assert_match(/R2P2-ESP32: abc1234 \(20250101_120000\)/, output)
           assert_match(/picoruby-esp32: def5678 \(20250102_120000\)/, output)
           assert_match(/picoruby: ghi9012 \(20250103_120000\)/, output)
           assert_match(/Notes: Test environment/, output)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "shows symlink information when available" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-
-          # テスト用の環境とシンボリックリンクを作成
-          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
-          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
-
-          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
-          Pra::Env.set_current_env('test-env')
-
-          # BUILD_DIRとcurrentシンボリックリンクを作成（正しいenv_hashを使用）
-          r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
-          esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
-          picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
-          env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-
-          FileUtils.mkdir_p(Pra::Env::BUILD_DIR)
-          target = File.join(Pra::Env::BUILD_DIR, env_hash)
-          FileUtils.mkdir_p(target)
-          current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-          FileUtils.ln_s(env_hash, current_link)
-
-          output = capture_stdout do
-            Pra::Commands::Env.start(['show'])
-          end
-
-          assert_match(/Symlink: current -> #{Regexp.escape(env_hash)}\//, output)
         ensure
           Dir.chdir(original_dir)
         end
@@ -204,7 +118,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # Create multiple environments
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -234,7 +147,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           output = capture_stdout do
             Pra::Commands::Env.start(['show', 'missing-env'])
@@ -251,101 +163,12 @@ class PraCommandsEnvTest < PraTestCase
 
   # env set コマンドのテスト
   sub_test_case "env set command" do
-    test "raises error when environment does not exist" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-
-          assert_raise(RuntimeError) do
-            capture_stdout do
-              Pra::Commands::Env.start(['set', 'non-existent'])
-            end
-          end
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "shows error when build directory does not exist" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-
-          # 環境定義は作成するが、ビルドディレクトリは作成しない
-          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
-          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
-
-          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
-
-          output = capture_stdout do
-            Pra::Commands::Env.start(['set', 'test-env'])
-          end
-
-          assert_match(/Error: Build environment not found/, output)
-          assert_match(/Run 'pra build setup test-env' first/, output)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "successfully switches environment when build exists" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
-
-          # 環境定義を作成
-          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
-          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250101_120000' }
-          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250101_120000' }
-
-          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
-
-          # ビルドディレクトリを作成
-          r2p2_hash = "#{r2p2_info['commit']}-#{r2p2_info['timestamp']}"
-          esp32_hash = "#{esp32_info['commit']}-#{esp32_info['timestamp']}"
-          picoruby_hash = "#{picoruby_info['commit']}-#{picoruby_info['timestamp']}"
-          env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-          build_path = Pra::Env.get_build_path(env_hash)
-          FileUtils.mkdir_p(build_path)
-
-          output = capture_stdout do
-            Pra::Commands::Env.start(['set', 'test-env'])
-          end
-
-          assert_match(/Switching to environment definition: test-env/, output)
-          assert_match(/✓ Switched to environment definition 'test-env'/, output)
-
-          # currentが正しく設定されていることを確認
-          assert_equal('test-env', Pra::Env.get_current_env)
-
-          # シンボリックリンクが作成されていることを確認
-          current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-          assert_true(File.symlink?(current_link))
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
     test "validates environment name against pattern" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # Invalid env name (contains uppercase)
           assert_raise(RuntimeError) do
@@ -365,7 +188,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # set with --commit option
           output = capture_stdout do
@@ -388,7 +210,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # set with --commit and --branch options
           output = capture_stdout do
@@ -413,7 +234,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # Create environment with initial data
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -444,7 +264,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # Create initial environment
           r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
@@ -474,7 +293,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           assert_raise(RuntimeError) do
             capture_stdout do
@@ -496,7 +314,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # Git操作をモック化
           stub_git_operations do |stubs|
@@ -538,7 +355,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # Git操作をモック化（失敗させる）
           stub_git_operations(fail_fetch: true) do |stubs|
@@ -560,7 +376,6 @@ class PraCommandsEnvTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           FileUtils.rm_f(Pra::Env::ENV_FILE)
-          FileUtils.rm_rf(Pra::Env::BUILD_DIR)
 
           # Git操作をモック化（cloneを失敗させる）
           stub_git_operations(fail_clone: true) do |stubs|
@@ -694,7 +509,8 @@ class PraCommandsEnvTest < PraTestCase
 
     test "get_build_path returns correct path for build environment" do
       build_path = Pra::Env.get_build_path('env_hash_value')
-      assert_match(/build\/env_hash_value$/, build_path)
+      # Phase 4.1: Path changed from build/ to ptrk_env/
+      assert_match(/ptrk_env\/env_hash_value$/, build_path)
     end
   end
 
@@ -1017,6 +833,149 @@ class PraCommandsEnvTest < PraTestCase
             # clone should not be called
             assert_equal(0, context[:call_count][:clone])
           end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  # env patch operations (patch_export, patch_apply, patch_diff)
+  sub_test_case "env patch operations" do
+    test "exports patches with patch_export command" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          # Create test environment
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+          # Create build directory with git repository
+          # Phase 4.1: Build path uses env_name instead of env_hash
+          build_path = Pra::Env.get_build_path('test-env')
+
+          # Initialize git repository with changes
+          r2p2_work = File.join(build_path, 'R2P2-ESP32')
+          FileUtils.mkdir_p(r2p2_work)
+          Dir.chdir(r2p2_work) do
+            system('git init > /dev/null 2>&1')
+            system('git config user.email "test@example.com" > /dev/null 2>&1')
+            system('git config user.name "Test User" > /dev/null 2>&1')
+            File.write('test.txt', 'initial')
+            system('git add . > /dev/null 2>&1')
+            system('git commit -m "initial" > /dev/null 2>&1')
+            File.write('test.txt', 'modified')
+          end
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['patch_export', 'test-env'])
+          end
+
+          # Verify output
+          assert_match(/Exporting patches from: test-env/, output)
+          assert_match(/✓ Patches exported/, output)
+
+          # Verify patch directory was created
+          patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
+          assert_true(Dir.exist?(patch_dir))
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "applies patches with patch_apply command" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          # Create test environment
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+          # Create build directory
+          # Phase 4.1: Build path uses env_name instead of env_hash
+          build_path = Pra::Env.get_build_path('test-env')
+
+          r2p2_work = File.join(build_path, 'R2P2-ESP32')
+          FileUtils.mkdir_p(r2p2_work)
+
+          # Create patch file
+          patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
+          FileUtils.mkdir_p(patch_dir)
+          File.write(File.join(patch_dir, 'patch.txt'), 'patched content')
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['patch_apply', 'test-env'])
+          end
+
+          # Verify output
+          assert_match(/Applying patches/, output)
+          assert_match(/✓ Patches applied/, output)
+
+          # Verify patch was applied
+          assert_true(File.exist?(File.join(r2p2_work, 'patch.txt')))
+          assert_equal('patched content', File.read(File.join(r2p2_work, 'patch.txt')))
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "shows patch differences with patch_diff command" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          # Create test environment
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+          # Create build directory with git repository
+          # Phase 4.1: Build path uses env_name instead of env_hash
+          build_path = Pra::Env.get_build_path('test-env')
+
+          r2p2_work = File.join(build_path, 'R2P2-ESP32')
+          FileUtils.mkdir_p(r2p2_work)
+
+          # Initialize git repository
+          Dir.chdir(r2p2_work) do
+            system('git init > /dev/null 2>&1')
+            system('git config user.email "test@example.com" > /dev/null 2>&1')
+            system('git config user.name "Test User" > /dev/null 2>&1')
+            File.write('test.txt', 'initial')
+            system('git add . > /dev/null 2>&1')
+            system('git commit -m "initial" > /dev/null 2>&1')
+          end
+
+          # Create patch directory
+          patch_dir = File.join(Pra::Env::PATCH_DIR, 'R2P2-ESP32')
+          FileUtils.mkdir_p(patch_dir)
+          File.write(File.join(patch_dir, 'patch.txt'), 'patched content')
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['patch_diff', 'test-env'])
+          end
+
+          # Verify output
+          assert_match(/=== Patch Differences ===/, output)
+          assert_match(/Stored patches:/, output)
         ensure
           Dir.chdir(original_dir)
         end

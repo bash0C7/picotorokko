@@ -71,29 +71,6 @@ class PraEnvTest < Test::Unit::TestCase
     end
   end
 
-  # カレント環境のテスト
-  sub_test_case "Current environment" do
-    test "get_current_env returns nil when not set" do
-      result = Pra::Env.get_current_env
-      assert_nil(result)
-    end
-
-    test "set_current_env and get_current_env work together" do
-      Pra::Env.set_current_env('my-env')
-
-      current = Pra::Env.get_current_env
-      assert_equal('my-env', current)
-    end
-
-    test "set_current_env updates existing current value" do
-      Pra::Env.set_current_env('env1')
-      assert_equal('env1', Pra::Env.get_current_env)
-
-      Pra::Env.set_current_env('env2')
-      assert_equal('env2', Pra::Env.get_current_env)
-    end
-  end
-
   # ユーティリティメソッドのテスト
   sub_test_case "Utility methods" do
     test "generate_env_hash creates correct format" do
@@ -115,9 +92,10 @@ class PraEnvTest < Test::Unit::TestCase
     end
 
     test "get_build_path returns correct path" do
-      env_hash = 'abc1234-20250101_120000_def5678-20250101_120000_ghi9012-20250101_120000'
-      result = Pra::Env.get_build_path(env_hash)
-      expected = File.join(Pra::Env::BUILD_DIR, env_hash)
+      # Phase 4.1: Build path uses env_name instead of env_hash
+      env_name = 'test-env'
+      result = Pra::Env.get_build_path(env_name)
+      expected = File.join(Pra::Env::PROJECT_ROOT, Pra::Env::ENV_DIR, env_name)
 
       assert_equal(expected, result)
     end
@@ -167,6 +145,160 @@ class PraEnvTest < Test::Unit::TestCase
 
       result = Pra::Env.read_symlink(link)
       assert_equal(target, result)
+    end
+  end
+
+  # compute_env_hash のテスト
+  sub_test_case "compute_env_hash" do
+    test "returns correct hash array for existing environment" do
+      r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+      esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+      picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+      Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+
+      result = Pra::Env.compute_env_hash('test-env')
+      assert_not_nil(result)
+
+      r2p2_hash, esp32_hash, picoruby_hash, env_hash = result
+      assert_equal('abc1234-20250101_120000', r2p2_hash)
+      assert_equal('def5678-20250102_120000', esp32_hash)
+      assert_equal('ghi9012-20250103_120000', picoruby_hash)
+      assert_match(/abc1234-20250101_120000_def5678-20250102_120000_ghi9012-20250103_120000/, env_hash)
+    end
+
+    test "returns nil for non-existent environment" do
+      result = Pra::Env.compute_env_hash('non-existent')
+      assert_nil(result)
+    end
+  end
+
+  # has_submodules? のテスト
+  sub_test_case "has_submodules?" do
+    test "returns true when .gitmodules exists" do
+      repo_dir = File.join(@tmpdir, 'repo_with_submodules')
+      FileUtils.mkdir_p(repo_dir)
+      File.write(File.join(repo_dir, '.gitmodules'), '[submodule "test"]\n  path = test\n')
+
+      result = Pra::Env.has_submodules?(repo_dir)
+      assert_true(result)
+    end
+
+    test "returns false when .gitmodules does not exist" do
+      repo_dir = File.join(@tmpdir, 'repo_without_submodules')
+      FileUtils.mkdir_p(repo_dir)
+
+      result = Pra::Env.has_submodules?(repo_dir)
+      assert_false(result)
+    end
+  end
+
+  # get_timestamp のテスト (covered by integration tests in env_test.rb)
+
+  # fetch_remote_commit のテスト
+  sub_test_case "fetch_remote_commit" do
+    test "returns short commit hash on success" do
+      # Use actual picoruby repository
+      commit = Pra::Env.fetch_remote_commit('https://github.com/picoruby/picoruby.git', 'HEAD')
+      # Should return 7-character commit hash
+      assert_match(/^[0-9a-f]{7}$/, commit) if commit
+    end
+
+    test "returns nil when repository does not exist" do
+      commit = Pra::Env.fetch_remote_commit('https://github.com/invalid/nonexistent.git', 'HEAD')
+      assert_nil(commit)
+    end
+
+    test "returns nil when ref does not exist" do
+      commit = Pra::Env.fetch_remote_commit('https://github.com/picoruby/picoruby.git', 'nonexistent-branch')
+      assert_nil(commit)
+    end
+  end
+
+  # clone_repo エラーハンドリングのテスト
+  sub_test_case "clone_repo error handling" do
+    test "skips clone if directory already exists" do
+      dest_path = File.join(@tmpdir, 'existing_repo')
+      FileUtils.mkdir_p(dest_path)
+
+      # Should not raise error, just skip
+      assert_nothing_raised do
+        Pra::Env.clone_repo('https://github.com/picoruby/picoruby.git', dest_path, 'abc1234')
+      end
+    end
+  end
+
+  # traverse_submodules_and_validate のテスト (covered by integration tests)
+
+  # generate_env_hash additional tests
+  sub_test_case "generate_env_hash additional tests" do
+    test "generates correct format with different inputs" do
+      r2p2 = 'xyz789-20250104_140000'
+      esp32 = 'uvw456-20250105_150000'
+      picoruby = 'rst123-20250106_160000'
+
+      result = Pra::Env.generate_env_hash(r2p2, esp32, picoruby)
+      expected = "#{r2p2}_#{esp32}_#{picoruby}"
+
+      assert_equal(expected, result)
+      assert_match(/_/, result)
+    end
+  end
+
+  # get_cache_path additional tests
+  sub_test_case "get_cache_path additional tests" do
+    test "returns correct path for different repositories" do
+      repos = %w[R2P2-ESP32 picoruby-esp32 picoruby]
+      repos.each do |repo|
+        path = Pra::Env.get_cache_path(repo, 'test123-20250101_120000')
+        assert_match(/#{repo}/, path)
+        assert_match(/test123-20250101_120000/, path)
+      end
+    end
+  end
+
+  # read_symlink edge cases
+  sub_test_case "read_symlink edge cases" do
+    test "returns nil for regular file" do
+      file_path = File.join(@tmpdir, 'regular_file')
+      File.write(file_path, 'content')
+
+      result = Pra::Env.read_symlink(file_path)
+      assert_nil(result)
+    end
+  end
+
+  # execute_with_esp_env のテスト
+  sub_test_case "execute_with_esp_env" do
+    test "executes command successfully" do
+      # Simple command that should succeed
+      assert_nothing_raised do
+        Pra::Env.execute_with_esp_env('true')
+      end
+    end
+
+    test "raises error when command fails" do
+      assert_raise(RuntimeError) do
+        Pra::Env.execute_with_esp_env('false')
+      end
+    end
+
+    test "executes command in specified working directory" do
+      work_dir = File.join(@tmpdir, 'workdir')
+      FileUtils.mkdir_p(work_dir)
+      marker_file = File.join(work_dir, 'marker.txt')
+
+      Pra::Env.execute_with_esp_env("touch #{File.basename(marker_file)}", work_dir)
+      assert_true(File.exist?(marker_file))
+    end
+
+    test "raises error when command fails in working directory" do
+      work_dir = File.join(@tmpdir, 'workdir')
+      FileUtils.mkdir_p(work_dir)
+
+      assert_raise(RuntimeError) do
+        Pra::Env.execute_with_esp_env('false', work_dir)
+      end
     end
   end
 end
