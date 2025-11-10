@@ -364,23 +364,23 @@ class PraCommandsDeviceTest < PraTestCase
       end
     end
 
-    test "uses default env_name when not provided" do
+    test "delegates rake task with explicit env" do
       with_fresh_project_root do
         Dir.mktmpdir do |tmpdir|
           Dir.chdir(tmpdir)
           begin
             # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
 
-            setup_test_environment_with_current('test-env')
+            setup_test_environment('test-env')
 
             with_stubbed_esp_env do
               # custom_task が Rakefile に存在するため、method_missing で委譲される
-              # env_name が省略された場合、'current' がデフォルトとして使用される
+              # 環境名は --env で明示的に指定する（暗黙のカレント環境は存在しない）
               output = capture_stdout do
-                Pra::Commands::Device.start(['custom_task'])
+                Pra::Commands::Device.start(['custom_task', '--env', 'test-env'])
               end
 
-              # デフォルト環境（current）が使われることを確認
+              # タスク委譲メッセージが出力されることを確認
               assert_match(/Delegating to R2P2-ESP32 task: custom_task/, output)
             end
 
@@ -459,9 +459,7 @@ class PraCommandsDeviceTest < PraTestCase
   def setup_test_environment_with_current(env_name)
     env_name, r2p2_path = setup_test_environment(env_name)
 
-    current_link = File.join(Pra::Env::BUILD_DIR, "current")
-    env_hash = Pra::Env.compute_env_hash(env_name).last
-    FileUtils.ln_s(env_hash, current_link)
+    # Set current environment for default resolution
     Pra::Env.set_current_env(env_name)
 
     [env_name, r2p2_path]

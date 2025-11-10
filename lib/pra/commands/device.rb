@@ -153,11 +153,12 @@ module Pra
       def resolve_env_name(env_name)
         return env_name unless env_name == 'current'
 
-        current_link = File.join(Pra::Env::BUILD_DIR, 'current')
-        raise "Error: No current environment set. Use 'pra env set ENV_NAME' first" unless File.symlink?(current_link)
-
         current = Pra::Env.get_current_env
-        current || env_name
+        if current.nil?
+          raise "Error: No current environment set. Use 'pra device <command> --env <name>' to specify an environment"
+        end
+
+        current
       end
 
       # 環境を検証してR2P2パスを取得
