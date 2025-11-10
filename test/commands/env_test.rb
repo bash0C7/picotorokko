@@ -847,14 +847,7 @@ class PraCommandsEnvTest < PraTestCase
     test "get_timestamp returns formatted timestamp" do
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
-          # Create a minimal git repository with a commit
-          system('git init', out: File::NULL) || raise('git init failed')
-          system('git config user.email "test@example.com"')
-          system('git config user.name "Test User"')
-          system('git config commit.gpgsign false') # Disable commit signing for tests
-          File.write('test.txt', 'test')
-          system('git add .') || raise('git add failed')
-          system('git commit -m "test"', out: File::NULL) || raise('git commit failed')
+          setup_test_git_repo
 
           result = Pra::Env.get_timestamp(tmpdir)
           # Should return timestamp in YYYYMMDD_HHMMSS format
@@ -877,14 +870,7 @@ class PraCommandsEnvTest < PraTestCase
     test "get_commit_hash returns formatted commit hash with timestamp" do
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
-          # Create a minimal git repository with a commit
-          system('git init', out: File::NULL) || raise('git init failed')
-          system('git config user.email "test@example.com"')
-          system('git config user.name "Test User"')
-          system('git config commit.gpgsign false')
-          File.write('test.txt', 'test')
-          system('git add .') || raise('git add failed')
-          system('git commit -m "test"', out: File::NULL) || raise('git commit failed')
+          setup_test_git_repo
 
           result = Pra::Env.get_commit_hash(tmpdir, 'HEAD')
           # Should return format: short_hash-YYYYMMDD_HHMMSS
