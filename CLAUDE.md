@@ -256,7 +256,8 @@ The `pra` gem does **NOT** know:
   - ✅ All tests pass (156 tests)
   - ✅ RuboCop: 0 violations
   - ✅ SimpleCov report generated
-- If any check fails, the push is **blocked** with clear error message
+- If any check **fails**, hook displays **⚠️ WARNING** but **allows push to proceed** (non-blocking)
+- Hook always exits with success (exit 0) to prevent blocking pushes
 
 **Coverage Thresholds** (defined in `test/test_helper.rb`):
 - **Line coverage minimum**: 85% (currently: 85.84%)
@@ -265,12 +266,14 @@ The `pra` gem does **NOT** know:
 **Workflow**:
 1. Commit your changes locally
 2. Run `git push origin <branch>`
-3. Pre-push hook automatically validates coverage
-4. If coverage drops below thresholds:
-   - Push is rejected
-   - Expand test coverage in relevant files
-   - Re-run `bundle exec rake test` to verify
-   - Try push again
+3. Pre-push hook automatically runs `bundle exec rake ci`
+4. If coverage or tests are problematic:
+   - Hook displays ⚠️ WARNING with details
+   - Push proceeds (hook is non-blocking)
+   - **You are responsible** for fixing issues before PR/merge:
+     - Expand test coverage in relevant files
+     - Re-run `bundle exec rake test` to verify locally
+     - Push fix commits
 
 **Manual Coverage Check** (without pushing):
 ```bash
