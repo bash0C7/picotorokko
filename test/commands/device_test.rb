@@ -507,4 +507,61 @@ class PraCommandsDeviceTest < PraTestCase
       Pra::Env.define_singleton_method(:execute_with_esp_env, original_method)
     end
   end
+
+  # parse_env_from_args のテスト
+  sub_test_case "parse_env_from_args private method" do
+    test "returns nil when args is empty" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, [])
+      assert_nil(result)
+    end
+
+    test "parses --env value format" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, ['--env', 'test-env'])
+      assert_equal('test-env', result)
+    end
+
+    test "parses --env=value format" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, ['--env=test-env'])
+      assert_equal('test-env', result)
+    end
+
+    test "parses --env with other arguments before" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, ['--other', 'arg', '--env', 'test-env'])
+      assert_equal('test-env', result)
+    end
+
+    test "parses --env with other arguments after" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, ['--env', 'test-env', '--other', 'arg'])
+      assert_equal('test-env', result)
+    end
+
+    test "handles --env= with empty value" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, ['--env='])
+      assert_equal('', result)
+    end
+
+    test "returns nil when --env has no following value" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, ['--env'])
+      assert_nil(result)
+    end
+
+    test "returns first --env when multiple --env present" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, ['--env', 'first', '--env', 'second'])
+      assert_equal('first', result)
+    end
+
+    test "parses --env=value with equals in value" do
+      device = Pra::Commands::Device.new
+      result = device.send(:parse_env_from_args, ['--env=test=env'])
+      assert_equal('test=env', result)
+    end
+  end
 end
