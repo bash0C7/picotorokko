@@ -3,7 +3,81 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
+# Refinement-based system command mocking for CI compatibility
+module SystemCommandMocking
+  # Scoped Kernel#system override using Refinement
+  # This approach is CI-compatible (no global state pollution)
+  module SystemRefinement
+    refine Kernel do
+      def system(*args)
+        # Check if mock context is active in thread-local storage
+        mock_context = Thread.current[:system_mock_context]
+        return super unless mock_context
+
+        cmd = args.join(' ')
+
+        # Mock git clone
+        if cmd.include?('git clone')
+          mock_context[:call_count][:clone] += 1
+          return false if mock_context[:fail_clone]
+
+          # Create dummy git repository at destination path
+          if cmd =~ /git clone.* (\S+)\s*$/
+            dest_path = $1.gsub(/['"]/, '')
+            FileUtils.mkdir_p(dest_path)
+            FileUtils.mkdir_p(File.join(dest_path, '.git'))
+          end
+          return true
+        end
+
+        # Mock git checkout
+        if cmd.include?('git checkout')
+          mock_context[:call_count][:checkout] += 1
+          return false if mock_context[:fail_checkout]
+
+          return true
+        end
+
+        # Mock git submodule update
+        if cmd.include?('git submodule update')
+          mock_context[:call_count][:submodule] += 1
+          return false if mock_context[:fail_submodule]
+
+          return true
+        end
+
+        # Fallback to original system() for other commands
+        super
+      end
+    end
+  end
+
+  # Helper method to set up system command mocking with Refinement
+  # Usage: with_system_mocking(fail_clone: true) { |mock| ... }
+  def with_system_mocking(fail_clone: false, fail_checkout: false, fail_submodule: false)
+    using SystemRefinement
+
+    mock_context = {
+      call_count: { clone: 0, checkout: 0, submodule: 0 },
+      fail_clone: fail_clone,
+      fail_checkout: fail_checkout,
+      fail_submodule: fail_submodule
+    }
+
+    Thread.current[:system_mock_context] = mock_context
+
+    begin
+      yield(mock_context)
+    ensure
+      Thread.current[:system_mock_context] = nil
+    end
+  end
+end
+
 class PraCommandsEnvTest < PraTestCase
+  include SystemCommandMocking
+
+  using SystemCommandMocking::SystemRefinement
   # env list コマンドのテスト
   sub_test_case "env list command" do
     test "lists all environments in ptrk_user_root" do
@@ -1194,29 +1268,66 @@ class PraCommandsEnvTest < PraTestCase
   # Branch coverage tests: Uncovered error paths and conditionals
   sub_test_case "branch coverage: clone_repo error handling" do
     test "clone_repo raises error when git clone fails" do
-      omit("PENDING Phase 4.7: System command mocking refactor. " \
-           "Current issue: Kernel.method(:system) mock fails in CI. " \
-           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
-           "Alternative: Refactor clone_repo for dependency injection. " \
-           "See TODO.md Phase 4.7 for detailed implementation plan.")
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          with_system_mocking(fail_clone: true) do |mock|
+            error = assert_raise(RuntimeError) do
+              Pra::Env.clone_repo('https://github.com/test/repo.git', 'dest', 'abc1234')
+            end
+            assert_match(/Failed to clone repository/, error.message)
+            assert_equal(1, mock[:call_count][:clone])
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
     end
 
     test "clone_repo raises error when git checkout fails" do
-      omit("PENDING Phase 4.7: System command mocking refactor. " \
-           "Current issue: Kernel.method(:system) mock fails in CI. " \
-           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
-           "Alternative: Refactor clone_repo for dependency injection. " \
-           "See TODO.md Phase 4.7 for detailed implementation plan.")
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          # Create dummy destination directory to skip clone
+          dest = File.join(tmpdir, 'dest')
+          FileUtils.mkdir_p(dest)
+          FileUtils.mkdir_p(File.join(dest, '.git'))
+
+          with_system_mocking(fail_checkout: true) do |mock|
+            error = assert_raise(RuntimeError) do
+              Pra::Env.clone_repo('https://github.com/test/repo.git', dest, 'abc1234')
+            end
+            assert_match(/Failed to checkout commit/, error.message)
+            # clone is not called since dest already exists
+            assert_equal(0, mock[:call_count][:clone])
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
     end
   end
 
   sub_test_case "branch coverage: clone_with_submodules error handling" do
     test "clone_with_submodules raises error when submodule init fails" do
-      omit("PENDING Phase 4.7: System command mocking refactor. " \
-           "Current issue: Kernel.method(:system) mock fails in CI. " \
-           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
-           "Alternative: Refactor clone_with_submodules for dependency injection. " \
-           "See TODO.md Phase 4.7 for detailed implementation plan.")
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          with_system_mocking(fail_submodule: true) do |mock|
+            error = assert_raise(RuntimeError) do
+              Pra::Env.clone_with_submodules('https://github.com/test/repo.git', 'dest', 'abc1234')
+            end
+            assert_match(/Failed to initialize submodules/, error.message)
+            assert_equal(1, mock[:call_count][:clone])
+            assert_equal(1, mock[:call_count][:submodule])
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
     end
   end
 
