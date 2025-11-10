@@ -1,37 +1,24 @@
-# [PicoRuby](https://github.com/picoruby) Application on [R2P2-ESP32](https://github.com/picoruby/R2P2-ESP32) development kit
+# [PicoRuby](https://github.com/picoruby) Application on [R2P2-ESP32](https://github.com/picoruby/R2P2-ESP32) Development Kit
 
-Packaged by pra command
-
-**pra** (**P**ico**R**uby **A**pplication) is a multi-version build system for ESP32 + PicoRuby development that manages multiple versions of R2P2-ESP32 and its nested submodules (picoruby-esp32 → picoruby) in parallel, allowing easy switching and validation across versions.
+**picotorokko** (ptrk) is a modern build system CLI for ESP32 + PicoRuby development that manages multiple versions of R2P2-ESP32 and its nested submodules (picoruby-esp32 → picoruby) in parallel, enabling seamless environment switching and validation across versions.
 
 [![Ruby](https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/actions/workflows/main.yml/badge.svg)](https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/branch/main/graph/badge.svg)](https://codecov.io/gh/bash0C7/picoruby-application-on-r2p2-esp32-development-kit)
 
 ## Features
 
-- **Immutable Cache**: Repositories are uniquely identified by commit hash + timestamp and never modified
-- **Environment Isolation**: Multiple build environments can coexist simultaneously
-- **Patch Management**: Git-managed changes in the `patch/` directory with automatic application
-- **Task Delegation**: Build/flash/monitor tasks delegated to R2P2-ESP32's Rakefile
-
-## Terminology
-
-This project uses specific terminology to distinguish between different concepts:
-
-- **Environment Definition**: Metadata stored in `.picoruby-env.yml` that defines commit hashes and timestamps for three repositories (R2P2-ESP32, picoruby-esp32, picoruby). Managed by `pra env` commands.
-
-- **Build Environment**: A working directory in `build/` that contains actual repository files for building firmware. Managed by `pra build` commands.
-
-- **Cache**: Immutable repository copies stored in `.cache/` indexed by commit hash and timestamp. These are never modified after creation. Managed by `pra cache` commands.
-
-**Workflow**: First, define an environment in `.picoruby-env.yml` → Then fetch repositories to cache → Finally setup a build environment from the cache.
+- **Environment Management**: Define, list, and manage multiple PicoRuby build environments with version control
+- **Centralized Directory Structure**: All environment data stored in `ptrk_env/` for clean project organization
+- **Git Integration**: Clone and manage repositories with automatic submodule handling
+- **Patch Management**: Export, apply, and diff patches across environments
+- **Task Delegation**: Build/flash/monitor tasks transparently delegated to R2P2-ESP32's Rakefile
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'picoruby-application-on-r2p2-esp32-development-kit'
+gem 'picotorokko'
 ```
 
 And then execute:
@@ -43,112 +30,89 @@ bundle install
 Or install it yourself as:
 
 ```bash
-gem install picoruby-application-on-r2p2-esp32-development-kit
+gem install picotorokko
 ```
 
 ## For PicoRuby Application Users
 
 ### Quick Start
 
-#### 1. Check current environment
+#### 1. Create a new environment
 
 ```bash
-bundle exec pra env show
+bundle exec ptrk env set development --commit abc1234
 ```
 
-#### 2. Fetch environment from cache
-
-If you have a `.picoruby-env.yml` with environment definitions:
+#### 2. List all environments
 
 ```bash
-bundle exec pra cache fetch stable-2024-11
+bundle exec ptrk env list
 ```
 
-#### 3. Setup build environment
+#### 3. View environment details
 
 ```bash
-bundle exec pra build setup stable-2024-11
+bundle exec ptrk env show development
 ```
 
 #### 4. Build, flash, and monitor
 
 ```bash
-bundle exec pra device flash
-bundle exec pra device monitor
+bundle exec ptrk device flash --env development
+bundle exec ptrk device monitor --env development
+bundle exec ptrk device build --env development
 ```
 
 ### Commands Reference
 
-#### Environment Definition Management
+#### Environment Management
 
-- `pra env show` - Display current environment definition from .picoruby-env.yml
-- `pra env set ENV_NAME` - Switch to specified environment definition (updates build/current symlink)
-- `pra env latest` - Fetch latest commit versions and create environment definition
-
-#### Cache Management
-
-- `pra cache list` - Display list of cached repository versions
-- `pra cache fetch [ENV_NAME]` - Fetch specified environment from GitHub and save to cache
-- `pra cache clean REPO` - Delete all caches for specified repo
-- `pra cache prune` - Delete caches not referenced by any environment
-
-#### Build Environment Management
-
-- `pra build setup [ENV_NAME]` - Setup build environment from environment definition (.picoruby-env.yml)
-- `pra build clean [ENV_NAME]` - Delete specified build environment directory
-- `pra build list` - Display list of constructed build environment directories
-
-#### Application-Specific mrbgem Management
-
-- `pra mrbgems generate [NAME]` - Generate application-specific mrbgem template (default: App)
-  - Creates `mrbgems/{NAME}/` with Rubyコード and C extension template
-  - Automatically registers mrbgem in build_config and CMakeLists.txt during `pra build setup`
-  - Use `--author` option to specify author name: `pra mrbgems generate --author "Your Name"`
-
-#### PicoRuby RuboCop Configuration
-
-- `pra rubocop setup` - Setup RuboCop configuration for PicoRuby development
-- `pra rubocop update` - Update PicoRuby method database from latest definitions
-
-For detailed guide, see [docs/RUBOCOP_PICORUBY_GUIDE.md](docs/RUBOCOP_PICORUBY_GUIDE.md).
+- `ptrk env list` - List all environments in `ptrk_env/`
+- `ptrk env set <NAME> [--commit <SHA>] [--branch <BRANCH>]` - Create or update an environment
+- `ptrk env reset <NAME>` - Reset an environment by removing and recreating it
+- `ptrk env show [NAME]` - Show details of a specific environment
 
 #### Patch Management
 
-- `pra patch export [ENV_NAME]` - Export changes from build environment to patch directory
-- `pra patch apply [ENV_NAME]` - Apply patches to build environment
-- `pra patch diff [ENV_NAME]` - Display differences between working changes and stored patches
+- `ptrk env patch_export <NAME>` - Export uncommitted changes from environment to local patch directory
+- `ptrk env patch_apply <NAME>` - Apply stored patches to environment
+- `ptrk env patch_diff <NAME>` - Display differences between working changes and stored patches
 
-#### R2P2-ESP32 Device Operations
+#### Application-Specific mrbgem Management
 
-##### Explicit Commands
+- `ptrk mrbgems generate [NAME]` - Generate application-specific mrbgem template (default: App)
+  - Creates `mrbgems/{NAME}/` with Ruby code and C extension template
+  - Use `--author` option to specify author name: `ptrk mrbgems generate --author "Your Name"`
 
-- `pra device flash [ENV_NAME]` - Flash firmware to ESP32 (delegates to R2P2-ESP32's `rake flash`)
-- `pra device monitor [ENV_NAME]` - Monitor ESP32 serial output (delegates to R2P2-ESP32's `rake monitor`)
-- `pra device build [ENV_NAME]` - Build firmware for ESP32 (delegates to R2P2-ESP32's `rake build`)
-- `pra device setup_esp32 [ENV_NAME]` - Setup ESP32 build environment (delegates to R2P2-ESP32's `rake setup_esp32`)
-- `pra device help [ENV_NAME]` - Show available R2P2-ESP32 tasks for the environment
+#### PicoRuby RuboCop Configuration
 
-##### Dynamic Rake Task Delegation
+- `ptrk rubocop setup` - Setup RuboCop configuration for PicoRuby development
+- `ptrk rubocop update` - Update PicoRuby method database from latest definitions
 
-The `pra device` command uses Ruby's `method_missing` to transparently delegate any undefined subcommand to R2P2-ESP32's Rakefile. This allows you to run any Rake task defined in R2P2-ESP32 without explicit `pra device` commands:
+For detailed guide, see [docs/RUBOCOP_PICORUBY_GUIDE.md](docs/RUBOCOP_PICORUBY_GUIDE.md).
+
+#### Device Operations
+
+- `ptrk device flash --env <NAME>` - Flash firmware to ESP32
+- `ptrk device monitor --env <NAME>` - Monitor ESP32 serial output
+- `ptrk device build --env <NAME>` - Build firmware for ESP32
+- `ptrk device setup_esp32 --env <NAME>` - Setup ESP32 build environment
+- `ptrk device help --env <NAME>` - Show available R2P2-ESP32 tasks
+
+The `ptrk device` command transparently delegates tasks to R2P2-ESP32's Rakefile:
 
 ```bash
-# Run custom Rake tasks directly
-bundle exec pra device <custom_rake_task> [ENV_NAME]
+# Run any Rake task defined in R2P2-ESP32
+bundle exec ptrk device <task_name> --env <NAME>
 
 # Examples (assuming these tasks exist in R2P2-ESP32):
-bundle exec pra device custom_task my-env
-bundle exec pra device build_app my-env
+bundle exec ptrk device custom_task --env development
+bundle exec ptrk device build_app --env development
 ```
-
-**Usage Pattern**:
-1. Get list of available tasks: `pra device help my-env`
-2. Run any task: `pra device <task_name> my-env`
-3. Default environment: If `[ENV_NAME]` is omitted, uses the current environment (set via `pra env set`)
 
 #### Other
 
-- `pra version` or `pra -v` - Show pra version
+- `ptrk version` or `ptrk -v` - Show ptrk version
 
 ### Requirements
 
@@ -157,9 +121,12 @@ bundle exec pra device build_app my-env
 - Git
 - ESP-IDF (for build/flash/monitor tasks)
 
-### Configuration File
+### Configuration
 
-See `.picoruby-env.yml` for environment configuration examples. Each environment defines commit hashes and timestamps for R2P2-ESP32, picoruby-esp32, and picoruby repositories.
+Environment metadata is stored in `ptrk_env/.picoruby-env.yml`. Each environment definition includes:
+- Environment name (lowercase alphanumeric, hyphens, underscores: `/^[a-z0-9_-]+$/`)
+- Repository paths for R2P2-ESP32, picoruby-esp32, and picoruby
+- Optional: Commit SHA and branch information
 
 ### Documentation
 
@@ -169,9 +136,9 @@ For detailed specifications, see [SPEC.md](SPEC.md).
 
 For PicoRuby application developers using GitHub Actions for automated builds, see [docs/CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md).
 
-For pra gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONTRIBUTING.md).
+For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## For pra Gem Developers
+## For picotorokko Gem Developers
 
 ### Development
 
@@ -197,16 +164,22 @@ We use RuboCop for code style enforcement:
 bundle exec rubocop -A
 ```
 
-#### 4. Build the gem
+#### 4. Run full quality suite (tests + RuboCop + coverage validation)
 
 ```bash
-bundle exec gem build picoruby-application-on-r2p2-esp32-development-kit.gemspec
+bundle exec rake ci
 ```
 
-#### 5. Test CLI locally
+#### 5. Build the gem
 
 ```bash
-bundle exec exe/pra --help
+bundle exec gem build picotorokko.gemspec
+```
+
+#### 6. Test CLI locally
+
+```bash
+bundle exec exe/ptrk --help
 ```
 
 ## License

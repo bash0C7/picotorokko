@@ -1183,4 +1183,202 @@ class PraCommandsEnvTest < PraTestCase
       end
     end
   end
+
+  # ⚠️ [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-TESTS]
+  # These 3 tests are omitted pending refactoring. See Phase 4.7 TODO.md:
+  # Problem: Kernel.method(:system) mocking fails in CI (environment-dependent)
+  # Solution: Use Ruby Refinement or test::unit mock/stub for clean mocking
+  # Impact: Missing branch coverage for clone_repo/clone_with_submodules error paths
+  # Action: Refactor to use testable dependency injection + mocking patterns
+
+  # Branch coverage tests: Uncovered error paths and conditionals
+  sub_test_case "branch coverage: clone_repo error handling" do
+    test "clone_repo raises error when git clone fails" do
+      omit("PENDING Phase 4.7: System command mocking refactor. " \
+           "Current issue: Kernel.method(:system) mock fails in CI. " \
+           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
+           "Alternative: Refactor clone_repo for dependency injection. " \
+           "See TODO.md Phase 4.7 for detailed implementation plan.")
+    end
+
+    test "clone_repo raises error when git checkout fails" do
+      omit("PENDING Phase 4.7: System command mocking refactor. " \
+           "Current issue: Kernel.method(:system) mock fails in CI. " \
+           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
+           "Alternative: Refactor clone_repo for dependency injection. " \
+           "See TODO.md Phase 4.7 for detailed implementation plan.")
+    end
+  end
+
+  sub_test_case "branch coverage: clone_with_submodules error handling" do
+    test "clone_with_submodules raises error when submodule init fails" do
+      omit("PENDING Phase 4.7: System command mocking refactor. " \
+           "Current issue: Kernel.method(:system) mock fails in CI. " \
+           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
+           "Alternative: Refactor clone_with_submodules for dependency injection. " \
+           "See TODO.md Phase 4.7 for detailed implementation plan.")
+    end
+  end
+
+  sub_test_case "branch coverage: traverse_submodules_and_validate partial structure" do
+    test "traverse_submodules_and_validate handles missing picoruby-esp32" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          # Create only R2P2-ESP32 repo (no esp32 submodule)
+          r2p2_path = File.join(tmpdir, 'R2P2-ESP32')
+          FileUtils.mkdir_p(r2p2_path)
+          Dir.chdir(r2p2_path) do
+            setup_test_git_repo
+          end
+
+          info, warnings = Pra::Env.traverse_submodules_and_validate(r2p2_path)
+
+          # Should have R2P2-ESP32 info only
+          assert_equal(1, info.size)
+          assert info.key?('R2P2-ESP32')
+          assert_false info.key?('picoruby-esp32')
+          assert_false info.key?('picoruby')
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "traverse_submodules_and_validate handles missing picoruby" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          # Create R2P2-ESP32 with esp32 but not picoruby
+          r2p2_path = File.join(tmpdir, 'R2P2-ESP32')
+          FileUtils.mkdir_p(r2p2_path)
+          Dir.chdir(r2p2_path) do
+            setup_test_git_repo
+          end
+
+          esp32_path = File.join(r2p2_path, 'components', 'picoruby-esp32')
+          FileUtils.mkdir_p(esp32_path)
+          Dir.chdir(esp32_path) do
+            setup_test_git_repo
+          end
+
+          info, warnings = Pra::Env.traverse_submodules_and_validate(r2p2_path)
+
+          # Should have R2P2-ESP32 and esp32 only
+          assert_equal(2, info.size)
+          assert info.key?('R2P2-ESP32')
+          assert info.key?('picoruby-esp32')
+          assert_false info.key?('picoruby')
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  sub_test_case "branch coverage: patch_export error handling" do
+    test "patch_export raises error when environment not found" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Pra::Commands::Env.start(['patch_export', 'nonexistent'])
+            end
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "patch_export raises error when build directory not found" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          # Create environment definition but no build directory
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('no-build-env', r2p2_info, esp32_info, picoruby_info)
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Pra::Commands::Env.start(['patch_export', 'no-build-env'])
+            end
+          end
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  sub_test_case "branch coverage: reset notes ternary logic" do
+    test "reset preserves original notes when present" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info,
+                                   notes: 'Important notes')
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['reset', 'test-env'])
+          end
+
+          config = Pra::Env.get_environment('test-env')
+          assert_match(/Important notes/, config['notes'])
+          assert_match(/reset at/, config['notes'])
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "reset with empty notes generates reset message only" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          FileUtils.rm_f(Pra::Env::ENV_FILE)
+
+          r2p2_info = { 'commit' => 'abc1234', 'timestamp' => '20250101_120000' }
+          esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
+          picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
+
+          Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info, notes: '')
+
+          output = capture_stdout do
+            Pra::Commands::Env.start(['reset', 'test-env'])
+          end
+
+          config = Pra::Env.get_environment('test-env')
+          assert_match(/^Reset at/, config['notes'])
+          assert_no_match(/\n/, config['notes']) # Single line only
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
 end
