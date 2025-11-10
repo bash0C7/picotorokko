@@ -140,7 +140,15 @@ module Pra
       def get_commit_hash(repo_path, commit)
         Dir.chdir(repo_path) do
           short_hash = `git rev-parse --short=7 #{Shellwords.escape(commit)}`.strip
+          if short_hash.empty?
+            raise "Failed to get commit hash for '#{commit}' in repository: #{repo_path}"
+          end
+
           timestamp_str = `git show -s --format=%ci #{Shellwords.escape(commit)}`.strip
+          if timestamp_str.empty?
+            raise "Failed to get commit hash for '#{commit}' in repository: #{repo_path}"
+          end
+
           timestamp = Time.parse(timestamp_str).strftime('%Y%m%d_%H%M%S')
           "#{short_hash}-#{timestamp}"
         end
