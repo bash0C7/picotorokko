@@ -405,6 +405,23 @@ Pra::Commands::Device.start(['flash', 'test-env'])
 - **QUALITY**: 138 tests, 265 assertions, 100% pass, 3 omissions, 0 RuboCop violations, 82.02% line, 58.85% branch ✅
 - **REMAINING BUG**: 1 bug still needs fix (traverse_submodules_and_validate)
 
+#### 4.6: Fix Bug #3 - traverse_submodules git rev-parse error handling (Red → Green → RuboCop → Commit) ✅ COMPLETED
+- [x] **RED**: Write tests for traverse_submodules_and_validate ✅
+  - Test: Success case - returns info for all three levels (R2P2, esp32, picoruby)
+  - Test: Warning case - warns about 4th level submodules
+  - Test: Error case - raises error when git rev-parse fails
+  - Commit: ea5fcfb, df2548e
+  - Note: Success/warning tests passed immediately (get_timestamp already had error handling)
+- [x] **GREEN**: Add git rev-parse error handling to traverse_submodules ✅
+  - Implement: Check empty string for all 3 levels (lib/pra/env.rb:164, 174, 184)
+  - Prevents: Silent failures when git commands fail
+  - Commit: 2409320
+- [x] **RUBOCOP**: 0 violations ✅
+- [x] **REFACTOR**: Code is simple and clear, no refactoring needed ✅
+- [x] **COMMIT**: 3 commits total ✅
+- **QUALITY**: 139 tests, 277 assertions, 100% pass, 1 omission, 0 RuboCop violations, 84.86% line, 61.11% branch ✅
+- **ACHIEVEMENT**: All 3 infrastructure bugs fixed! Line coverage 84.86% (target 85%, only 0.14% away!)
+
 ---
 
 ### Phase 5: Device Command Thor Fix & Test Completion - TDD Approach (2-3 days)
