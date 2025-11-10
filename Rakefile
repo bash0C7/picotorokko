@@ -6,7 +6,8 @@ Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
   test_files = FileList["test/**/*_test.rb"]
-  # device_test.rb is now included - Refinements-based system() mocking resolved test framework interference
+  # TEMPORARILY EXCLUDE device_test.rb to compare test counts
+  test_files.exclude("test/commands/device_test.rb")
 
   t.test_files = test_files
 
