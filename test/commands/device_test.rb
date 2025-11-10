@@ -3,7 +3,12 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
+# SystemCommandMocking is now defined in test_helper.rb
+
 class PraCommandsDeviceTest < PraTestCase
+  include SystemCommandMocking
+
+  using SystemCommandMocking::SystemRefinement
   # device flash コマンドのテスト
   sub_test_case "device flash command" do
     test "raises error when environment not found" do
@@ -77,7 +82,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_stubbed_esp_env do
+            with_system_mocking do |mock|
               output = capture_stdout do
                 Pra::Commands::Device.start(['flash', '--env', 'test-env'])
               end
@@ -85,6 +90,9 @@ class PraCommandsDeviceTest < PraTestCase
               # 出力を確認
               assert_match(/Flashing: test-env/, output)
               assert_match(/✓ Flash completed/, output)
+
+              # コマンド実行の検証（rake flash が実行されたことを確認）
+              assert_equal(1, mock[:commands_executed].count { |cmd| cmd.include?('rake flash') })
             end
 
             # Directory change is handled by with_fresh_project_root
@@ -141,7 +149,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_stubbed_esp_env do
+            with_system_mocking do
               output = capture_stdout do
                 Pra::Commands::Device.start(['monitor', '--env', 'test-env'])
               end
@@ -187,7 +195,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_stubbed_esp_env do
+            with_system_mocking do
               output = capture_stdout do
                 Pra::Commands::Device.start(['build', '--env', 'test-env'])
               end
@@ -233,7 +241,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_stubbed_esp_env do
+            with_system_mocking do
               output = capture_stdout do
                 Pra::Commands::Device.start(['setup_esp32', '--env', 'test-env'])
               end
@@ -297,7 +305,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_stubbed_esp_env do
+            with_system_mocking do
               output = capture_stdout do
                 Pra::Commands::Device.start(['tasks', '--env', 'test-env'])
               end
@@ -325,7 +333,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_stubbed_esp_env do
+            with_system_mocking do
               # custom_task が Rakefile に存在するため、method_missing で委譲される
               output = capture_stdout do
                 Pra::Commands::Device.start(['custom_task', '--env', 'test-env'])
@@ -350,7 +358,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_failing_esp_env do
+            with_system_mocking(fail_rake: true) do
               assert_raise(RuntimeError) do
                 capture_stdout do
                   Pra::Commands::Device.start(['nonexistent_task', '--env', 'test-env'])
@@ -373,7 +381,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_stubbed_esp_env do
+            with_system_mocking do
               # custom_task が Rakefile に存在するため、method_missing で委譲される
               # 環境名は --env で明示的に指定する（暗黙のカレント環境は存在しない）
               output = capture_stdout do
@@ -407,7 +415,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             setup_test_environment('test-env')
 
-            with_tasks_list_esp_env do
+            with_system_mocking do
               output = capture_stdout do
                 Pra::Commands::Device.start(['help', '--env', 'test-env'])
               end
@@ -463,49 +471,6 @@ class PraCommandsDeviceTest < PraTestCase
     Pra::Env.set_current_env(env_name)
 
     [env_name, r2p2_path]
-  end
-
-  def with_stubbed_esp_env
-    original_method = Pra::Env.method(:execute_with_esp_env)
-    Pra::Env.define_singleton_method(:execute_with_esp_env) do |_cmd, _path|
-      # スタブ：実際の実行は避ける
-    end
-
-    begin
-      yield
-    ensure
-      Pra::Env.define_singleton_method(:execute_with_esp_env, original_method)
-    end
-  end
-
-  def with_failing_esp_env
-    original_method = Pra::Env.method(:execute_with_esp_env)
-    Pra::Env.define_singleton_method(:execute_with_esp_env) do |_cmd, _path|
-      raise "Rake task not found"
-    end
-
-    begin
-      yield
-    ensure
-      Pra::Env.define_singleton_method(:execute_with_esp_env, original_method)
-    end
-  end
-
-  def with_tasks_list_esp_env
-    original_method = Pra::Env.method(:execute_with_esp_env)
-    Pra::Env.define_singleton_method(:execute_with_esp_env) do |command, _working_dir|
-      return unless command == "rake -T"
-
-      puts "rake build"
-      puts "rake flash"
-      puts "rake monitor"
-    end
-
-    begin
-      yield
-    ensure
-      Pra::Env.define_singleton_method(:execute_with_esp_env, original_method)
-    end
   end
 
   # parse_env_from_args のテスト
