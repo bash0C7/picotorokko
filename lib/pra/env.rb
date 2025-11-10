@@ -12,6 +12,11 @@ module Pra
   # - ビルド環境（Build Environment）: build/ ディレクトリに構築されたワーキングディレクトリ（実ファイル）
   # - キャッシュ（Cache）: .cache/ ディレクトリに保存された不変のリポジトリコピー
   module Env
+    # ptrk env directory name
+    ENV_DIR = "ptrk_env".freeze
+    # ptrk env name pattern validation (lowercase alphanumeric, dash, underscore)
+    ENV_NAME_PATTERN = /^[a-z0-9_-]+$/
+
     # ルートディレクトリ
     PROJECT_ROOT = Dir.pwd
     CACHE_DIR = File.join(PROJECT_ROOT, '.cache')

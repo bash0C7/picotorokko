@@ -12,7 +12,7 @@ require_relative 'commands/mrbgems'
 require_relative 'commands/rubocop'
 
 module Pra
-  # praコマンドのCLIエントリーポイント
+  # ptrkコマンドのCLIエントリーポイント
   class CLI < Thor
     def self.exit_on_failure?
       true
@@ -21,18 +21,6 @@ module Pra
     # サブコマンド登録
     desc 'env SUBCOMMAND ...ARGS', 'Environment management commands'
     subcommand 'env', Pra::Commands::Env
-
-    desc 'cache SUBCOMMAND ...ARGS', 'Cache management commands'
-    subcommand 'cache', Pra::Commands::Cache
-
-    desc 'build SUBCOMMAND ...ARGS', 'Build environment management commands'
-    subcommand 'build', Pra::Commands::Build
-
-    desc 'patch SUBCOMMAND ...ARGS', 'Patch management commands'
-    subcommand 'patch', Pra::Commands::Patch
-
-    desc 'ci SUBCOMMAND ...ARGS', 'CI/CD configuration commands'
-    subcommand 'ci', Pra::Commands::Ci
 
     desc 'mrbgems SUBCOMMAND ...ARGS', 'Application-specific mrbgem management'
     subcommand 'mrbgems', Pra::Commands::Mrbgems
