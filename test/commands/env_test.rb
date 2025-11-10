@@ -490,6 +490,45 @@ class PraCommandsEnvTest < PraTestCase
     end
   end
 
+  # Pra::Env module validation tests
+  sub_test_case "Env module validation methods" do
+    test "validate_env_name! accepts valid lowercase alphanumeric names" do
+      assert_nothing_raised do
+        Pra::Env.validate_env_name!('staging')
+        Pra::Env.validate_env_name!('prod-123')
+        Pra::Env.validate_env_name!('test_env')
+        Pra::Env.validate_env_name!('dev-build-2025')
+      end
+    end
+
+    test "validate_env_name! rejects names with uppercase letters" do
+      assert_raise(RuntimeError) do
+        Pra::Env.validate_env_name!('InvalidEnv')
+      end
+    end
+
+    test "validate_env_name! rejects names with special characters" do
+      assert_raise(RuntimeError) do
+        Pra::Env.validate_env_name!('env@name')
+      end
+      assert_raise(RuntimeError) do
+        Pra::Env.validate_env_name!('env.name')
+      end
+    end
+
+    test "validate_env_name! rejects empty names" do
+      assert_raise(RuntimeError) do
+        Pra::Env.validate_env_name!('')
+      end
+    end
+
+    test "validate_env_name! rejects names with spaces" do
+      assert_raise(RuntimeError) do
+        Pra::Env.validate_env_name!('env name')
+      end
+    end
+  end
+
   # Pra::Env module utility method tests
   sub_test_case "Env module utility methods" do
     test "generate_env_hash combines three hashes correctly" do
