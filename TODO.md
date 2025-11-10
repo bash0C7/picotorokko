@@ -92,6 +92,95 @@
 
 ---
 
+### Phase 4.7: Fix System Command Mocking for CI Compatibility ⚠️ HIGHEST PRIORITY
+
+**Status**: CRITICAL - Blocks Phase 5 (omitted 3 tests in env_test.rb)
+
+**Problem**: [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-TESTS]
+- 3 tests omitted due to `Kernel.method(:system)` mocking failing in CI
+- Local tests pass (mocking works), but CI fails (environment-dependent behavior)
+- Affects: `clone_repo`, `clone_with_submodules` error path coverage
+
+**Omitted Tests** (test/commands/env_test.rb):
+1. `clone_repo raises error when git clone fails` (line 1196)
+2. `clone_repo raises error when git checkout fails` (line 1204)
+3. `clone_with_submodules raises error when submodule init fails` (line 1214)
+
+**Root Cause**:
+- Direct Kernel method override: `Kernel.define_singleton_method(:system)`
+- Works in local Ruby env, fails in CI runner (sandboxing, different Ruby version, etc.)
+- No dependency injection: system() calls are tightly coupled to implementation
+
+**Solution Approaches** (try in order):
+
+#### 4.7.1: Use Ruby Refinement (Recommended - Cleanest)
+```ruby
+# test/commands/env_test.rb
+module MockSystem
+  refine Kernel do
+    def system(*args)
+      # return false if cmd.include?('git clone')
+      # original behavior
+    end
+  end
+end
+
+class TestClass
+  using MockSystem
+  # system() calls use refined version
+end
+```
+**Pros**: Scoped, safe, no global state
+**Cons**: Requires Ruby 2.1+, slightly verbose
+
+#### 4.7.2: Use test::unit Mock/Stub (if available)
+```ruby
+# Check if test::unit has built-in mocking
+require 'test/unit/mock'
+mock_system = Test::Unit::Mock.new(Kernel, :system)
+mock_system.expect(:system, false, ['git clone ...'])
+```
+**Pros**: Standard library, simple
+**Cons**: Compatibility varies, may need adapter
+
+#### 4.7.3: Refactor clone_repo for Dependency Injection (Best Practice)
+```ruby
+# lib/pra/env.rb - add system executor parameter
+def clone_repo(repo_url, dest_path, commit, system_executor: method(:system))
+  # system_executor.call("git clone ...")
+end
+
+# test - inject mock
+class MockSystem
+  def call(cmd)
+    return false if cmd.include?('git clone')
+    true
+  end
+end
+
+Pra::Env.clone_repo(url, dest, commit, system_executor: MockSystem.new)
+```
+**Pros**: Testable, no mocking required, follows dependency injection
+**Cons**: Requires implementation changes (but permitted for this case)
+
+**Recommended Implementation**:
+1. **Try Refinement first** (4.7.1) - No implementation changes needed
+2. **Fallback to Dependency Injection** (4.7.3) - If Refinement not available
+3. **Last resort**: Skip testing error paths, accept CI limitation
+
+**Acceptance Criteria**:
+- ✅ All 3 omitted tests pass in both local AND CI
+- ✅ No `omit()` statements remain in system mocking tests
+- ✅ Branch coverage increased (target: 65%+)
+- ✅ RuboCop: 0 violations
+- ✅ No circular dependencies introduced
+
+**Estimated Effort**: 2-3 hours (1-2 hour implementation + testing)
+
+**Priority**: 🚨 **HIGHEST** - Unblock Phase 5, improve CI reliability
+
+---
+
 ### Phase 5: Device Command Thor Fix & Test Completion - TDD Approach (2-3 days)
 
 **⚠️ START - CRITICAL CHECKS**:

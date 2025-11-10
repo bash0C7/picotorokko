@@ -1184,23 +1184,39 @@ class PraCommandsEnvTest < PraTestCase
     end
   end
 
+  # ⚠️ [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-TESTS]
+  # These 3 tests are omitted pending refactoring. See Phase 4.7 TODO.md:
+  # Problem: Kernel.method(:system) mocking fails in CI (environment-dependent)
+  # Solution: Use Ruby Refinement or test::unit mock/stub for clean mocking
+  # Impact: Missing branch coverage for clone_repo/clone_with_submodules error paths
+  # Action: Refactor to use testable dependency injection + mocking patterns
+
   # Branch coverage tests: Uncovered error paths and conditionals
   sub_test_case "branch coverage: clone_repo error handling" do
     test "clone_repo raises error when git clone fails" do
-      omit("System mocking is environment-dependent in CI. " \
-           "Real clone failures tested via integration testing.")
+      omit("PENDING Phase 4.7: System command mocking refactor. " \
+           "Current issue: Kernel.method(:system) mock fails in CI. " \
+           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
+           "Alternative: Refactor clone_repo for dependency injection. " \
+           "See TODO.md Phase 4.7 for detailed implementation plan.")
     end
 
     test "clone_repo raises error when git checkout fails" do
-      omit("System mocking is environment-dependent in CI. " \
-           "Real checkout failures tested via integration testing.")
+      omit("PENDING Phase 4.7: System command mocking refactor. " \
+           "Current issue: Kernel.method(:system) mock fails in CI. " \
+           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
+           "Alternative: Refactor clone_repo for dependency injection. " \
+           "See TODO.md Phase 4.7 for detailed implementation plan.")
     end
   end
 
   sub_test_case "branch coverage: clone_with_submodules error handling" do
     test "clone_with_submodules raises error when submodule init fails" do
-      omit("System mocking is environment-dependent in CI. " \
-           "Real submodule failures tested via integration testing.")
+      omit("PENDING Phase 4.7: System command mocking refactor. " \
+           "Current issue: Kernel.method(:system) mock fails in CI. " \
+           "Solution: Use Ruby Refinement or test::unit mock/stub. " \
+           "Alternative: Refactor clone_with_submodules for dependency injection. " \
+           "See TODO.md Phase 4.7 for detailed implementation plan.")
     end
   end
 
