@@ -244,30 +244,38 @@ Pra::Commands::Device.start(['flash', 'test-env'])
 
 **Phase 3.1-3.4 Status**: 4 commits (597e52e, d731858, 68e6226, d7478c0) successfully pushed to origin/claude/execute-todo-items-011CUynGmL5qMprB2AGpc5Jc and merged into main
 
-#### 3.5: env patch operations (Red → Green → RuboCop → Commit)
-- [ ] **RED**: Test `ptrk env patch_export`, `patch_apply`, `patch_diff`
-  - Assertion: Commands accept env name parameter
-  - Assertion: Proper output for patches
-- [ ] **GREEN**: Move patch operations from deleted commands into `env.rb`
-  - Implement: `patch_export`, `patch_apply`, `patch_diff` as env subcommands
-- [ ] **RUBOCOP**: `bundle exec rubocop -A`
-- [ ] **REFACTOR**: N/A
-- [ ] **COMMIT**: "feat: move patch operations to env command"
+#### 3.5: env patch operations (Red → Green → RuboCop → Commit) ✅ COMPLETED
+- [x] **RED**: Test `ptrk env patch_export`, `patch_apply`, `patch_diff` ✅
+  - Assertion: Commands accept env name parameter ✅
+  - Assertion: Proper output for patches ✅
+  - Test file: `test/commands/env_test.rb` (3 tests added) ✅
+- [x] **GREEN**: Move patch operations from deleted commands into `env.rb` ✅
+  - Implement: `patch_export`, `patch_apply`, `patch_diff` as env subcommands ✅
+  - Add private helper methods: `resolve_work_path`, `export_repo_changes`, `show_repo_diff` ✅
+  - Add require for `pra/patch_applier` ✅
+- [x] **RUBOCOP**: `bundle exec rubocop -A` ✅ (1 auto-correction)
+- [x] **REFACTOR**: N/A ✅
+- [x] **COMMIT**: "feat: move patch operations to env command" (766b95d) ✅
 
-#### 3.6: Delete obsolete commands and update device (Red → Green → RuboCop → Commit)
-- [ ] **RED**: Test that deleted commands don't exist
-  - Assertion: `cache`, `build`, `patch` commands not available
-- [ ] **GREEN**: Delete files
-  - Delete: `lib/ptrk/commands/cache.rb`
-  - Delete: `lib/ptrk/commands/build.rb`
-  - Delete: `lib/ptrk/commands/patch.rb`
-  - Update: `lib/ptrk/cli.rb` to not register deleted commands
-  - Delete: Corresponding test files (cache_test.rb, build_test.rb, patch_test.rb)
-  - Update: `lib/ptrk/commands/device.rb` (remove implicit "current" env logic)
+#### 3.6: Delete obsolete commands and update device (Red → Green → RuboCop → Commit) ✅ COMPLETED
+- [x] **RED**: Test that deleted commands don't exist ✅
+  - Assertion: `cache`, `build`, `patch`, `ci` commands not available ✅
+  - Test already existed in `test/commands/cli_test.rb` from Phase 2.3 ✅
+- [x] **GREEN**: Delete files ✅
+  - Delete: `lib/pra/commands/cache.rb` ✅
+  - Delete: `lib/pra/commands/build.rb` ✅
+  - Delete: `lib/pra/commands/patch.rb` ✅
+  - Delete: `lib/pra/commands/ci.rb` ✅
+  - Update: `lib/pra/cli.rb` to remove requires for deleted commands ✅
+  - Delete: Corresponding test files (cache_test.rb, build_test.rb, patch_test.rb, ci_test.rb) ✅
+  - Update: `lib/ptrk/commands/device.rb` - deferred to Phase 5 ✅
     - [TODO-INFRASTRUCTURE-DEVICE-COMMAND] from Phase 0: Thor --env flag refactor deferred to Phase 5
-- [ ] **RUBOCOP**: `bundle exec rubocop -A`
-- [ ] **REFACTOR**: N/A
-- [ ] **COMMIT**: "refactor: remove cache, build, patch commands; update device"
+- [x] **RUBOCOP**: `bundle exec rubocop -A` ✅ (0 violations)
+- [x] **REFACTOR**: N/A ✅
+- [x] **COMMIT**: "refactor: remove cache, build, patch, ci commands; update cli" (c7b4acc) ✅
+- [x] **Quality**: 113 tests, 233 assertions, 100% passed; deleted 2485 lines ✅
+
+**Phase 3.5-3.6 Status**: 2 commits (766b95d, c7b4acc) successfully pushed to origin/claude/ruby-todo-implementation-011CUyovXEg8UEuSzPcTPsMS
 
 ---
 
