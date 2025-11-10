@@ -1,11 +1,12 @@
-# coverage_test.rb: SimpleCov exit code behavior verification
+# coverage_test.rb: SimpleCov configuration and runtime verification
 require_relative "test_helper"
 
 class CoverageTest < PraTestCase
-  # SimpleCov が正常に実行され、coverage ディレクトリが生成されることを確認
-  def test_simplecov_generates_coverage_directory
-    coverage_dir = File.join(Dir.pwd, "coverage")
-    assert File.directory?(coverage_dir), "SimpleCov coverage directory should exist"
+  # SimpleCov が起動していることを確認
+  def test_simplecov_is_running
+    # SimpleCov.start が test_helper.rb で呼ばれているか確認
+    assert defined?(SimpleCov), "SimpleCov should be defined"
+    assert SimpleCov.running, "SimpleCov should be running"
   end
 
   # SimpleCov が成功時に exit 0 で終了することを確認
@@ -16,9 +17,9 @@ class CoverageTest < PraTestCase
   end
 
   # SimpleCov 設定が有効であることを確認
-  def test_simplecov_configured
-    # SimpleCov が enabled かつ running であることを確認
-    # （このテストが実行されている = SimpleCov が正常に動作している）
-    assert true, "SimpleCov is configured and running"
+  def test_simplecov_configuration
+    # SimpleCov が設定されており、カバレッジ追跡が有効であることを確認
+    # coverage.xml 生成は at_exit 後に行われるため、coverage_validation タスクで検証
+    assert SimpleCov.running, "SimpleCov should be configured and tracking coverage"
   end
 end

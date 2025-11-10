@@ -25,9 +25,9 @@ class QualityGatesTest < PraTestCase
 
   # Coverage gate: SimpleCov is configured and running
   def test_coverage_gate_configured
-    # SimpleCov が設定されていることを確認
+    # SimpleCov が設定されており、カバレッジ追跡が有効であることを確認
     # coverage.xml の存在は coverage_validation タスクで検証される
-    assert true, "Coverage gate is configured (verified by coverage_validation task)"
+    assert SimpleCov.running, "Coverage gate: SimpleCov should be running"
   end
 
   # Integration: verify all gates can run together
