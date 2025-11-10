@@ -6,11 +6,7 @@ Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
   test_files = FileList["test/**/*_test.rb"]
-  # TEMPORARILY EXCLUDED: device_test.rb
-  # Cause: Global singleton method mocking of Pra::Env.execute_with_esp_env causes test framework interference
-  # Solution: Refactor to use Refinements-based system() mocking (see test/commands/env_test.rb:SystemCommandMocking)
-  # Device tests pass independently (17 tests), need Refinements migration
-  test_files.exclude("test/commands/device_test.rb")
+  # device_test.rb is now included - Refinements-based system() mocking resolved test framework interference
 
   t.test_files = test_files
 
