@@ -384,6 +384,27 @@ Pra::Commands::Device.start(['flash', 'test-env'])
 - **QUALITY**: 136 tests, 260 assertions, 100% pass, 4 omissions, 0 RuboCop violations, 81.22% line, 58.51% branch ✅
 - **REMAINING BUGS**: 2 bugs still need fixes (get_commit_hash, traverse_submodules_and_validate)
 
+#### 4.5: Fix Bug #2 - get_commit_hash error handling (Red → Green → RuboCop → Commit) ✅ COMPLETED
+- [x] **REFACTOR (PRE)**: Extract git setup to test helper ✅
+  - Helper: setup_test_git_repo in test_helper.rb (reduces duplication)
+  - Commit: 2dd38fe
+- [x] **RED**: Write tests for get_commit_hash error handling ✅
+  - Test: get_commit_hash returns formatted hash-timestamp (success case)
+  - Test: get_commit_hash raises error when git rev-parse fails (no git repo)
+  - Test: get_commit_hash raises error when commit does not exist
+  - Commit: 6fccd33
+  - Verified: ArgumentError from Time.parse("")
+- [x] **GREEN**: Add empty string checks to get_commit_hash ✅
+  - Implement: Check short_hash.empty? and timestamp_str.empty? (lib/pra/env.rb:143-150)
+  - Prevents: ArgumentError from Time.parse("")
+  - Commit: 0b8947e
+- [x] **RUBOCOP**: Auto-corrected 8 violations (string literals) ✅
+  - Commit: fba1da6
+- [x] **REFACTOR**: Code is simple and clear, no refactoring needed ✅
+- [x] **COMMIT**: 4 commits total ✅
+- **QUALITY**: 138 tests, 265 assertions, 100% pass, 3 omissions, 0 RuboCop violations, 82.02% line, 58.85% branch ✅
+- **REMAINING BUG**: 1 bug still needs fix (traverse_submodules_and_validate)
+
 ---
 
 ### Phase 5: Device Command Thor Fix & Test Completion - TDD Approach (2-3 days)
