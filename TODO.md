@@ -1,6 +1,6 @@
 # TODO: Project Maintenance Tasks
 
-## 🚨 CRITICAL: test-unit Registration Failure (54/159 tests) - UNRESOLVED
+## 🚨 CRITICAL: test-unit Registration Failure (54/159 tests) - ROOT CAUSE IDENTIFIED
 
 **Status**: 🔴 **BLOCKING CI** - Rake経由では54テストしか登録されない（期待：159テスト）
 
@@ -10,7 +10,37 @@
 - CI (GitHub Actions): 54 tests ❌
 - Line Coverage: 46.41% (291/627) - 不十分
 
-**発見した真犯人（6種類）**:
+**[TODO-INFRASTRUCTURE-RAKE-TEST-DISCOVERY]** 根本原因：test-unit v3 + git diff subprocess 相互作用
+
+### Root Cause Details
+
+**Primary Issue**: test_helper.rb の `verify_git_status_clean!` が実行する `git diff --name-only` サブプロセスが、test-unit の内部フック機構に予期しない副作用を与える
+
+**Confirmed Mechanism**:
+1. Rake::TestTask がテストファイルをロード開始
+2. test_helper.rb が require される
+3. PraTestCase クラスの setup メソッドが定義される
+4. テスト実行時に setup() が呼ばれ、`git diff --name-only` を実行
+5. **サブプロセス実行が test-unit の登録フックを"リセット"または部分的に破壊**
+6. clean state（git diff 結果なし）→ 登録フック"部分的破壊" → 54テスト登録
+7. unstaged state（git diff に結果あり）→ 登録フック"リセット" → 159テスト登録
+
+**実験的確認**:
+```bash
+# git diff 実行を無効化
+echo 'result = ""' # 実行結果を空にする
+
+# 結果：unstaged state でも 54テスト（git diff がなければ問題なし）
+```
+
+**推定原因**:
+- test-unit v3 がプロセス間の file descriptor やシグナルハンドラーに依存している
+- サブプロセス（`git diff`）の実行がこれらのフックを初期化/リセット
+- subprocess 実行の有無が状態を変える
+
+---
+
+**発見した旧レジストレーション破壊原因（6種類）**:
 
 ### 1. `using Refinement` at class level
 - **場所**: test/commands/env_test.rb:11 (削除済み: commit 8b099ba)
