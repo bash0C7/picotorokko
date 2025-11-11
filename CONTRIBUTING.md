@@ -1,6 +1,6 @@
-# Contributing to pra
+# Contributing to picotorokko
 
-Thank you for your interest in contributing to pra!
+Thank you for your interest in contributing to picotorokko!
 
 ## Development Setup
 

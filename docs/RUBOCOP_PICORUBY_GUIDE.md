@@ -1,10 +1,10 @@
 # PicoRuby RuboCop Custom Cop Implementation Guide
 
-> **For**: **pra gem developers** implementing RuboCop Cop infrastructure
+> **For**: **ptrk gem developers** implementing RuboCop Cop infrastructure
 >
-> **Not for**: PicoRuby application developers (use `pra rubocop setup` instead)
+> **Not for**: PicoRuby application developers (use `ptrk rubocop setup` instead)
 >
-> **Goal**: Automatically detect unsupported PicoRuby methods via custom RuboCop Cops deployed by `pra rubocop setup`
+> **Goal**: Automatically detect unsupported PicoRuby methods via custom RuboCop Cops deployed by `ptrk rubocop setup`
 
 ---
 
@@ -36,12 +36,12 @@ arr.combination(2)     # ❌ Enumerable メソッド未実装
 
 RuboCop のカスタム Cop により、開発時に**警告レベル**で不適切なメソッド使用を指摘。エラーではなく警告なので、開発者は必要に応じて抑制コメント（`# rubocop:disable PicoRuby/UnsupportedMethod`）で除外できる。
 
-### pra gem の役割
+### ptrk gem の役割
 
-**pra gem は「テンプレート提供者」として機能**：
+**ptrk gem は「テンプレート提供者」として機能**：
 - ❌ データファイルを同梱しない（バージョン管理が複雑）
 - ✅ データ抽出スクリプト（Ruby スクリプト）を提供
-- ✅ ユーザーが必要に応じて `pra rubocop update` でデータ生成
+- ✅ ユーザーが必要に応じて `ptrk rubocop update` でデータ生成
 - ✅ 常に最新の PicoRuby 定義を取得可能
 
 ---
@@ -228,9 +228,9 @@ end
 - `on_str` - 文字列リテラル
 - `on_array` - 配列リテラル
 
-### 4. pra gem のテンプレート機構
+### 4. ptrk gem のテンプレート機構
 
-#### 既存パターン: `pra ci setup`
+#### 既存パターン: `ptrk ci setup`
 
 **実装**: `lib/pra/commands/ci.rb` (23-46行)
 
@@ -280,7 +280,7 @@ lib/pra/templates/
 
 ## 💡 責務の明確化
 
-### pra gem の責務 ✅
+### ptrk gem の責務 ✅
 
 1. **データ抽出スクリプト提供** (`scripts/update_methods.rb`)
    - picoruby.github.io クローン/pull
@@ -298,21 +298,21 @@ lib/pra/templates/
    - Cop 有効化
    - 重要度レベル設定
 
-4. **pra コマンド提供**
-   - `pra rubocop setup` - テンプレート配置
-   - `pra rubocop update` - ユーザー環境でスクリプト実行
+4. **ptrk コマンド提供**
+   - `ptrk rubocop setup` - テンプレート配置
+   - `ptrk rubocop update` - ユーザー環境でスクリプト実行
 
 ### ユーザーの責務 🎯
 
 1. **初回セットアップ**
    ```bash
-   pra rubocop setup
+   ptrk rubocop setup
    ```
    → テンプレートがプロジェクトに配置される
 
 2. **データベース生成**
    ```bash
-   pra rubocop update
+   ptrk rubocop update
    ```
    → ユーザー環境で最新 PicoRuby 定義を取得・処理
 
@@ -322,7 +322,7 @@ lib/pra/templates/
    ```
    → 静的解析実行、警告表示
 
-**メリット**: PicoRuby がアップデートされたら、ユーザーは単に `pra rubocop update` を再実行すれば最新の定義を取得可能。gem バージョンアップ不要。
+**メリット**: PicoRuby がアップデートされたら、ユーザーは単に `ptrk rubocop update` を再実行すれば最新の定義を取得可能。gem バージョンアップ不要。
 
 ---
 
@@ -331,7 +331,7 @@ lib/pra/templates/
 ### ディレクトリ構造（全体）
 
 ```
-pra-gem/                                   # pra gem ルート
+`ptrk-gem/                                   # ptrk gem ルート
 ├── lib/
 │   ├── pra/
 │   │   ├── commands/
@@ -363,7 +363,7 @@ pra-gem/                                   # pra gem ルート
 │           └── rubocop_test.rb    # 新規作成
 └── TODO_rubocop_picoruby.md        # このファイル
 
-ユーザープロジェクト（pra rubocop setup 実行後）：
+ユーザープロジェクト（ptrk rubocop setup 実行後）：
 my-picoruby-project/
 ├── .rubocop.yml
 ├── lib/
@@ -643,7 +643,7 @@ the latest PicoRuby method definitions.
 **Generate the database:**
 
 ```bash
-pra rubocop update
+ptrk rubocop update
 ```
 
 Or manually:
@@ -691,7 +691,7 @@ Methods available in CRuby but NOT in PicoRuby. Used by RuboCop Cop:
 When PicoRuby is updated or you want to refresh the method list:
 
 ```bash
-pra rubocop update
+ptrk rubocop update
 ```
 
 This will:
@@ -742,7 +742,7 @@ module RuboCop
               "Verify in the RBS documentation or disable with `# rubocop:disable PicoRuby/UnsupportedMethod`"
 
         SETUP_MSG = "PicoRuby method database not found. " \
-                    "Run 'pra rubocop update' to generate it."
+                    "Run 'ptrk rubocop update' to generate it."
 
         # Performance optimization: only check these methods that are likely to be unsupported
         RESTRICT_ON_SEND = %i[
@@ -899,7 +899,7 @@ RuboCop configuration with custom cop for PicoRuby development.
 ### 1. Generate method database (required before first use)
 
 ```bash
-pra rubocop update
+ptrk rubocop update
 ```
 
 This will:
@@ -966,7 +966,7 @@ app.rb:15:5: W: PicoRuby/UnsupportedMethod: Method `String#unicode_normalize` ma
 When PicoRuby releases new features:
 
 ```bash
-pra rubocop update
+ptrk rubocop update
 ```
 
 This will fetch the latest method definitions from picoruby.github.io.
@@ -985,7 +985,7 @@ Edit `.rubocop.yml` to customize:
 
 Run:
 ```bash
-pra rubocop update
+ptrk rubocop update
 ```
 
 ### RuboCop doesn't load the custom cop
@@ -1007,7 +1007,7 @@ If a method works in your environment, you can safely disable the warning.
 - [RuboCop Documentation](https://docs.rubocop.org)
 ```
 
-### Phase 5: pra コマンド実装
+### Phase 5: ptrk コマンド実装
 
 #### 5.1 Rubocop コマンドクラス
 
@@ -1031,7 +1031,7 @@ module Pra
         - data/README.md
         - README.md (setup guide)
 
-        After setup, run 'pra rubocop update' to generate the method database.
+        After setup, run 'ptrk rubocop update' to generate the method database.
       LONGDESC
       def setup
         source_dir = File.expand_path('../../templates/rubocop', __dir__)
@@ -1042,7 +1042,7 @@ module Pra
         puts "\n✅ RuboCop configuration has been set up!"
         puts ""
         puts "Next steps:"
-        puts "  1. Run: pra rubocop update"
+        puts "  1. Run: ptrk rubocop update"
         puts "     (generates method database from latest PicoRuby definitions)"
         puts ""
         puts "  2. Run: bundle exec rubocop"
@@ -1064,7 +1064,7 @@ module Pra
         5. Generate data/picoruby_unsupported_methods.json
 
         Run this whenever:
-        - Setting up for the first time (after 'pra rubocop setup')
+        - Setting up for the first time (after 'ptrk rubocop setup')
         - PicoRuby has been updated with new methods
         - You want to refresh the method database
       LONGDESC
@@ -1074,7 +1074,7 @@ module Pra
         unless File.exist?(script_path)
           puts "❌ Update script not found."
           puts ""
-          puts "Please run 'pra rubocop setup' first to set up the RuboCop configuration."
+          puts "Please run 'ptrk rubocop setup' first to set up the RuboCop configuration."
           exit 1
         end
 
@@ -1222,7 +1222,7 @@ end
 ```bash
 # 1. テンプレート配置
 cd /tmp/test-picoruby-project
-pra rubocop setup
+ptrk rubocop setup
 
 # 2. ファイル確認
 ls -la .rubocop.yml
@@ -1230,7 +1230,7 @@ ls -la lib/rubocop/cop/picoruby/unsupported_method.rb
 ls -la scripts/update_methods.rb
 
 # 3. データベース生成
-pra rubocop update
+ptrk rubocop update
 # → picoruby.github.io クローン、RBS doc パース、JSON 生成
 
 # 4. ファイル確認
@@ -1259,7 +1259,7 @@ bundle exec rubocop app.rb
 
 ## 🎯 成果物の全リスト
 
-### pra gem 内に追加するファイル
+### ptrk gem 内に追加するファイル
 
 1. **`lib/pra/commands/rubocop.rb`** - RuboCop サブコマンド実装
 2. **`lib/pra/templates/rubocop/.rubocop.yml`** - RuboCop 設定テンプレート
@@ -1269,7 +1269,7 @@ bundle exec rubocop app.rb
 6. **`lib/pra/templates/rubocop/README.md`** - セットアップ・使用ガイド
 7. **`test/pra/commands/rubocop_test.rb`** - コマンドのテスト
 
-### pra gem 内の修正ファイル
+### ptrk gem 内の修正ファイル
 
 1. **`lib/pra/cli.rb`** - 1行追加（RuboCop サブコマンド登録）
 
@@ -1304,8 +1304,8 @@ arr.combination(2)           # arr の型が推論できない
 
 ### 3. データベース更新タイミング
 
-- **初回**: `pra rubocop setup` → `pra rubocop update` 必須
-- **継続**: ユーザーが必要に応じて `pra rubocop update` 実行
+- **初回**: `ptrk rubocop setup` → `ptrk rubocop update` 必須
+- **継続**: ユーザーが必要に応じて `ptrk rubocop update` 実行
 - **gem バージョン**: データ更新のためにアップグレード不要（最新定義を常に取得）
 
 ### 4. RBS doc の構造変更への耐性
@@ -1325,16 +1325,16 @@ picoruby.github.io の Markdown フォーマットが変更された場合、`up
 ```bash
 # ユーザーディレクトリ
 $ cd my-picoruby-project
-$ pra rubocop setup
+$ ptrk rubocop setup
 ✅ RuboCop configuration has been set up!
 
 Next steps:
-  1. Run: pra rubocop update
+  1. Run: ptrk rubocop update
   2. Run: bundle exec rubocop
 
 See README.md for more details.
 
-$ pra rubocop update
+$ ptrk rubocop update
 🚀 Starting PicoRuby method database update...
 📥 Cloning picoruby.github.io repository...
 🔍 Extracting PicoRuby methods from RBS documentation...
@@ -1364,7 +1364,7 @@ app.rb:15:5: W: PicoRuby/UnsupportedMethod: Method `String#unicode_normalize` ma
 ```bash
 # 3ヶ月後、PicoRuby がアップデートされた
 
-$ pra rubocop update
+$ ptrk rubocop update
 🚀 Starting PicoRuby method database update...
 📦 Repository already cloned. Pulling latest changes...
 🔍 Extracting PicoRuby methods from RBS documentation...
@@ -1451,7 +1451,7 @@ bundle exec rubocop --show-cops PicoRuby
   - [ ] `.rubocop.yml` テンプレート作成
 - [ ] Phase 4: テンプレート README
   - [ ] `README.md` 作成（セットアップ・使用方法）
-- [ ] Phase 5: pra コマンド実装
+- [ ] Phase 5: ptrk コマンド実装
   - [ ] `lib/pra/commands/rubocop.rb` 実装
   - [ ] `lib/pra/cli.rb` に登録
 - [ ] Phase 6: テスト実装

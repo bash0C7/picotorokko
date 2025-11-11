@@ -30,7 +30,7 @@ Gemspec/RequiredRubyVersion:
 # This cop supports safe autocorrection (--autocorrect).
 Layout/EmptyLineAfterGuardClause:
   Exclude:
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/env.rb'
 
 # Offense count: 2
 # This cop supports safe autocorrection (--autocorrect).
@@ -44,23 +44,23 @@ Layout/ExtraSpacing:
 Layout/LeadingEmptyLines:
   Exclude:
     - 'lib/pra.rb'
-    - 'lib/pra/cli.rb'
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/cache.rb'
-    - 'lib/pra/commands/ci.rb'
-    - 'lib/pra/commands/device.rb'
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
-    - 'lib/pra/env.rb'
-    - 'lib/pra/version.rb'
+    - 'lib/picotorokko/cli.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/cache.rb'
+    - 'lib/picotorokko/commands/ci.rb'
+    - 'lib/picotorokko/commands/device.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
+    - 'lib/picotorokko/env.rb'
+    - 'lib/picotorokko/version.rb'
     - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'
 
 # Offense count: 17
 # This cop supports unsafe autocorrection (--autocorrect-all).
 Lint/NonAtomicFileOperation:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/patch.rb'
     - 'test/commands/build_test.rb'
     - 'test/commands/cache_test.rb'
     - 'test/commands/device_test.rb'
@@ -72,14 +72,14 @@ Lint/NonAtomicFileOperation:
 # This cop supports unsafe autocorrection (--autocorrect-all).
 Lint/RedundantDirGlobSort:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/patch.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
 Lint/RedundantRequireStatement:
   Exclude:
-    - 'lib/pra/commands/cache.rb'
+    - 'lib/picotorokko/commands/cache.rb'
 
 # Offense count: 6
 # This cop supports safe autocorrection (--autocorrect).
@@ -95,7 +95,7 @@ Lint/UnusedBlockArgument:
 # NotImplementedExceptions: NotImplementedError
 Lint/UnusedMethodArgument:
   Exclude:
-    - 'lib/pra/commands/build.rb'
+    - 'lib/picotorokko/commands/build.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
@@ -107,11 +107,11 @@ Lint/UselessAssignment:
 # Configuration parameters: AllowedMethods, AllowedPatterns, CountRepeatedAttributes, Max.
 Metrics/AbcSize:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/cache.rb'
-    - 'lib/pra/commands/device.rb'
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/cache.rb'
+    - 'lib/picotorokko/commands/device.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
     - 'test/commands/env_test.rb'
 
 # Offense count: 23
@@ -120,7 +120,7 @@ Metrics/AbcSize:
 Metrics/BlockLength:
   Exclude:
     - '**/*.gemspec'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/patch.rb'
     - 'test/commands/build_test.rb'
     - 'test/commands/cache_test.rb'
     - 'test/commands/ci_test.rb'
@@ -133,41 +133,41 @@ Metrics/BlockLength:
 # Configuration parameters: AllowedMethods, AllowedPatterns, Max.
 Metrics/CyclomaticComplexity:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/cache.rb'
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/cache.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
     - 'test/commands/env_test.rb'
 
 # Offense count: 6
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns.
 Metrics/MethodLength:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
     - 'test/commands/env_test.rb'
 
 # Offense count: 1
 # Configuration parameters: CountComments, Max, CountAsOne.
 Metrics/ModuleLength:
   Exclude:
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/env.rb'
 
 # Offense count: 9
 # Configuration parameters: AllowedMethods, AllowedPatterns, Max.
 Metrics/PerceivedComplexity:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/cache.rb'
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/cache.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
     - 'test/commands/env_test.rb'
 
 # Offense count: 2
 Naming/AccessorMethodName:
   Exclude:
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/env.rb'
 
 # Offense count: 1
 # Configuration parameters: NamePrefix, ForbiddenPrefixes, AllowedMethods, MethodDefinitionMacros, UseSorbetSigs.
@@ -178,7 +178,7 @@ Naming/AccessorMethodName:
 Naming/PredicatePrefix:
   Exclude:
     - 'spec/**/*'
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/env.rb'
 
 # Offense count: 2
 # This cop supports safe autocorrection (--autocorrect).
@@ -190,32 +190,32 @@ Performance/BindCall:
 # Configuration parameters: MinSize.
 Performance/CollectionLiteralInLoop:
   Exclude:
-    - 'lib/pra/commands/cache.rb'
+    - 'lib/picotorokko/commands/cache.rb'
 
 # Offense count: 3
 # This cop supports safe autocorrection (--autocorrect).
 Performance/ConstantRegexp:
   Exclude:
-    - 'test/pra_test.rb'
+    - 'test/picotorokko_test.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
 Performance/ReverseEach:
   Exclude:
-    - 'lib/pra/commands/cache.rb'
+    - 'lib/picotorokko/commands/cache.rb'
 
 # Offense count: 2
 # This cop supports unsafe autocorrection (--autocorrect-all).
 Style/EnvHome:
   Exclude:
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/env.rb'
 
 # Offense count: 7
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: AllowedVars, DefaultToNil.
 Style/FetchEnvVar:
   Exclude:
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/env.rb'
 
 # Offense count: 12
 # This cop supports unsafe autocorrection (--autocorrect-all).
@@ -226,15 +226,15 @@ Style/FrozenStringLiteralComment:
     - '**/*.arb'
     - 'exe/pra'
     - 'lib/pra.rb'
-    - 'lib/pra/cli.rb'
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/cache.rb'
-    - 'lib/pra/commands/ci.rb'
-    - 'lib/pra/commands/device.rb'
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
-    - 'lib/pra/env.rb'
-    - 'lib/pra/version.rb'
+    - 'lib/picotorokko/cli.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/cache.rb'
+    - 'lib/picotorokko/commands/ci.rb'
+    - 'lib/picotorokko/commands/device.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
+    - 'lib/picotorokko/env.rb'
+    - 'lib/picotorokko/version.rb'
     - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'
 
 # Offense count: 4
@@ -242,9 +242,9 @@ Style/FrozenStringLiteralComment:
 # Configuration parameters: MinBodyLength, AllowConsecutiveConditionals.
 Style/GuardClause:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/device.rb'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/device.rb'
+    - 'lib/picotorokko/commands/patch.rb'
 
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
@@ -252,22 +252,22 @@ Style/GuardClause:
 # AllowedReceivers: Thread.current
 Style/HashEachMethods:
   Exclude:
-    - 'lib/pra/commands/cache.rb'
+    - 'lib/picotorokko/commands/cache.rb'
 
 # Offense count: 4
 # This cop supports safe autocorrection (--autocorrect).
 Style/IfUnlessModifier:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/ci.rb'
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/ci.rb'
+    - 'lib/picotorokko/env.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: AllowMethodComparison, ComparisonsThreshold.
 Style/MultipleComparison:
   Exclude:
-    - 'lib/pra/commands/ci.rb'
+    - 'lib/picotorokko/commands/ci.rb'
 
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
@@ -275,7 +275,7 @@ Style/MultipleComparison:
 # SupportedStyles: literals, strict
 Style/MutableConstant:
   Exclude:
-    - 'lib/pra/version.rb'
+    - 'lib/picotorokko/version.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
@@ -300,18 +300,18 @@ Style/RegexpLiteral:
 # SupportedStyles: implicit, explicit
 Style/RescueStandardError:
   Exclude:
-    - 'lib/pra/commands/device.rb'
+    - 'lib/picotorokko/commands/device.rb'
 
 # Offense count: 25
 # This cop supports unsafe autocorrection (--autocorrect-all).
 # Configuration parameters: Mode.
 Style/StringConcatenation:
   Exclude:
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/cache.rb'
-    - 'lib/pra/commands/device.rb'
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/cache.rb'
+    - 'lib/picotorokko/commands/device.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
     - 'test/commands/env_test.rb'
 
 # Offense count: 1023
@@ -320,14 +320,14 @@ Style/StringConcatenation:
 # SupportedStyles: single_quotes, double_quotes
 Style/StringLiterals:
   Exclude:
-    - 'lib/pra/cli.rb'
-    - 'lib/pra/commands/build.rb'
-    - 'lib/pra/commands/cache.rb'
-    - 'lib/pra/commands/ci.rb'
-    - 'lib/pra/commands/device.rb'
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/cli.rb'
+    - 'lib/picotorokko/commands/build.rb'
+    - 'lib/picotorokko/commands/cache.rb'
+    - 'lib/picotorokko/commands/ci.rb'
+    - 'lib/picotorokko/commands/device.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
+    - 'lib/picotorokko/env.rb'
     - 'test/commands/build_test.rb'
     - 'test/commands/cache_test.rb'
     - 'test/commands/ci_test.rb'
@@ -335,7 +335,7 @@ Style/StringLiterals:
     - 'test/commands/env_test.rb'
     - 'test/commands/patch_test.rb'
     - 'test/env_test.rb'
-    - 'test/pra_test.rb'
+    - 'test/picotorokko_test.rb'
 
 # Offense count: 90
 # This cop supports safe autocorrection (--autocorrect).
@@ -343,9 +343,9 @@ Style/StringLiterals:
 # SupportedStyles: single_quotes, double_quotes
 Style/StringLiteralsInInterpolation:
   Exclude:
-    - 'lib/pra/commands/env.rb'
-    - 'lib/pra/commands/patch.rb'
-    - 'lib/pra/env.rb'
+    - 'lib/picotorokko/commands/env.rb'
+    - 'lib/picotorokko/commands/patch.rb'
+    - 'lib/picotorokko/env.rb'
     - 'test/commands/build_test.rb'
     - 'test/commands/device_test.rb'
     - 'test/commands/env_test.rb'
@@ -365,6 +365,6 @@ Style/WordArray:
 # URISchemes: http, https
 Layout/LineLength:
   Exclude:
-    - 'lib/pra/commands/cache.rb'
-    - 'lib/pra/commands/env.rb'
+    - 'lib/picotorokko/commands/cache.rb'
+    - 'lib/picotorokko/commands/env.rb'
     - 'picoruby-application-on-r2p2-esp32-development-kit.gemspec'

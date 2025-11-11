@@ -34,10 +34,10 @@ For more details, see the [Terminology section in README.md](../README.md#termin
 
 If you're building a PicoRuby application for ESP32, you can automate the firmware build process using GitHub Actions.
 
-**Recommended**: If you have the `pra` gem installed, use the `pra ci setup` command to automatically copy the workflow template:
+**Recommended**: If you have the `pra` gem installed, use the `ptrk ci setup` command to automatically copy the workflow template:
 
 ```bash
-pra ci setup
+ptrk ci setup
 ```
 
 This will create `.github/workflows/esp32-build.yml` from the latest template.
@@ -87,7 +87,7 @@ Edit `.github/workflows/esp32-build.yml` to customize:
 # Change environment definition name
 - name: Fetch PicoRuby repositories to cache
   run: |
-    pra cache fetch stable-2024-11  # Change to your environment definition name
+    ptrk cache fetch stable-2024-11  # Change to your environment definition name
 ```
 
 #### Step 4: Commit and Push
@@ -109,7 +109,7 @@ When `pra` gem is updated with workflow improvements:
 
 ```bash
 gem update pra
-pra ci setup --force  # Overwrite with latest template
+ptrk ci setup --force  # Overwrite with latest template
 git diff .github/workflows/esp32-build.yml  # Review changes
 # Salvage any custom changes you need
 ```
@@ -122,10 +122,10 @@ The automated build workflow performs these steps:
 
 1. **Checkout**: Clones your repository with submodules
 2. **Ruby Setup**: Installs Ruby 3.4 and dependencies
-3. **Install pra**: Installs the pra gem globally
+3. **Install pra**: Installs the ptrk gem globally
 4. **ESP-IDF Setup**: Configures ESP-IDF toolchain via espressif action
-5. **Cache Fetch**: Downloads R2P2-ESP32 repositories to cache using `pra cache fetch`
-6. **Build Environment Setup**: Runs `pra build setup` to create build environment from cache
+5. **Cache Fetch**: Downloads R2P2-ESP32 repositories to cache using `ptrk cache fetch`
+6. **Build Environment Setup**: Runs `ptrk build setup` to create build environment from cache
 7. **Apply Patches**: Applies any custom patches from `patch/` directory
 8. **Firmware Build**: Builds ESP32 firmware using `idf.py build`
 9. **Upload Artifacts**: Saves firmware binaries as downloadable artifacts
@@ -155,20 +155,20 @@ esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash \
   0x10000 your-app-name.bin
 ```
 
-**Option 2: Using pra (Recommended)**
+**Option 2: Using ptrk (Recommended)**
 
 If you have the `pra` gem installed locally:
 
 ```bash
 # Ensure you're using the same environment definition
-bundle exec pra cache fetch stable-2024-11
-bundle exec pra build setup
+bundle exec ptrk cache fetch stable-2024-11
+bundle exec ptrk build setup
 
 # Copy downloaded artifacts to build directory
 cp downloaded-artifacts/*.bin .cache/*/r2p2-esp32/build/
 
 # Flash using pra
-bundle exec pra device flash
+bundle exec ptrk device flash
 ```
 
 ### Customization Options
@@ -306,7 +306,7 @@ Follow [Semantic Versioning](https://semver.org/):
 
 #### "Environment definition not found"
 
-**Problem**: Workflow fails at `pra cache fetch` step with "Environment definition not found in .picoruby-env.yml"
+**Problem**: Workflow fails at `ptrk cache fetch` step with "Environment definition not found in .picoruby-env.yml"
 
 **Solution**:
 1. Verify `.picoruby-env.yml` exists and is valid
@@ -315,7 +315,7 @@ Follow [Semantic Versioning](https://semver.org/):
 
 ```bash
 # Locally test cache fetch
-bundle exec pra cache fetch your-environment-definition-name
+bundle exec ptrk cache fetch your-environment-definition-name
 ```
 
 #### "ESP-IDF not found"
@@ -368,7 +368,7 @@ bundle exec pra cache fetch your-environment-definition-name
 ### For Application Developers
 
 1. **Pin Environment Definition Versions**: Use specific commit hashes in `.picoruby-env.yml`
-2. **Test Locally First**: Run `pra build setup && rake build` before pushing
+2. **Test Locally First**: Run `ptrk build setup && rake build` before pushing
 3. **Use Artifacts Expiry**: Set reasonable retention days (30-90)
 4. **Enable Branch Protection**: Require status checks and prevent force pushes
 5. **Document Flash Process**: Add flash instructions to your README

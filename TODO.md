@@ -2,7 +2,7 @@
 
 ## 🚀 Active Development
 
-### Phase 0: Command Name Refactoring (pra → picotorokko)
+### Phase 0: Command Name Refactoring (ptrk → picotorokko)
 
 **CRITICAL PRIORITY**: Complete migration of gem name from `pra` → `picotorokko` across 46 files
 
@@ -12,7 +12,7 @@
 
 **Tasks** (TDD cycles: 1-5 minutes each):
 
-1. Rename `lib/pra/` directory to `lib/picotorokko/`
+1. Rename `lib/picotorokko/` directory to `lib/picotorokko/`
 2. Update `module Pra` → `module Picotorokko` in all files
 3. Update all `require "pra/..."` → `require "picotorokko/..."`
 4. Update all test helper requires
@@ -20,13 +20,13 @@
 
 **Related Files**:
 - lib/pra.rb
-- lib/pra/version.rb
-- lib/pra/cli.rb
-- lib/pra/env.rb
-- lib/pra/executor.rb
-- lib/pra/patch_applier.rb
-- lib/pra/commands/*.rb (env.rb, device.rb, mrbgems.rb, rubocop.rb)
-- lib/pra/template/*.rb (engine.rb)
+- lib/picotorokko/version.rb
+- lib/picotorokko/cli.rb
+- lib/picotorokko/env.rb
+- lib/picotorokko/executor.rb
+- lib/picotorokko/patch_applier.rb
+- lib/picotorokko/commands/*.rb (env.rb, device.rb, mrbgems.rb, rubocop.rb)
+- lib/picotorokko/template/*.rb (engine.rb)
 - test/test_helper.rb
 - exe/ptrk
 - picoruby-application-on-r2p2-esp32-development-kit.gemspec
@@ -35,7 +35,7 @@
 
 **Tasks**:
 
-1. Update SPEC.md: `pra env show` → `ptrk env show` (58 references)
+1. Update SPEC.md: `ptrk env show` → `ptrk env show` (58 references)
 2. Update `.picoruby-env.yml.example`: all command examples `pra` → `ptrk`
 3. Update `CONTRIBUTING.md`: "Contributing to pra" → "Contributing to picotorokko"
 4. Update `CHANGELOG.md`: Initial release message
@@ -52,17 +52,17 @@
 
 **Tasks**:
 
-1. Update `.rubocop.yml`: `lib/pra/` → `lib/picotorokko/` in exclusion path
+1. Update `.rubocop.yml`: `lib/picotorokko/` → `lib/picotorokko/` in exclusion path
 2. Update `.claude/settings.local.json`: `pra` → `ptrk` command references
-3. Update `.github/workflows/release.yml`: version.rb path (pra → picotorokko)
-4. Update test file names & requires (pra_test.rb references)
+3. Update `.github/workflows/release.yml`: version.rb path (ptrk → picotorokko)
+4. Update test file names & requires (picotorokko_test.rb references)
 5. Run full test suite and verify 0 violations, 197 tests passing
 
 **Related Files**:
 - .rubocop.yml
 - .claude/settings.local.json
 - .github/workflows/release.yml
-- test/pra_test.rb
+- test/picotorokko_test.rb
 - test/commands/mrbgems_test.rb
 
 ---

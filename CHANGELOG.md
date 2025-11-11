@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial release of pra RubyGem with Thor CLI
+- Initial release of picotorokko RubyGem with Thor CLI
 - Multi-version build system for ESP32 + PicoRuby development
 - Environment management commands (`env show`, `env set`, `env latest`)
 - Cache management commands (`cache list`, `cache fetch`, `cache clean`, `cache prune`)

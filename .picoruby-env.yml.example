@@ -5,10 +5,10 @@
 #   cp .picoruby-env.yml.example .picoruby-env.yml
 #
 # Usage:
-#   pra env show              - Display current environment
-#   pra env set ENV_NAME      - Switch to specified environment
-#   pra env latest            - Fetch latest versions and switch to them
-#   pra cache fetch ENV_NAME  - Fetch environment from GitHub
+#   ptrk env show              - Display current environment
+#   ptrk env set ENV_NAME      - Switch to specified environment
+#   ptrk env latest            - Fetch latest versions and switch to them
+#   ptrk cache fetch ENV_NAME  - Fetch environment from GitHub
 
 current: stable-2024-11
 

@@ -16,7 +16,7 @@ The `pra` tool automates mrbgem scaffolding and integration with the ESP32 build
 ### 1. Generate mrbgem Template
 
 ```bash
-pra mrbgems generate App
+ptrk mrbgems generate App
 ```
 
 This creates:
@@ -54,10 +54,10 @@ mrbc_app_init(mrbc_vm *vm)
 ### 3. Build and Test
 
 ```bash
-pra build setup your-env
-pra device build    # Build firmware with your mrbgem
-pra device flash    # Flash to ESP32
-pra device monitor  # Check output
+ptrk build setup your-env
+ptrk device build    # Build firmware with your mrbgem
+ptrk device flash    # Flash to ESP32
+ptrk device monitor  # Check output
 ```
 
 The mrbgem is automatically registered in:
@@ -176,7 +176,7 @@ mrbc_raise(vm, MRBC_CLASS(RuntimeError), "operation failed");
 
 ### Patch Files
 
-When you run `pra build setup`, the tool automatically creates:
+When you run `ptrk build setup`, the tool automatically creates:
 
 **`patch/picoruby/build_config/xtensa-esp.rb`**
 ```ruby
@@ -190,8 +190,8 @@ ${COMPONENT_DIR}/../../mrbgems/App/src/app.c
 
 You can customize these patches in the `patch/` directory and manage them with:
 ```bash
-pra patch export your-env
-pra patch diff your-env
+ptrk patch export your-env
+ptrk patch diff your-env
 ```
 
 ### Relative Paths
@@ -217,11 +217,11 @@ result = App.add(2, 3)    #=> 5
 You can create multiple mrbgems for different functionalities:
 
 ```bash
-pra mrbgems generate Sensor
-pra mrbgems generate Motor
+ptrk mrbgems generate Sensor
+ptrk mrbgems generate Motor
 ```
 
-Each one will be automatically registered during `pra build setup`.
+Each one will be automatically registered during `ptrk build setup`.
 
 ### RP2040 Support (Future)
 
@@ -251,11 +251,11 @@ Increment for each release and use `App.version` in Ruby to validate compatibili
 
 ### "mrbgem not found" Error
 
-Ensure you ran `pra build setup`. The mrbgem template must exist before setup:
+Ensure you ran `ptrk build setup`. The mrbgem template must exist before setup:
 
 ```bash
-pra mrbgems generate App
-pra build setup your-env  # This auto-generates patches
+ptrk mrbgems generate App
+ptrk build setup your-env  # This auto-generates patches
 ```
 
 ### Build Fails with Undefined Symbols
@@ -270,8 +270,8 @@ Check that:
 Export your patches after editing:
 
 ```bash
-pra patch export your-env  # Saves changes to patch/ directory
-pra build setup your-env   # Clean rebuild with patches
+ptrk patch export your-env  # Saves changes to patch/ directory
+ptrk build setup your-env   # Clean rebuild with patches
 ```
 
 ## Reference

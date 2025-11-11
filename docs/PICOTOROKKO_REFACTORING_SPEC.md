@@ -117,17 +117,17 @@ This refactoring addresses fundamental design inconsistencies in the current `pr
 **Pattern Analysis**:
 
 All commands follow `<subject> <action>` pattern:
-- `pra env show/set/latest` ✅ (subject: env, actions: show/set/latest)
-- `pra cache list/fetch/clean` ✅ (subject: cache, actions: list/fetch/clean)
-- `pra patch export/apply/diff` ✅ (subject: patch, actions: export/apply/diff)
-- `pra device flash/monitor/build` ✅ (subject: device, actions: flash/monitor/build)
+- `ptrk env show/set/latest` ✅ (subject: env, actions: show/set/latest)
+- `ptrk cache list/fetch/clean` ✅ (subject: cache, actions: list/fetch/clean)
+- `ptrk patch export/apply/diff` ✅ (subject: patch, actions: export/apply/diff)
+- `ptrk device flash/monitor/build` ✅ (subject: device, actions: flash/monitor/build)
 
 **The Exception**:
-- `pra build setup/clean/list` ❌ (setup/clean/list are actions, but build is ambiguous)
+- `ptrk build setup/clean/list` ❌ (setup/clean/list are actions, but build is ambiguous)
 
 **Why it's confusing**: "build" could mean:
-1. The action of compiling firmware (`pra device build`)
-2. A working environment (`pra build setup`)
+1. The action of compiling firmware (`ptrk device build`)
+2. A working environment (`ptrk build setup`)
 
 Two different concepts share the same word.
 
@@ -135,15 +135,15 @@ Two different concepts share the same word.
 
 | Command | Responsibility | Issue |
 |---------|----------------|-------|
-| `pra env` | Environment definitions (metadata) | Clean separation |
-| `pra cache` | Immutable repository cache | Auxiliary to `build` |
-| `pra build` | Build environment (working directory) | **Depends on cache** |
-| `pra patch` | Patch management | **Auto-applied by build** |
+| `ptrk env` | Environment definitions (metadata) | Clean separation |
+| `ptrk cache` | Immutable repository cache | Auxiliary to `build` |
+| `ptrk build` | Build environment (working directory) | **Depends on cache** |
+| `ptrk patch` | Patch management | **Auto-applied by build** |
 
-**The issue**: `pra build setup` internally:
-1. Reads from `pra env` (environment definition)
-2. Copies from `.cache/` (created by `pra cache fetch`)
-3. Applies patches from `pra patch`
+**The issue**: `ptrk build setup` internally:
+1. Reads from `ptrk env` (environment definition)
+2. Copies from `.cache/` (created by `ptrk cache fetch`)
+3. Applies patches from `ptrk patch`
 4. Generates new patches automatically
 
 This tight coupling makes each command hard to understand in isolation.
@@ -153,30 +153,30 @@ This tight coupling makes each command hard to understand in isolation.
 Current implementation has complex side effect dependencies:
 
 ```
-pra env set/latest
+ptrk env set/latest
     ↓ (updates)
 .picoruby-env.yml
     ↓ (read by)
-pra cache fetch → .cache/
+ptrk cache fetch → .cache/
     ↓ (copied by)
-pra build setup → build/{env-hash}/
+ptrk build setup → build/{env-hash}/
     ↓ (patches applied to)
-pra patch (export/apply)
+ptrk patch (export/apply)
     ↓ (auto-generated)
 patch/ directory
 ```
 
 **Why it's problematic**:
 - Implicit dependencies make errors hard to diagnose
-- `pra build setup` does too many things
+- `ptrk build setup` does too many things
 - `current` symlink creates additional state
 
 ### Problem 4: User Mental Model Mismatch
 
 New users expect:
-- `pra env` to manage environments ✅
-- `pra build` to build firmware ❌ (Actually it sets up working directory)
-- `pra device build` to build firmware ✅ (But then why two "build"s?)
+- `ptrk env` to manage environments ✅
+- `ptrk build` to build firmware ❌ (Actually it sets up working directory)
+- `ptrk device build` to build firmware ✅ (But then why two "build"s?)
 
 **Result**: Confusion about command purpose and usage order.
 
@@ -231,7 +231,7 @@ New users expect:
 **Trade-off**: Prefer fewer commands with clear purposes over many commands with overlapping responsibilities.
 
 **Example**:
-- ❌ Current: `pra build setup`, `pra build clean`, `pra build list`
+- ❌ Current: `ptrk build setup`, `ptrk build clean`, `ptrk build list`
 - ✅ New: Part of `ptrk env` (environment operations)
 
 ### Principle 3: Environment Names Over Implicit State
@@ -239,7 +239,7 @@ New users expect:
 **Trade-off**: Prefer explicit environment names over symbolic links and implicit "current" state.
 
 **Example**:
-- ❌ Current: `pra build setup` then `pra device flash` (implicitly uses `build/current`)
+- ❌ Current: `ptrk build setup` then `ptrk device flash` (implicitly uses `build/current`)
 - ✅ New: `ptrk device flash development` (explicitly names environment)
 
 **Benefits**:
@@ -659,13 +659,13 @@ ptrk device build
 
 ## Deleted Features
 
-### 1. `pra cache` Command
+### 1. `ptrk cache` Command
 
 **Current functionality**:
-- `pra cache list` - List cached repositories
-- `pra cache fetch` - Clone repositories to cache
-- `pra cache clean` - Delete cache for a repository
-- `pra cache prune` - Remove unused caches
+- `ptrk cache list` - List cached repositories
+- `ptrk cache fetch` - Clone repositories to cache
+- `ptrk cache clean` - Delete cache for a repository
+- `ptrk cache prune` - Remove unused caches
 
 **Why delete?**
 
@@ -678,66 +678,66 @@ Cache operations are now automatic:
 **Replacement workflow**:
 ```bash
 # Old
-pra cache fetch latest
-pra build setup latest
+ptrk cache fetch latest
+ptrk build setup latest
 
 # New
 ptrk env set development
 ```
 
-### 2. `pra build` Command
+### 2. `ptrk build` Command
 
 **Current functionality**:
-- `pra build setup` - Create build environment
-- `pra build clean` - Delete build environment
-- `pra build list` - List environments
+- `ptrk build setup` - Create build environment
+- `ptrk build clean` - Delete build environment
+- `ptrk build list` - List environments
 
 **Why delete?**
 
 These operations belong in `ptrk env`:
-- `ptrk env set` replaces `pra build setup`
-- `ptrk env` list replaces `pra build list`
+- `ptrk env set` replaces `ptrk build setup`
+- `ptrk env` list replaces `ptrk build list`
 - Build environment is now managed as environment state
 
 **Replacement workflow**:
 ```bash
 # Old
-pra build setup current
-pra build list
+ptrk build setup current
+ptrk build list
 
 # New
 ptrk env set development
 ptrk env
 ```
 
-### 3. `pra patch` Command
+### 3. `ptrk patch` Command
 
 **Current functionality**:
-- `pra patch export` - Export changes to patch files
-- `pra patch apply` - Apply patch files to environment
-- `pra patch diff` - Show differences
+- `ptrk patch export` - Export changes to patch files
+- `ptrk patch apply` - Apply patch files to environment
+- `ptrk patch diff` - Show differences
 
 **Why delete?**
 
 These operations are now `ptrk env` subcommands:
-- `ptrk env patch_export` (was: `pra patch export`)
-- `ptrk env patch_apply` (was: `pra patch apply`)
-- `ptrk env patch_diff` (was: `pra patch diff`)
+- `ptrk env patch_export` (was: `ptrk patch export`)
+- `ptrk env patch_apply` (was: `ptrk patch apply`)
+- `ptrk env patch_diff` (was: `ptrk patch diff`)
 
 This makes patches clearly part of environment management.
 
 **Replacement workflow**:
 ```bash
 # Old
-pra patch export current
-pra patch apply current
+ptrk patch export current
+ptrk patch apply current
 
 # New
 ptrk env patch_export development
 ptrk env patch_apply development
 ```
 
-### 4. `pra env latest` Subcommand
+### 4. `ptrk env latest` Subcommand
 
 **Current functionality**: Create environment definition from latest GitHub commits
 
@@ -747,8 +747,8 @@ It's now implicit in `ptrk env set`:
 
 ```bash
 # Old: Two steps
-pra env latest
-pra build setup latest
+ptrk env latest
+ptrk build setup latest
 
 # New: One step
 ptrk env set development
@@ -1222,7 +1222,7 @@ Reason for rejection: Overkill for simple identifier substitution
 
 **✅ DECISION: Complete Migration after picotorokko Refactoring**
 
-**Timing**: Independent task, executed AFTER picotorokko (pra → ptrk) refactoring is complete.
+**Timing**: Independent task, executed AFTER picotorokko (ptrk → ptrk) refactoring is complete.
 
 **Phase 1: Proof of Concept** (Validation)
 1. Implement `Ptrk::Template::Engine` module
@@ -1627,7 +1627,7 @@ end
 - [ ] Add constant reference in `CLAUDE.md` (ptrk command name subject to change)
 - [ ] Update `lib/ptrk/cli.rb` (command registration)
 - [ ] Run RuboCop, fix violations
-- [ ] Commit: "chore: rename pra → picotorokko, command → ptrk"
+- [ ] Commit: "chore: rename ptrk → picotorokko, command → ptrk"
 
 ### Phase 3: Command Structure (Estimated: 4-5 days)
 - [ ] Refactor `lib/ptrk/commands/env.rb`
@@ -1769,24 +1769,24 @@ git commit -m "Migrate to picotorokko (ptrk)"
 
 | Old Command | New Command | Notes |
 |-----------|-----------|-------|
-| `pra env show` | `ptrk env show (env)` | Now shows version details |
-| `pra env set` | `ptrk env set (env)` | Now accepts commit/branch options |
-| `pra env latest` | `ptrk env set (env)` | Implicit (uses main by default) |
-| `pra cache list` | N/A | Auto-managed, not needed |
-| `pra cache fetch` | Part of `ptrk env set` | Auto-fetches to cache |
-| `pra cache clean` | N/A | Delete `ptrk_env/.cache/{repo}` manually |
-| `pra cache prune` | N/A | Unused with new design |
-| `pra build setup` | `ptrk env set (env)` | Automatic |
-| `pra build clean` | Manual deletion | `rm -rf ptrk_env/{env}` |
-| `pra build list` | `ptrk env` | Shows environment overview |
-| `pra patch export` | `ptrk env patch_export (env)` | Moved under env |
-| `pra patch apply` | `ptrk env patch_apply (env)` | Moved under env |
-| `pra patch diff` | `ptrk env patch_diff (env)` | Moved under env |
-| `pra device build` | `ptrk device build [env]` | Env name explicit (default: development) |
-| `pra device flash` | `ptrk device flash [env]` | Same |
-| `pra device monitor` | `ptrk device monitor [env]` | Same |
-| `pra mrbgems generate` | `ptrk mrbgem generate` | Same |
-| `pra rubocop setup` | `ptrk rubocop setup` | Same |
+| `ptrk env show` | `ptrk env show (env)` | Now shows version details |
+| `ptrk env set` | `ptrk env set (env)` | Now accepts commit/branch options |
+| `ptrk env latest` | `ptrk env set (env)` | Implicit (uses main by default) |
+| `ptrk cache list` | N/A | Auto-managed, not needed |
+| `ptrk cache fetch` | Part of `ptrk env set` | Auto-fetches to cache |
+| `ptrk cache clean` | N/A | Delete `ptrk_env/.cache/{repo}` manually |
+| `ptrk cache prune` | N/A | Unused with new design |
+| `ptrk build setup` | `ptrk env set (env)` | Automatic |
+| `ptrk build clean` | Manual deletion | `rm -rf ptrk_env/{env}` |
+| `ptrk build list` | `ptrk env` | Shows environment overview |
+| `ptrk patch export` | `ptrk env patch_export (env)` | Moved under env |
+| `ptrk patch apply` | `ptrk env patch_apply (env)` | Moved under env |
+| `ptrk patch diff` | `ptrk env patch_diff (env)` | Moved under env |
+| `ptrk device build` | `ptrk device build [env]` | Env name explicit (default: development) |
+| `ptrk device flash` | `ptrk device flash [env]` | Same |
+| `ptrk device monitor` | `ptrk device monitor [env]` | Same |
+| `ptrk mrbgems generate` | `ptrk mrbgem generate` | Same |
+| `ptrk rubocop setup` | `ptrk rubocop setup` | Same |
 
 ### Directory Mapping (Old → New)
 
