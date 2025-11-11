@@ -2,6 +2,9 @@ require "bundler/gem_tasks"
 require "rake/testtask"
 require "English"
 
+# ============================================================================
+# MAIN TEST TASK
+# ============================================================================
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
@@ -18,6 +21,46 @@ Rake::TestTask.new(:test) do |t|
 
   # Ruby warning suppress: method redefinition warnings in test mocks
   # See: test/commands/env_test.rb, test/commands/cache_test.rb
+  t.ruby_opts = ["-W1"]
+end
+
+# ============================================================================
+# DIAGNOSTIC TASKS: Binary search for test registration failure
+# ============================================================================
+
+# Test with left half of files (0-3: cli, device, env_commands, mrbgems)
+Rake::TestTask.new("test:left_half") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = [
+    "test/commands/cli_test.rb",
+    "test/commands/device_test.rb",
+    "test/commands/env_test.rb",
+    "test/commands/mrbgems_test.rb"
+  ]
+  t.ruby_opts = ["-W1"]
+end
+
+# Test with right half of files (4-8: rubocop, env, env_constants, pra, rake_task_extractor)
+Rake::TestTask.new("test:right_half") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = [
+    "test/commands/rubocop_test.rb",
+    "test/env_test.rb",
+    "test/lib/env_constants_test.rb",
+    "test/pra_test.rb",
+    "test/rake_task_extractor_test.rb"
+  ]
+  t.ruby_opts = ["-W1"]
+end
+
+# Test each file individually for baseline
+Rake::TestTask.new("test:individual") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  # Just first file to start
+  t.test_files = ["test/commands/cli_test.rb"]
   t.ruby_opts = ["-W1"]
 end
 

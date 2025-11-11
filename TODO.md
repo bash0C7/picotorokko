@@ -1,8 +1,15 @@
 # TODO: Project Maintenance Tasks
 
-## 🚨 CRITICAL: test-unit Registration Failure (54/551 tests) - ROOT CAUSE UNDER INVESTIGATION
+## 🚨 CRITICAL: test-unit Registration Failure (54/551 tests) - DIAGNOSTIC IMPLEMENTATION IN PROGRESS
 
 **Status**: 🔴 **BLOCKING CI** - Rake経由では54テストしか登録されない（期待：551テスト）
+
+**Latest Session Work**:
+- ✅ Refactored Pra::Env constants → dynamic methods (project_root, cache_dir, etc.)
+- ✅ Added const_missing for backward compatibility
+- ✅ Removed constant manipulation from test_helper.rb setup/teardown
+- ✅ Added diagnostic Rake tasks (test:left_half, test:right_half) for binary search
+- 🔄 **Next**: Execute binary search to identify problematic file combinations
 
 **現象**:
 - 個別実行: `test/*.rb` を単独実行 → 各ファイルで正常に登録 ✓
@@ -45,23 +52,42 @@
 - ✅ test_helper.rb の git diff subprocess を disabled（副作用排除）
 - ❌ **でも 54テストのままで改善されていない**
 
-### 次セッションでの正しい調査戦略
+### 次セッションでの実装ロードマップ
 
-**ユーザーの指摘**：「各テストが何を作成するか把握して、teardown で綺麗にする」
+**PHASE 1: Binary Search (診断タスク実行)**
+```bash
+# 左半分テスト（4ファイル）
+bundle exec rake test:left_half
+# Expected: 95+ tests（session 2データから）
+# Result: TBD
 
-**必要な修正**：
-1. `Pra::Env` をリファクター：定数ではなく**動的メソッド**に変更
-   - `PROJECT_ROOT` → `def self.project_root`
-   - `CACHE_DIR` → `def self.cache_dir`
-   - これにより PROJECT_ROOT の変更が自動的に反映される
+# 右半分テスト（5ファイル）
+bundle exec rake test:right_half
+# Expected: 59-100 tests（session 2データから）
+# Result: TBD
+```
 
-2. test/commands/ 内の各テストファイルが何を作成・削除しているか詳細調査
-   - ファイル毎の污染状態（グローバル変数、クラス変数、定数）をチェック
-   - テスト間の状態漏洩を検出
+**PHASE 2: Problem File Identification**
+- 右半分で登録失敗が確認されたら、さらに二分割
+- 特定ファイルの組み合わせで失敗を再現
 
-3. test-unit v3 のバージョン検証とアップグレード検討
-   - 複数ファイルロード時の内部動作をデバッグ
-   - または最新版へのアップグレードで解決するか確認
+**PHASE 3: Root Cause Analysis**
+- 問題ファイル間のコンテキスト污染を調査：
+  - グローバル変数の副作用
+  - クラス変数の状態変更
+  - モジュール定数の干渉
+  - setup/teardown の実行順序
+
+**PHASE 4: Implementation Fix**
+- test-unit のテストレジストレーション保護メカニズム（if needed）
+- または test_helper.rb の setup/teardown 強化
+- または特定ファイルの分離・リファクタリング
+
+**Previous work completed**:
+✅ 1. `Pra::Env` リファクター：定数 → 動的メソッド
+✅ 2. const_missing フック追加
+✅ 3. 定数操作 from test_helper.rb 削除
+✅ 4. 診断 Rake タスク追加
 
 ---
 
