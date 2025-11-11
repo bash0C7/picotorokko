@@ -43,7 +43,7 @@ Layout/ExtraSpacing:
 # This cop supports safe autocorrection (--autocorrect).
 Layout/LeadingEmptyLines:
   Exclude:
-    - 'lib/pra.rb'
+    - 'lib/picotorokko.rb'
     - 'lib/picotorokko/cli.rb'
     - 'lib/picotorokko/commands/build.rb'
     - 'lib/picotorokko/commands/cache.rb'
@@ -224,8 +224,8 @@ Style/FetchEnvVar:
 Style/FrozenStringLiteralComment:
   Exclude:
     - '**/*.arb'
-    - 'exe/pra'
-    - 'lib/pra.rb'
+    - 'exe/ptrk'
+    - 'lib/picotorokko.rb'
     - 'lib/picotorokko/cli.rb'
     - 'lib/picotorokko/commands/build.rb'
     - 'lib/picotorokko/commands/cache.rb'

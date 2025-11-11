@@ -19,7 +19,7 @@
       "Bash(gh run view:*)",
       "Bash(gh api:*)",
       "Bash(jq '.files[] | select(.filename == \"\"\"\".github/workflows/main.yml\"\"\"\") | .patch' -r)",
-      "Bash(git -C /Users/bash/src/picoruby-application-on-r2p2-esp32-development-kit status)",
+      "Bash(git -C /Users/bash/src/picotorokko status)",
       "Bash(curl:*)",
       "Bash(ruby -e:*)",
       "Bash(ruby:*)",

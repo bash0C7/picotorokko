@@ -16,9 +16,9 @@ ESP32 上の PicoRuby アプリケーション・処理系開発。mrbgems ビ�
 
 ## Your Role
 
-**You are the developer of the `picoruby-application-on-r2p2-esp32-development-kit` gem** — a multi-version build system CLI (`ptrk` command) for PicoRuby application development on ESP32.
+**You are the developer of the `picotorokko` gem** — a multi-version build system CLI (`ptrk` command) for PicoRuby application development on ESP32.
 
-### Role Clarity: Gem Developer vs. pra User
+### Role Clarity: Gem Developer vs. ptrk User
 
 There are two distinct audiences in this project:
 
@@ -29,7 +29,7 @@ There are two distinct audiences in this project:
 - You maintain consistency between specification and implementation
 
 **ptrk Users** (PicoRuby Application Developers):
-- They install the `ptrk` gem: `gem install picoruby-application-on-r2p2-esp32-development-kit`
+- They install the `ptrk` gem: `gem install picotorokko`
 - They use the `ptrk` command to develop PicoRuby applications for ESP32
 - They use templates and guides in `docs/`, `docs/github-actions/`, and `SPEC.md`
 - They run: `ptrk env show`, `ptrk build setup`, `ptrk device flash`, etc.
@@ -174,7 +174,7 @@ There are two distinct audiences in this project:
 ## Gem Development
 
 **Dependency Management** (gemspec centralization):
-- ✅ **All dependencies go in `picoruby-application-on-r2p2-esp32-development-kit.gemspec`** — Single source of truth
+- ✅ **All dependencies go in `picotorokko.gemspec`** — Single source of truth
   - Runtime: `spec.add_dependency`
   - Development: `spec.add_development_dependency` (rake, test-unit, rubocop, etc.)
 - ✅ **Gemfile must be minimal** — Only `source` + `gemspec` directive

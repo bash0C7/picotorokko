@@ -4,8 +4,8 @@
 
 The picotorokko project serves **two distinct audiences**:
 
-1. **pra Gem Developers** — Those developing the gem itself
-2. **pra Users** — PicoRuby application developers who install and use the gem
+1. **ptrk Gem Developers** — Those developing the gem itself
+2. **ptrk Users** — PicoRuby application developers who install and use the gem
 
 This document clarifies which documentation is for whom and how to maintain consistency.
 
@@ -13,12 +13,12 @@ This document clarifies which documentation is for whom and how to maintain cons
 
 ## Audience Definition
 
-### pra Gem Developer
+### ptrk Gem Developer
 
 **Who**: You (Claude Code in this project)
 
 **What you do**:
-- Develop the `pra` command and infrastructure
+- Develop the `ptrk` command and infrastructure
 - Write/test code in `lib/picotorokko/`, `test/`
 - Manage gem configuration (gemspec, Gemfile, `.ruby-version`)
 - Design user-facing features and guides
@@ -31,12 +31,12 @@ This document clarifies which documentation is for whom and how to maintain cons
 - `CLAUDE.md` — Your development guidelines
 - Configuration: `pra.gemspec`, `Gemfile`, `.rubocop.yml`, etc.
 
-### pra User (PicoRuby Application Developer)
+### ptrk User (PicoRuby Application Developer)
 
 **Who**: Someone who runs `gem install picotorokko`
 
 **What they do**:
-- Use the `pra` command to develop PicoRuby applications
+- Use the `ptrk` command to develop PicoRuby applications
 - Run workflows: `ptrk env show`, `ptrk build setup`, `ptrk device flash`
 - Customize configuration: `.picoruby-env.yml`, `mrbgems/`, patches
 - Set up GitHub Actions CI/CD
@@ -186,7 +186,7 @@ These are **user-facing templates** with gem developer annotations:
 - Assume user has **pra installed**: "Run `ptrk env show`"
 - **Hide implementation**: Don't explain how caching works internally
 - **Explain user workflows**: "First, define an environment → fetch repositories → setup build"
-- **Provide examples**: Show `pra` command usage with realistic scenarios
+- **Provide examples**: Show `ptrk` command usage with realistic scenarios
 
 ### For Gem Developer Docs (.claude/docs/)
 
@@ -239,7 +239,7 @@ When making changes that affect documentation:
 
 ## Example: Adding a New Feature
 
-**Scenario**: You're implementing a new `pra config` command.
+**Scenario**: You're implementing a new `ptrk config` command.
 
 **Steps**:
 
@@ -248,7 +248,7 @@ When making changes that affect documentation:
 3. **Add to spec** (`SPEC.md`):
    - Section: "### Config Management"
    - Show user-facing behavior: "Show and validate configuration"
-   - Example: `pra config show`, `pra config validate`
+   - Example: `ptrk config show`, `ptrk config validate`
 4. **Add implementation notes** (`.claude/docs/spec/config-management.md`):
    - Design decisions
    - Edge cases
