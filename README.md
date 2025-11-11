@@ -165,6 +165,22 @@ For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONT
 
 ## For picotorokko Gem Developers
 
+### Documentation
+
+#### Architecture & Design
+
+- [Executor Abstraction](docs/architecture/executor-abstraction-design.md) - Dependency injection pattern for system command testing with ProductionExecutor and MockExecutor
+- [Prism Rakefile Parser](docs/architecture/prism-rakefile-parser-design.md) - AST-based static analysis for dynamic Rake task extraction and whitelist validation
+
+See [docs/architecture/](docs/architecture/) for complete architecture documentation index.
+
+#### User & Developer Guides
+
+- [SPEC.md](SPEC.md) - Complete specification of ptrk commands and behavior
+- [CI/CD Integration Guide](docs/CI_CD_GUIDE.md) - GitHub Actions workflows for PicoRuby application users
+- [mrbgems Development Guide](docs/MRBGEMS_GUIDE.md) - Creating application-specific mrbgems
+- [RuboCop Integration Guide](docs/RUBOCOP_PICORUBY_GUIDE.md) - RuboCop setup for PicoRuby development
+
 ### Development
 
 After checking out the repo:
