@@ -22,7 +22,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         output = capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate"])
+          Picotorokko::Commands::Mrbgems.start(["generate"])
         end
 
         # 出力を確認
@@ -55,7 +55,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         output = capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate", "CustomLib"])
+          Picotorokko::Commands::Mrbgems.start(["generate", "CustomLib"])
         end
 
         # 出力を確認
@@ -77,7 +77,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate", "App"])
+          Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
         content = File.read("mrbgems/App/mrbgem.rake")
@@ -98,7 +98,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate", "App"])
+          Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
         content = File.read("mrbgems/App/mrblib/app.rb")
@@ -118,7 +118,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate", "App"])
+          Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
         content = File.read("mrbgems/App/src/app.c")
@@ -148,7 +148,7 @@ class PraCommandsMrbgemsTest < PraTestCase
 
         assert_raises(RuntimeError) do
           capture_stdout do
-            Pra::Commands::Mrbgems.start(["generate", "App"])
+            Picotorokko::Commands::Mrbgems.start(["generate", "App"])
           end
         end
       ensure
@@ -163,7 +163,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate", "App"])
+          Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
         content = File.read("mrbgems/App/mrbgem.rake")
@@ -182,7 +182,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate", "App", "--author", "Test Author"])
+          Picotorokko::Commands::Mrbgems.start(["generate", "App", "--author", "Test Author"])
         end
 
         content = File.read("mrbgems/App/mrbgem.rake")
@@ -201,7 +201,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate", "CustomLib"])
+          Picotorokko::Commands::Mrbgems.start(["generate", "CustomLib"])
         end
 
         content = File.read("mrbgems/CustomLib/src/customlib.c")
@@ -223,7 +223,7 @@ class PraCommandsMrbgemsTest < PraTestCase
       Dir.chdir(tmpdir)
       begin
         output = capture_stdout do
-          Pra::Commands::Mrbgems.start(["generate", "App"])
+          Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
         # ナビゲーションメッセージを確認

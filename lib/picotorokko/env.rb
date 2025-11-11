@@ -1,12 +1,11 @@
+require "English"
+require "fileutils"
+require "yaml"
+require "time"
+require "shellwords"
+require_relative "executor"
 
-require 'English'
-require 'fileutils'
-require 'yaml'
-require 'time'
-require 'shellwords'
-require_relative 'executor'
-
-module Pra
+module Picotorokko
   # PicoRuby環境定義・ビルド環境管理モジュール
   #
   # 用語の定義:
@@ -21,21 +20,21 @@ module Pra
 
     # リポジトリ定義
     REPOS = {
-      'R2P2-ESP32' => 'https://github.com/picoruby/R2P2-ESP32.git',
-      'picoruby-esp32' => 'https://github.com/picoruby/picoruby-esp32.git',
-      'picoruby' => 'https://github.com/picoruby/picoruby.git'
+      "R2P2-ESP32" => "https://github.com/picoruby/R2P2-ESP32.git",
+      "picoruby-esp32" => "https://github.com/picoruby/picoruby-esp32.git",
+      "picoruby" => "https://github.com/picoruby/picoruby.git"
     }.freeze
 
     # Submodule パス（3段階）
     SUBMODULE_PATHS = {
-      'R2P2-ESP32' => 'components/picoruby-esp32',
-      'picoruby-esp32' => 'picoruby'
+      "R2P2-ESP32" => "components/picoruby-esp32",
+      "picoruby-esp32" => "picoruby"
     }.freeze
 
     # ====== CRITICAL FIX: Cache initial project root ======
     # PROBLEM: Dynamic methods using Dir.pwd break when tests chdir
     # - export_repo_changes does Dir.chdir(work_path)
-    # - Inside that, Pra::Env.patch_dir calls Dir.pwd
+    # - Inside that, Picotorokko::Env.patch_dir calls Dir.pwd
     # - Gets wrong path (work_path/ptrk_env/patch instead of original/ptrk_env/patch)
     # - Test assertion fails: Dir.exist?(patch_dir) returns false
     #
@@ -71,27 +70,28 @@ module Pra
       # テスト用：キャッシュされた project_root をリセット
       def reset_cached_root!
         return unless @reset_cached_root_enabled
+
         @project_root = Dir.pwd
       end
 
       # キャッシュディレクトリ
       def cache_dir
-        File.join(project_root, ENV_DIR, '.cache')
+        File.join(project_root, ENV_DIR, ".cache")
       end
 
       # パッチディレクトリ
       def patch_dir
-        File.join(project_root, ENV_DIR, 'patch')
+        File.join(project_root, ENV_DIR, "patch")
       end
 
       # ストレージホームディレクトリ
       def storage_home
-        File.join(project_root, 'storage', 'home')
+        File.join(project_root, "storage", "home")
       end
 
       # 環境定義ファイルパス
       def env_file
-        File.join(project_root, ENV_DIR, '.picoruby-env.yml')
+        File.join(project_root, ENV_DIR, ".picoruby-env.yml")
       end
 
       # ====== 環境名検証 ======
@@ -101,6 +101,7 @@ module Pra
       # @raise [RuntimeError] 無効な環境名の場合
       def validate_env_name!(name)
         return if name.match?(ENV_NAME_PATTERN)
+
         raise "Error: Invalid environment name '#{name}'. Must match pattern: #{ENV_NAME_PATTERN}"
       end
 
@@ -109,6 +110,7 @@ module Pra
       # .picoruby-env.yml を読み込み（環境定義のメタデータ）
       def load_env_file
         return {} unless File.exist?(env_file)
+
         YAML.load_file(env_file) || {}
       end
 
@@ -121,21 +123,21 @@ module Pra
       # 指定された名前の環境定義を読み込み（.picoruby-env.yml から）
       def get_environment(env_name)
         data = load_env_file
-        environments = data['environments'] || {}
+        environments = data["environments"] || {}
         environments[env_name]
       end
 
       # 環境定義を追加/更新
-      def set_environment(env_name, r2p2_info, esp32_info, picoruby_info, notes: '')
+      def set_environment(env_name, r2p2_info, esp32_info, picoruby_info, notes: "")
         data = load_env_file
-        data['environments'] ||= {}
+        data["environments"] ||= {}
 
-        data['environments'][env_name] = {
-          'R2P2-ESP32' => r2p2_info,
-          'picoruby-esp32' => esp32_info,
-          'picoruby' => picoruby_info,
-          'created_at' => Time.now.to_s,
-          'notes' => notes
+        data["environments"][env_name] = {
+          "R2P2-ESP32" => r2p2_info,
+          "picoruby-esp32" => esp32_info,
+          "picoruby" => picoruby_info,
+          "created_at" => Time.now.to_s,
+          "notes" => notes
         }
 
         save_env_file(data)
@@ -156,9 +158,10 @@ module Pra
       # ====== Git操作 ======
 
       # リモートからコミット情報を取得（git ls-remote使用）
-      def fetch_remote_commit(repo_url, ref = 'HEAD')
+      def fetch_remote_commit(repo_url, ref = "HEAD")
         output = `git ls-remote #{Shellwords.escape(repo_url)} #{Shellwords.escape(ref)} 2>/dev/null`
         return nil if output.empty?
+
         output.split.first[0..6] # 7桁のコミットハッシュ
       end
 
@@ -180,7 +183,7 @@ module Pra
         clone_repo(repo_url, dest_path, commit)
 
         # Submodule初期化
-        cmd = 'git submodule update --init --recursive'
+        cmd = "git submodule update --init --recursive"
         executor.execute(cmd, dest_path)
       end
 
@@ -188,16 +191,12 @@ module Pra
       def get_commit_hash(repo_path, commit)
         Dir.chdir(repo_path) do
           short_hash = `git rev-parse --short=7 #{Shellwords.escape(commit)}`.strip
-          if short_hash.empty?
-            raise "Failed to get commit hash for '#{commit}' in repository: #{repo_path}"
-          end
+          raise "Failed to get commit hash for '#{commit}' in repository: #{repo_path}" if short_hash.empty?
 
           timestamp_str = `git show -s --format=%ci #{Shellwords.escape(commit)}`.strip
-          if timestamp_str.empty?
-            raise "Failed to get commit hash for '#{commit}' in repository: #{repo_path}"
-          end
+          raise "Failed to get commit hash for '#{commit}' in repository: #{repo_path}" if timestamp_str.empty?
 
-          timestamp = Time.parse(timestamp_str).strftime('%Y%m%d_%H%M%S')
+          timestamp = Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
           "#{short_hash}-#{timestamp}"
         end
       end
@@ -209,31 +208,28 @@ module Pra
 
         # R2P2-ESP32の情報取得
         r2p2_short = `git -C #{Shellwords.escape(repo_path)} rev-parse --short=7 HEAD`.strip
-        if r2p2_short.empty?
-          raise "Failed to get commit hash from git repository: #{repo_path}"
-        end
+        raise "Failed to get commit hash from git repository: #{repo_path}" if r2p2_short.empty?
+
         r2p2_timestamp = get_timestamp(repo_path)
-        info['R2P2-ESP32'] = "#{r2p2_short}-#{r2p2_timestamp}"
+        info["R2P2-ESP32"] = "#{r2p2_short}-#{r2p2_timestamp}"
 
         # Level 1: components/picoruby-esp32
-        esp32_path = File.join(repo_path, 'components', 'picoruby-esp32')
+        esp32_path = File.join(repo_path, "components", "picoruby-esp32")
         if Dir.exist?(esp32_path)
           esp32_short = `git -C #{Shellwords.escape(esp32_path)} rev-parse --short=7 HEAD`.strip
-          if esp32_short.empty?
-            raise "Failed to get commit hash from git repository: #{esp32_path}"
-          end
+          raise "Failed to get commit hash from git repository: #{esp32_path}" if esp32_short.empty?
+
           esp32_timestamp = get_timestamp(esp32_path)
-          info['picoruby-esp32'] = "#{esp32_short}-#{esp32_timestamp}"
+          info["picoruby-esp32"] = "#{esp32_short}-#{esp32_timestamp}"
 
           # Level 2: picoruby-esp32/picoruby
-          picoruby_path = File.join(esp32_path, 'picoruby')
+          picoruby_path = File.join(esp32_path, "picoruby")
           if Dir.exist?(picoruby_path)
             picoruby_short = `git -C #{Shellwords.escape(picoruby_path)} rev-parse --short=7 HEAD`.strip
-            if picoruby_short.empty?
-              raise "Failed to get commit hash from git repository: #{picoruby_path}"
-            end
+            raise "Failed to get commit hash from git repository: #{picoruby_path}" if picoruby_short.empty?
+
             picoruby_timestamp = get_timestamp(picoruby_path)
-            info['picoruby'] = "#{picoruby_short}-#{picoruby_timestamp}"
+            info["picoruby"] = "#{picoruby_short}-#{picoruby_timestamp}"
 
             # Level 3以降: warning
             if has_submodules?(picoruby_path)
@@ -250,15 +246,14 @@ module Pra
       # Timestamp取得（ローカルタイムゾーン）
       def get_timestamp(repo_path)
         timestamp_str = `git -C #{Shellwords.escape(repo_path)} show -s --format=%ci HEAD`.strip
-        if timestamp_str.empty?
-          raise "Failed to get timestamp from git repository: #{repo_path}"
-        end
-        Time.parse(timestamp_str).strftime('%Y%m%d_%H%M%S')
+        raise "Failed to get timestamp from git repository: #{repo_path}" if timestamp_str.empty?
+
+        Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
       end
 
       # Submoduleの存在確認
       def has_submodules?(repo_path)
-        gitmodules_path = File.join(repo_path, '.gitmodules')
+        gitmodules_path = File.join(repo_path, ".gitmodules")
         File.exist?(gitmodules_path)
       end
 
@@ -273,9 +268,9 @@ module Pra
         env_config = get_environment(env_name)
         return nil unless env_config
 
-        r2p2_hash = "#{env_config['R2P2-ESP32']['commit']}-#{env_config['R2P2-ESP32']['timestamp']}"
-        esp32_hash = "#{env_config['picoruby-esp32']['commit']}-#{env_config['picoruby-esp32']['timestamp']}"
-        picoruby_hash = "#{env_config['picoruby']['commit']}-#{env_config['picoruby']['timestamp']}"
+        r2p2_hash = "#{env_config["R2P2-ESP32"]["commit"]}-#{env_config["R2P2-ESP32"]["timestamp"]}"
+        esp32_hash = "#{env_config["picoruby-esp32"]["commit"]}-#{env_config["picoruby-esp32"]["timestamp"]}"
+        picoruby_hash = "#{env_config["picoruby"]["commit"]}-#{env_config["picoruby"]["timestamp"]}"
 
         env_hash = generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
         [r2p2_hash, esp32_hash, picoruby_hash, env_hash]
@@ -302,6 +297,7 @@ module Pra
       # Symlink先を取得
       def read_symlink(link)
         return nil unless File.symlink?(link)
+
         File.readlink(link)
       end
 
@@ -316,7 +312,7 @@ module Pra
 
     # 後方互換性のための定数インターフェース
     # MODULE レベルで定義：モジュール上の定数ルックアップで呼び出される
-    # （既存コードで Pra::Env::PROJECT_ROOT のような参照があった場合）
+    # （既存コードで Picotorokko::Env::PROJECT_ROOT のような参照があった場合）
     # NOTE: CRITICAL FIX - Use project_root method, not Dir.pwd directly
     # This ensures const_missing returns cached values, consistent with dynamic methods
     def self.const_missing(name)
@@ -332,7 +328,7 @@ module Pra
       when :ENV_FILE
         env_file
       when :BUILD_DIR
-        File.join(project_root, 'build')
+        File.join(project_root, "build")
       else
         super
       end

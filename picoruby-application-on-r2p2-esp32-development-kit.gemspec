@@ -1,9 +1,9 @@
 
-require_relative "lib/pra/version"
+require_relative "lib/picotorokko/version"
 
 Gem::Specification.new do |spec|
   spec.name = "picotorokko"
-  spec.version = Pra::VERSION
+  spec.version = Picotorokko::VERSION
   spec.authors = ["bash0C7"]
   spec.email = ["ksb.4038.nullpointer+github@gmail.com"]
 

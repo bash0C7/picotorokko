@@ -1,6 +1,6 @@
 require "prism"
 
-module Pra
+module Picotorokko
   module Template
     # Prism AST ベースのRubyテンプレートエンジン
     # テンプレート内の TEMPLATE_* 定数をプレースホルダとして認識し、置換する

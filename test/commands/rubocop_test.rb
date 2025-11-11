@@ -28,7 +28,7 @@ class PraCommandsRubocopTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           output = capture_stdout do
-            Pra::Commands::Rubocop.start(["setup"])
+            Picotorokko::Commands::Rubocop.start(["setup"])
           end
 
           assert_match(/✅ RuboCop configuration has been set up!/, output)
@@ -55,7 +55,7 @@ class PraCommandsRubocopTest < PraTestCase
         begin
           FileUtils.touch(".rubocop.yml")
 
-          rubocop_cmd = Pra::Commands::Rubocop.new
+          rubocop_cmd = Picotorokko::Commands::Rubocop.new
           rubocop_cmd.define_singleton_method(:yes?) { |_msg| false }
 
           output = capture_stdout do
@@ -77,7 +77,7 @@ class PraCommandsRubocopTest < PraTestCase
           FileUtils.touch(".rubocop.yml")
           File.write(".rubocop.yml", "old content")
 
-          rubocop_cmd = Pra::Commands::Rubocop.new
+          rubocop_cmd = Picotorokko::Commands::Rubocop.new
           rubocop_cmd.define_singleton_method(:yes?) { |_msg| true }
 
           output = capture_stdout do
@@ -103,7 +103,7 @@ class PraCommandsRubocopTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           capture_stdout do
-            Pra::Commands::Rubocop.start(["setup"])
+            Picotorokko::Commands::Rubocop.start(["setup"])
           end
 
           assert_true(File.exist?("lib/rubocop/cop/picoruby/unsupported_method.rb"))
@@ -128,7 +128,7 @@ class PraCommandsRubocopTest < PraTestCase
         begin
           assert_raises(SystemExit) do
             capture_stdout do
-              Pra::Commands::Rubocop.start(["update"])
+              Picotorokko::Commands::Rubocop.start(["update"])
             end
           end
         ensure
@@ -149,7 +149,7 @@ class PraCommandsRubocopTest < PraTestCase
           File.chmod(0o755, "scripts/update_methods.rb")
 
           output = capture_stdout do
-            Pra::Commands::Rubocop.start(["update"])
+            Picotorokko::Commands::Rubocop.start(["update"])
           end
 
           assert_match(/🚀 Running method database update.../, output)
@@ -168,7 +168,7 @@ class PraCommandsRubocopTest < PraTestCase
           File.write("scripts/update_methods.rb", "#!/usr/bin/env ruby; exit 1")
           File.chmod(0o755, "scripts/update_methods.rb")
 
-          rubocop_cmd = Pra::Commands::Rubocop.new
+          rubocop_cmd = Picotorokko::Commands::Rubocop.new
           rubocop_cmd.define_singleton_method(:system) { |_cmd| false }
 
           error = assert_raises(RuntimeError) do
@@ -191,7 +191,7 @@ class PraCommandsRubocopTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           capture_stdout do
-            Pra::Commands::Rubocop.start(["setup"])
+            Picotorokko::Commands::Rubocop.start(["setup"])
           end
 
           assert_true(File.exist?(".rubocop.yml"))
@@ -212,7 +212,7 @@ class PraCommandsRubocopTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           capture_stdout do
-            Pra::Commands::Rubocop.start(["setup"])
+            Picotorokko::Commands::Rubocop.start(["setup"])
           end
 
           assert_true(File.directory?("lib"))
@@ -236,7 +236,7 @@ class PraCommandsRubocopTest < PraTestCase
           FileUtils.mkdir_p("lib/rubocop/cop/picoruby")
           File.write("lib/rubocop/cop/picoruby/old_cop.rb", "old code")
 
-          rubocop_cmd = Pra::Commands::Rubocop.new
+          rubocop_cmd = Picotorokko::Commands::Rubocop.new
           rubocop_cmd.define_singleton_method(:yes?) { |_msg| true }
 
           capture_stdout do

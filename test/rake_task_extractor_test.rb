@@ -1,6 +1,6 @@
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require_relative "test_helper"
-require "pra/commands/device"
+require "picotorokko/commands/device"
 
 # RakeTaskExtractor の単体テスト
 class RakeTaskExtractorTest < PraTestCase
@@ -145,7 +145,7 @@ class RakeTaskExtractorTest < PraTestCase
 
   def extract_tasks(source)
     result = Prism.parse(source)
-    extractor = Pra::Commands::RakeTaskExtractor.new
+    extractor = Picotorokko::Commands::RakeTaskExtractor.new
     result.value.accept(extractor)
     extractor
   end

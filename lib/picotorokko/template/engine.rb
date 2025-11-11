@@ -3,7 +3,7 @@ require_relative "yaml_engine"
 require_relative "c_engine"
 require_relative "string_engine"
 
-module Pra
+module Picotorokko
   # Template rendering system with support for multiple file formats
   # Provides unified interface for AST-based and string-based template processing
   module Template
@@ -40,6 +40,6 @@ module Pra
     end
 
     # テストで Ptrk 名前空間を使用するためのエイリアス
-    Ptrk = Pra unless defined?(Ptrk)
+    Ptrk = Picotorokko unless defined?(Ptrk)
   end
 end

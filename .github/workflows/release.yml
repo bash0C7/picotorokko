@@ -45,8 +45,8 @@ jobs:
 
       - name: Update version file
         run: |
-          sed -i 's/VERSION = ".*"/VERSION = "${{ inputs.version }}"/' lib/pra/version.rb
-          git diff lib/pra/version.rb
+          sed -i 's/VERSION = ".*"/VERSION = "${{ inputs.version }}"/' lib/picotorokko/version.rb
+          git diff lib/picotorokko/version.rb
 
       - name: Run tests
         run: bundle exec rake test
@@ -57,7 +57,7 @@ jobs:
       - name: Commit version bump
         if: ${{ !inputs.dry_run }}
         run: |
-          git add lib/pra/version.rb
+          git add lib/picotorokko/version.rb
           git commit -m "Bump version to ${{ inputs.version }}"
           git push origin main
 

@@ -2,7 +2,7 @@ require "English"
 require "fileutils"
 require "thor"
 
-module Pra
+module Picotorokko
   module Commands
     # RuboCop configuration and method database management for PicoRuby development
     class Rubocop < Thor

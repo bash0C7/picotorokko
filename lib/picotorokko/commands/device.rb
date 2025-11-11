@@ -1,8 +1,7 @@
+require "thor"
+require "prism"
 
-require 'thor'
-require 'prism'
-
-module Pra
+module Picotorokko
   module Commands
     # ESP32デバイス操作コマンド群（R2P2-ESP32タスク委譲）
     class Device < Thor
@@ -10,56 +9,56 @@ module Pra
         true
       end
 
-      desc 'flash', 'Flash firmware to ESP32'
-      option :env, default: 'current', desc: 'Environment name'
+      desc "flash", "Flash firmware to ESP32"
+      option :env, default: "current", desc: "Environment name"
       def flash
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
         validate_and_get_r2p2_path(actual_env)
 
         puts "Flashing: #{actual_env}"
-        delegate_to_r2p2('flash', env_name)
-        puts '✓ Flash completed'
+        delegate_to_r2p2("flash", env_name)
+        puts "\u2713 Flash completed"
       end
 
-      desc 'monitor', 'Monitor ESP32 serial output'
-      option :env, default: 'current', desc: 'Environment name'
+      desc "monitor", "Monitor ESP32 serial output"
+      option :env, default: "current", desc: "Environment name"
       def monitor
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
         validate_and_get_r2p2_path(actual_env)
 
         puts "Monitoring: #{actual_env}"
-        puts '(Press Ctrl+C to exit)'
-        delegate_to_r2p2('monitor', env_name)
+        puts "(Press Ctrl+C to exit)"
+        delegate_to_r2p2("monitor", env_name)
       end
 
-      desc 'build', 'Build firmware for ESP32'
-      option :env, default: 'current', desc: 'Environment name'
+      desc "build", "Build firmware for ESP32"
+      option :env, default: "current", desc: "Environment name"
       def build
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
         validate_and_get_r2p2_path(actual_env)
 
         puts "Building: #{actual_env}"
-        delegate_to_r2p2('build', env_name)
-        puts '✓ Build completed'
+        delegate_to_r2p2("build", env_name)
+        puts "\u2713 Build completed"
       end
 
-      desc 'setup_esp32', 'Setup ESP32 build environment'
-      option :env, default: 'current', desc: 'Environment name'
+      desc "setup_esp32", "Setup ESP32 build environment"
+      option :env, default: "current", desc: "Environment name"
       def setup_esp32
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
         validate_and_get_r2p2_path(actual_env)
 
         puts "Setting up ESP32: #{actual_env}"
-        delegate_to_r2p2('setup_esp32', env_name)
-        puts '✓ ESP32 setup completed'
+        delegate_to_r2p2("setup_esp32", env_name)
+        puts "\u2713 ESP32 setup completed"
       end
 
-      desc 'tasks', 'Show available R2P2-ESP32 tasks'
-      option :env, default: 'current', desc: 'Environment name'
+      desc "tasks", "Show available R2P2-ESP32 tasks"
+      option :env, default: "current", desc: "Environment name"
       def tasks
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
@@ -68,8 +67,8 @@ module Pra
         show_available_tasks(env_name)
       end
 
-      desc 'help', 'Show available R2P2-ESP32 tasks (alias for tasks)'
-      option :env, default: 'current', desc: 'Environment name'
+      desc "help", "Show available R2P2-ESP32 tasks (alias for tasks)"
+      option :env, default: "current", desc: "Environment name"
       def help
         tasks
       end
@@ -77,10 +76,10 @@ module Pra
       # 明示的に定義されていないコマンドをRakeタスクに透過的に委譲
       def method_missing(method_name, *args)
         # Thorの内部メソッド呼び出しは無視
-        return super if method_name.to_s.start_with?('_')
+        return super if method_name.to_s.start_with?("_")
 
         # Parse --env option from args
-        env_name = parse_env_from_args(args) || 'current'
+        env_name = parse_env_from_args(args) || "current"
         actual_env = resolve_env_name(env_name)
         r2p2_path = validate_and_get_r2p2_path(actual_env)
 
@@ -109,7 +108,7 @@ module Pra
 
       def respond_to_missing?(method_name, include_private = false)
         # Thorの内部メソッド以外は全てR2P2タスクとして扱う可能性がある
-        !method_name.to_s.start_with?('_') || super
+        !method_name.to_s.start_with?("_") || super
       end
 
       private
@@ -120,10 +119,10 @@ module Pra
 
         # 連続する2つのarg: ['--env', 'value'] または 1つのarg: ['--env=value']
         args.each_with_index do |arg, index|
-          if arg == '--env' && args[index + 1]
+          if arg == "--env" && args[index + 1]
             return args[index + 1]
-          elsif arg.start_with?('--env=')
-            return arg.split('=', 2)[1]
+          elsif arg.start_with?("--env=")
+            return arg.split("=", 2)[1]
           end
         end
 
@@ -137,7 +136,7 @@ module Pra
 
         puts "Available R2P2-ESP32 tasks for environment: #{actual_env}"
         puts "=" * 60
-        Pra::Env.execute_with_esp_env('rake -T', r2p2_path)
+        Picotorokko::Env.execute_with_esp_env("rake -T", r2p2_path)
       end
 
       # R2P2-ESP32のRakefileにタスクを委譲
@@ -146,14 +145,14 @@ module Pra
         r2p2_path = validate_and_get_r2p2_path(actual_env)
 
         # ESP-IDF環境でR2P2-ESP32のrakeタスクを実行
-        Pra::Env.execute_with_esp_env("rake #{command}", r2p2_path)
+        Picotorokko::Env.execute_with_esp_env("rake #{command}", r2p2_path)
       end
 
       # 環境名を解決（currentの場合は実環境名に変換）
       def resolve_env_name(env_name)
-        return env_name unless env_name == 'current'
+        return env_name unless env_name == "current"
 
-        current = Pra::Env.get_current_env
+        current = Picotorokko::Env.get_current_env
         if current.nil?
           raise "Error: No current environment set. Use 'pra device <command> --env <name>' to specify an environment"
         end
@@ -163,21 +162,21 @@ module Pra
 
       # 環境を検証してR2P2パスを取得
       def validate_and_get_r2p2_path(env_name)
-        env_config = Pra::Env.get_environment(env_name)
+        env_config = Picotorokko::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
-        build_path = Pra::Env.get_build_path(env_name)
+        build_path = Picotorokko::Env.get_build_path(env_name)
         raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
 
-        r2p2_path = File.join(build_path, 'R2P2-ESP32')
-        raise 'Error: R2P2-ESP32 not found in build environment' unless Dir.exist?(r2p2_path)
+        r2p2_path = File.join(build_path, "R2P2-ESP32")
+        raise "Error: R2P2-ESP32 not found in build environment" unless Dir.exist?(r2p2_path)
 
         r2p2_path
       end
 
       # Rakefileから利用可能なタスクを取得
       def available_rake_tasks(r2p2_path)
-        rakefile_path = File.join(r2p2_path, 'Rakefile')
+        rakefile_path = File.join(r2p2_path, "Rakefile")
         return [] unless File.exist?(rakefile_path)
 
         source = File.read(rakefile_path)
@@ -188,7 +187,7 @@ module Pra
 
         extractor.tasks.uniq.sort
       rescue StandardError => e
-        warn "Warning: Failed to parse Rakefile: #{e.message}" if ENV['DEBUG']
+        warn "Warning: Failed to parse Rakefile: #{e.message}" if ENV["DEBUG"]
         []
       end
     end

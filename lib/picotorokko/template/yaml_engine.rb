@@ -1,6 +1,6 @@
 require "yaml"
 
-module Pra
+module Picotorokko
   module Template
     # Psych ベースの YAML テンプレートエンジン
     # テンプレート内の __PTRK_TEMPLATE_* プレースホルダを置換する

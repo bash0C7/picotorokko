@@ -1,7 +1,7 @@
 require "thor"
 require "fileutils"
 
-module Pra
+module Picotorokko
   module Commands
     # Application-specific mrbgem管理コマンド群
     class Mrbgems < Thor
@@ -56,7 +56,7 @@ module Pra
       end
 
       def render_single_template(template_path, output_path, variables)
-        rendered_content = Pra::Template::Engine.render(template_path, variables)
+        rendered_content = Picotorokko::Template::Engine.render(template_path, variables)
         File.write(output_path, rendered_content, encoding: "UTF-8")
         puts "✓ Created: #{File.basename(output_path)}"
       end
@@ -72,7 +72,7 @@ module Pra
 
       def templates_directory
         gem_root = File.expand_path("../../../", __dir__)
-        File.join(gem_root, "lib", "pra", "templates", "mrbgem_app")
+        File.join(gem_root, "lib", "picotorokko", "templates", "mrbgem_app")
       end
 
       def print_success_message(name, c_prefix)

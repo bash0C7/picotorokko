@@ -1,7 +1,7 @@
 require_relative "../test_helper"
-require_relative "../../lib/pra/executor"
+require_relative "../../lib/picotorokko/executor"
 
-module Pra
+module Picotorokko
   class ExecutorTest < Test::Unit::TestCase
     # ProductionExecutor: 成功
     sub_test_case "ProductionExecutor" do

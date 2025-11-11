@@ -3,7 +3,7 @@ require "simplecov"
 SimpleCov.start do
   add_filter "/test/"
   add_filter "/vendor/"
-  add_filter "/lib/pra/templates/" # ユーザープロジェクト向けテンプレートは除外
+  add_filter "/lib/picotorokko/templates/" # ユーザープロジェクト向けテンプレートは除外
   enable_coverage :branch
   # NOTE: 段階的にカバレッジ要件を引き上げ
   # Phase 3.2: 60% 達成
@@ -22,14 +22,14 @@ SimpleCov.formatter = SimpleCov::Formatter::CoberturaFormatter
 # See TODO.md [TODO-INFRASTRUCTURE-DEVICE-TEST] for details
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-require "pra"
+require "picotorokko"
 
 require "test-unit"
 require "tmpdir"
 require "securerandom"
 
-# Ptrk as alias for Pra (for tests using Ptrk namespace)
-Ptrk = Pra unless defined?(Ptrk)
+# Ptrk as alias for Picotorokko (for tests using Ptrk namespace)
+Ptrk = Picotorokko unless defined?(Ptrk)
 
 # テスト用 ptrk_user_root を一時ディレクトリで設定
 # これにより、テスト実行中に gem root に汚染がないようにする
@@ -40,12 +40,12 @@ class PraTestCase < Test::Unit::TestCase
   # setup: 各テスト開始時に初期化
   def setup
     super
-    # NOTE: PROJECT_ROOT は動的メソッド（Pra::Env.project_root）に変更されたため、
+    # NOTE: PROJECT_ROOT は動的メソッド（Picotorokko::Env.project_root）に変更されたため、
     # 定数操作は不要になった。Dir.pwd の変更が自動的に反映される。
 
     # CRITICAL FIX: Reset cached project root at test start
     # This ensures each test starts with the current directory as the project root
-    Pra::Env.reset_cached_root!
+    Picotorokko::Env.reset_cached_root!
 
     # Verify git status is clean before test starts
     verify_git_status_clean!("before test")
@@ -69,7 +69,7 @@ class PraTestCase < Test::Unit::TestCase
 
       # CRITICAL FIX: Reset cached project root when returning from chdir
       # This ensures patch_dir, cache_dir point back to the original directory
-      Pra::Env.reset_cached_root!
+      Picotorokko::Env.reset_cached_root!
     end
   end
 
@@ -81,13 +81,13 @@ class PraTestCase < Test::Unit::TestCase
     # （.gitignore されているものだけを削除するため、リポジトリ管理物は損壊しない）
     begin
       dirs_to_cleanup = [
-        File.join(Pra::Env.project_root, "build"),    # build/
-        Pra::Env.patch_dir,                           # ptrk_env/patch/
-        Pra::Env.cache_dir                            # ptrk_env/.cache/
+        File.join(Picotorokko::Env.project_root, "build"),    # build/
+        Picotorokko::Env.patch_dir,                           # ptrk_env/patch/
+        Picotorokko::Env.cache_dir                            # ptrk_env/.cache/
       ]
 
       files_to_cleanup = [
-        Pra::Env.env_file                             # ptrk_env/.picoruby-env.yml
+        Picotorokko::Env.env_file                             # ptrk_env/.picoruby-env.yml
       ]
 
       dirs_to_cleanup.each do |dir|
@@ -231,7 +231,7 @@ module SystemCommandMocking
     end
   end
 
-  # Helper method to mock Pra::Env.execute_with_esp_env for device tests
+  # Helper method to mock Picotorokko::Env.execute_with_esp_env for device tests
   # Usage: with_esp_env_mocking { |mock| ... }
   # This mocks execute_with_esp_env to track commands instead of executing them
   def with_esp_env_mocking(fail_command: false)
@@ -242,8 +242,8 @@ module SystemCommandMocking
 
     Thread.current[:esp_env_mock_context] = mock_context
 
-    original_method = Pra::Env.method(:execute_with_esp_env)
-    Pra::Env.define_singleton_method(:execute_with_esp_env) do |command, working_dir = nil|
+    original_method = Picotorokko::Env.method(:execute_with_esp_env)
+    Picotorokko::Env.define_singleton_method(:execute_with_esp_env) do |command, working_dir = nil|
       ctx = Thread.current[:esp_env_mock_context]
       return original_method.call(command, working_dir) unless ctx
 
@@ -255,7 +255,7 @@ module SystemCommandMocking
       yield(mock_context)
     ensure
       Thread.current[:esp_env_mock_context] = nil
-      Pra::Env.define_singleton_method(:execute_with_esp_env, original_method)
+      Picotorokko::Env.define_singleton_method(:execute_with_esp_env, original_method)
     end
   end
 end

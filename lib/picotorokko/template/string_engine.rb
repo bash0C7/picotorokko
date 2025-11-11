@@ -1,6 +1,6 @@
 require "erb"
 
-module Pra
+module Picotorokko
   module Template
     # 汎用テキストテンプレートエンジン
     # Markdownやその他のテキストファイル向けのフォールバック

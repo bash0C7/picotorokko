@@ -9,7 +9,7 @@ AllCops:
     - ".cache/**/*"
     - "patch/**/*"
     - "storage/**/*"
-    - "lib/pra/templates/**/*" # User-facing templates, not core gem code
+    - "lib/picotorokko/templates/**/*" # User-facing templates, not core gem code
     - "test/commands/device_test.rb" # Excluded from test suite - see TODO.md [TODO-INFRASTRUCTURE-DEVICE-TEST]
 
 plugins:

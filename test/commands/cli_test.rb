@@ -5,7 +5,7 @@ class PraCommandsCliTest < PraTestCase
     # 2.3: Update lib/ptrk/cli.rb command registration
     # Red: Verify env, device, mrbgem, rubocop commands are registered
     # Old commands (cache, build, patch, ci) should not exist
-    cli_class = Pra::CLI
+    cli_class = Picotorokko::CLI
 
     # Verify new commands exist
     assert_includes cli_class.commands.keys, "env",
@@ -13,26 +13,26 @@ class PraCommandsCliTest < PraTestCase
   end
 
   def test_device_command_exists
-    cli_class = Pra::CLI
+    cli_class = Picotorokko::CLI
     assert_includes cli_class.commands.keys, "device",
                     "device command should be registered"
   end
 
   def test_mrbgems_command_exists
-    cli_class = Pra::CLI
+    cli_class = Picotorokko::CLI
     assert_includes cli_class.commands.keys, "mrbgems",
                     "mrbgems command should be registered"
   end
 
   def test_rubocop_command_exists
-    cli_class = Pra::CLI
+    cli_class = Picotorokko::CLI
     assert_includes cli_class.commands.keys, "rubocop",
                     "rubocop command should be registered"
   end
 
   def test_old_commands_do_not_exist
     # Verify old commands are NOT registered
-    cli_class = Pra::CLI
+    cli_class = Picotorokko::CLI
     assert_not_includes cli_class.commands.keys, "cache",
                         "cache command should NOT be registered"
     assert_not_includes cli_class.commands.keys, "build",

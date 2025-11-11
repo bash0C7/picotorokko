@@ -1,6 +1,6 @@
 require "fileutils"
 
-module Pra
+module Picotorokko
   # パッチ適用ロジック（複数のコマンドで再利用）
   module PatchApplier
     # パッチディレクトリ内のファイルをワーキングディレクトリに適用

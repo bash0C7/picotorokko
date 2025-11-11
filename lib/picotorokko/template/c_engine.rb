@@ -1,4 +1,4 @@
-module Pra
+module Picotorokko
   module Template
     # C コード用のテンプレートエンジン
     # シンプルな文字列置換アプローチを使用

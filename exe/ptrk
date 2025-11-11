@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-require "pra"
+require "picotorokko"
 
-Pra::CLI.start(ARGV)
+Picotorokko::CLI.start(ARGV)

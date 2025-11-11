@@ -1,6 +1,6 @@
 require "open3"
 
-module Pra
+module Picotorokko
   # 外部コマンド実行の抽象化層
   # ProductionExecutor: 実際のコマンド実行（Open3 使用）
   # MockExecutor: テスト用のモック実行

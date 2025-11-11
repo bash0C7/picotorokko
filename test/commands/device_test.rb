@@ -24,7 +24,7 @@ class PraCommandsDeviceTest < PraTestCase
 
   # NOTE: SystemCommandMocking::SystemRefinement is NOT used in device_test.rb
   # - Refinement-based system() mocking doesn't work across lexical scopes
-  # - device_test.rb uses with_esp_env_mocking instead (mocks Pra::Env.execute_with_esp_env)
+  # - device_test.rb uses with_esp_env_mocking instead (mocks Picotorokko::Env.execute_with_esp_env)
   # - See: test_helper.rb with_esp_env_mocking for device test mocking strategy
 
   # device flash コマンドのテスト
@@ -38,7 +38,7 @@ class PraCommandsDeviceTest < PraTestCase
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Pra::Commands::Device.start(['flash', '--env', 'nonexistent-env'])
+              Picotorokko::Commands::Device.start(['flash', '--env', 'nonexistent-env'])
             end
           end
 
@@ -56,7 +56,7 @@ class PraCommandsDeviceTest < PraTestCase
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Pra::Commands::Device.start(['flash', '--env', 'current'])
+              Picotorokko::Commands::Device.start(['flash', '--env', 'current'])
             end
           end
 
@@ -77,15 +77,15 @@ class PraCommandsDeviceTest < PraTestCase
             esp32_info = { 'commit' => 'def5678', 'timestamp' => '20250102_120000' }
             picoruby_info = { 'commit' => 'ghi9012', 'timestamp' => '20250103_120000' }
 
-            Pra::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
+            Picotorokko::Env.set_environment('test-env', r2p2_info, esp32_info, picoruby_info)
 
             # ビルド環境ディレクトリが存在する場合は削除（前のテストの残骸をクリーンアップ）
-            build_path = Pra::Env.get_build_path('test-env')
+            build_path = Picotorokko::Env.get_build_path('test-env')
             FileUtils.rm_rf(build_path) if Dir.exist?(build_path)
 
             assert_raise(RuntimeError) do
               capture_stdout do
-                Pra::Commands::Device.start(['flash', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['flash', '--env', 'test-env'])
               end
             end
 
@@ -106,7 +106,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             with_esp_env_mocking do |mock|
               output = capture_stdout do
-                Pra::Commands::Device.start(['flash', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['flash', '--env', 'test-env'])
               end
 
               # 出力を確認
@@ -135,7 +135,7 @@ class PraCommandsDeviceTest < PraTestCase
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Pra::Commands::Device.start(['monitor', '--env', 'nonexistent-env'])
+              Picotorokko::Commands::Device.start(['monitor', '--env', 'nonexistent-env'])
             end
           end
 
@@ -153,7 +153,7 @@ class PraCommandsDeviceTest < PraTestCase
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Pra::Commands::Device.start(['monitor', '--env', 'current'])
+              Picotorokko::Commands::Device.start(['monitor', '--env', 'current'])
             end
           end
 
@@ -173,7 +173,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             with_esp_env_mocking do |_mock|
               output = capture_stdout do
-                Pra::Commands::Device.start(['monitor', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['monitor', '--env', 'test-env'])
               end
 
               # 出力を確認
@@ -199,7 +199,7 @@ class PraCommandsDeviceTest < PraTestCase
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Pra::Commands::Device.start(['build', '--env', 'nonexistent-env'])
+              Picotorokko::Commands::Device.start(['build', '--env', 'nonexistent-env'])
             end
           end
 
@@ -219,7 +219,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             with_esp_env_mocking do |_mock|
               output = capture_stdout do
-                Pra::Commands::Device.start(['build', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['build', '--env', 'test-env'])
               end
 
               # 出力を確認
@@ -245,7 +245,7 @@ class PraCommandsDeviceTest < PraTestCase
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Pra::Commands::Device.start(['setup_esp32', '--env', 'nonexistent-env'])
+              Picotorokko::Commands::Device.start(['setup_esp32', '--env', 'nonexistent-env'])
             end
           end
 
@@ -265,7 +265,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             with_esp_env_mocking do |_mock|
               output = capture_stdout do
-                Pra::Commands::Device.start(['setup_esp32', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['setup_esp32', '--env', 'test-env'])
               end
 
               # 出力を確認
@@ -291,7 +291,7 @@ class PraCommandsDeviceTest < PraTestCase
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Pra::Commands::Device.start(['tasks', '--env', 'nonexistent-env'])
+              Picotorokko::Commands::Device.start(['tasks', '--env', 'nonexistent-env'])
             end
           end
 
@@ -309,7 +309,7 @@ class PraCommandsDeviceTest < PraTestCase
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Pra::Commands::Device.start(['tasks', '--env', 'current'])
+              Picotorokko::Commands::Device.start(['tasks', '--env', 'current'])
             end
           end
 
@@ -335,7 +335,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             with_esp_env_mocking do |_mock|
               output = capture_stdout do
-                Pra::Commands::Device.start(['tasks', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['tasks', '--env', 'test-env'])
               end
 
               # タスク一覧メッセージが出力されることを確認
@@ -364,7 +364,7 @@ class PraCommandsDeviceTest < PraTestCase
             with_esp_env_mocking do |_mock|
               # custom_task が Rakefile に存在するため、method_missing で委譲される
               output = capture_stdout do
-                Pra::Commands::Device.start(['custom_task', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['custom_task', '--env', 'test-env'])
               end
 
               # タスク委譲メッセージが出力されることを確認
@@ -389,7 +389,7 @@ class PraCommandsDeviceTest < PraTestCase
             with_esp_env_mocking(fail_command: true) do |_mock|
               assert_raise(SystemExit) do
                 capture_stdout do
-                  Pra::Commands::Device.start(['nonexistent_task', '--env', 'test-env'])
+                  Picotorokko::Commands::Device.start(['nonexistent_task', '--env', 'test-env'])
                 end
               end
             end
@@ -413,7 +413,7 @@ class PraCommandsDeviceTest < PraTestCase
               # custom_task が Rakefile に存在するため、method_missing で委譲される
               # 環境名は --env で明示的に指定する（暗黙のカレント環境は存在しない）
               output = capture_stdout do
-                Pra::Commands::Device.start(['custom_task', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['custom_task', '--env', 'test-env'])
               end
 
               # タスク委譲メッセージが出力されることを確認
@@ -428,7 +428,7 @@ class PraCommandsDeviceTest < PraTestCase
 
     test "does not delegate Thor internal methods" do
       # _で始まるメソッドはmethod_missingで処理されない
-      device = Pra::Commands::Device.new
+      device = Picotorokko::Commands::Device.new
 
       # respond_to_missing? が false を返すことを確認
       assert_false(device.respond_to?(:_internal_method))
@@ -452,7 +452,7 @@ class PraCommandsDeviceTest < PraTestCase
 
             with_esp_env_mocking do |_mock|
               output = capture_stdout do
-                Pra::Commands::Device.start(['help', '--env', 'test-env'])
+                Picotorokko::Commands::Device.start(['help', '--env', 'test-env'])
               end
 
               # ヘルプメッセージが表示されることを確認
@@ -485,10 +485,10 @@ class PraCommandsDeviceTest < PraTestCase
     esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
     picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
 
-    Pra::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+    Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
 
     # Phase 4: get_build_path uses env_name, not env_hash
-    build_path = Pra::Env.get_build_path(env_name)
+    build_path = Picotorokko::Env.get_build_path(env_name)
     r2p2_path = File.join(build_path, "R2P2-ESP32")
     FileUtils.mkdir_p(r2p2_path)
 
@@ -503,7 +503,7 @@ class PraCommandsDeviceTest < PraTestCase
     env_name, r2p2_path = setup_test_environment(env_name)
 
     # Set current environment for default resolution
-    Pra::Env.set_current_env(env_name)
+    Picotorokko::Env.set_current_env(env_name)
 
     [env_name, r2p2_path]
   end

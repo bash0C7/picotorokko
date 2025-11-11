@@ -1,11 +1,11 @@
 require "test_helper"
 require "stringio"
 
-class PraTest < Test::Unit::TestCase
+class PicotorokkoTest < Test::Unit::TestCase
   # VERSION定数の存在確認
   test "VERSION constant is defined" do
     assert do
-      ::Pra.const_defined?(:VERSION)
+      ::Picotorokko.const_defined?(:VERSION)
     end
   end
 
@@ -14,28 +14,28 @@ class PraTest < Test::Unit::TestCase
     test "outputs version string" do
       # 標準出力をキャプチャ
       output = capture_stdout do
-        Pra::CLI.start(['version'])
+        Picotorokko::CLI.start(['version'])
       end
 
       # バージョン情報が出力されることを確認
-      assert_match(/pra version \d+\.\d+\.\d+/, output)
-      assert_match(/#{Pra::VERSION}/, output)
+      assert_match(/picotorokko version \d+\.\d+\.\d+/, output)
+      assert_match(/#{Picotorokko::VERSION}/, output)
     end
 
     test "outputs version with --version flag" do
       output = capture_stdout do
-        Pra::CLI.start(['--version'])
+        Picotorokko::CLI.start(['--version'])
       end
 
-      assert_match(/pra version #{Pra::VERSION}/, output)
+      assert_match(/picotorokko version #{Picotorokko::VERSION}/, output)
     end
 
     test "outputs version with -v flag" do
       output = capture_stdout do
-        Pra::CLI.start(['-v'])
+        Picotorokko::CLI.start(['-v'])
       end
 
-      assert_match(/pra version #{Pra::VERSION}/, output)
+      assert_match(/picotorokko version #{Picotorokko::VERSION}/, output)
     end
   end
 

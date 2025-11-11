@@ -4,20 +4,20 @@ class EnvConstantsTest < PraTestCase
   def test_env_dir_constant_exists
     # 2.2: Update lib/ptrk/env.rb constants
     # Red: Verify ENV_DIR constant exists and is "ptrk_env"
-    assert Pra::Env.const_defined?(:ENV_DIR),
-           "Pra::Env should define ENV_DIR constant"
+    assert Picotorokko::Env.const_defined?(:ENV_DIR),
+           "Picotorokko::Env should define ENV_DIR constant"
 
-    assert_equal "ptrk_env", Pra::Env::ENV_DIR,
-                 "Pra::Env::ENV_DIR should equal 'ptrk_env'"
+    assert_equal "ptrk_env", Picotorokko::Env::ENV_DIR,
+                 "Picotorokko::Env::ENV_DIR should equal 'ptrk_env'"
   end
 
   def test_env_name_pattern_constant_exists
     # 2.2: Update lib/ptrk/env.rb constants
     # Red: Verify ENV_NAME_PATTERN constant exists and matches valid env names
-    assert Pra::Env.const_defined?(:ENV_NAME_PATTERN),
-           "Pra::Env should define ENV_NAME_PATTERN constant"
+    assert Picotorokko::Env.const_defined?(:ENV_NAME_PATTERN),
+           "Picotorokko::Env should define ENV_NAME_PATTERN constant"
 
-    pattern = Pra::Env::ENV_NAME_PATTERN
+    pattern = Picotorokko::Env::ENV_NAME_PATTERN
 
     # Valid names
     assert_match pattern, "development", "should match 'development'"
@@ -38,18 +38,18 @@ class EnvConstantsTest < PraTestCase
     # All paths should use ptrk_env/ prefix
 
     # Cache directory
-    expected_cache = File.join(Pra::Env::PROJECT_ROOT, "ptrk_env", ".cache")
-    assert_equal expected_cache, Pra::Env::CACHE_DIR,
+    expected_cache = File.join(Picotorokko::Env::PROJECT_ROOT, "ptrk_env", ".cache")
+    assert_equal expected_cache, Picotorokko::Env::CACHE_DIR,
                  "CACHE_DIR should be ptrk_env/.cache"
 
     # Environment file
-    expected_env_file = File.join(Pra::Env::PROJECT_ROOT, "ptrk_env", ".picoruby-env.yml")
-    assert_equal expected_env_file, Pra::Env::ENV_FILE,
+    expected_env_file = File.join(Picotorokko::Env::PROJECT_ROOT, "ptrk_env", ".picoruby-env.yml")
+    assert_equal expected_env_file, Picotorokko::Env::ENV_FILE,
                  "ENV_FILE should be ptrk_env/.picoruby-env.yml"
 
     # Patch directory
-    expected_patch = File.join(Pra::Env::PROJECT_ROOT, "ptrk_env", "patch")
-    assert_equal expected_patch, Pra::Env::PATCH_DIR,
+    expected_patch = File.join(Picotorokko::Env::PROJECT_ROOT, "ptrk_env", "patch")
+    assert_equal expected_patch, Picotorokko::Env::PATCH_DIR,
                  "PATCH_DIR should be ptrk_env/patch"
   end
 
@@ -57,9 +57,9 @@ class EnvConstantsTest < PraTestCase
     # Phase 4.1: Build paths should use env_name instead of env_hash
     # Pattern: ptrk_env/{env_name}/ instead of build/{env_hash}/
     env_name = "test-env"
-    build_path = Pra::Env.get_build_path(env_name)
+    build_path = Picotorokko::Env.get_build_path(env_name)
 
-    expected_path = File.join(Pra::Env::PROJECT_ROOT, "ptrk_env", env_name)
+    expected_path = File.join(Picotorokko::Env::PROJECT_ROOT, "ptrk_env", env_name)
     assert_equal expected_path, build_path,
                  "Build path should be ptrk_env/{env_name}"
   end
@@ -69,7 +69,7 @@ class EnvConstantsTest < PraTestCase
     # All operations should use explicit env_name
 
     # get_current_env should return nil (no implicit current)
-    assert_nil Pra::Env.get_current_env,
+    assert_nil Picotorokko::Env.get_current_env,
                "get_current_env should return nil (no implicit current environment)"
   end
 end
