@@ -115,7 +115,7 @@ module Pra
         puts '  Applying patches...'
 
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
-          patch_repo_dir = File.join(Pra::Env::PATCH_DIR, repo)
+          patch_repo_dir = File.join(Pra::Env.patch_dir, repo)
           next unless Dir.exist?(patch_repo_dir)
 
           case repo
@@ -149,7 +149,7 @@ module Pra
         puts "=== Patch Differences ===\n"
 
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
-          patch_repo_dir = File.join(Pra::Env::PATCH_DIR, repo)
+          patch_repo_dir = File.join(Pra::Env.patch_dir, repo)
           work_path = resolve_work_path(repo, build_path)
 
           show_repo_diff(repo, patch_repo_dir, work_path)
@@ -267,7 +267,7 @@ module Pra
           puts "  #{repo}: #{changed_files.size} file(s)"
 
           changed_files.each do |file|
-            patch_dir = File.join(Pra::Env::PATCH_DIR, repo)
+            patch_dir = File.join(Pra::Env.patch_dir, repo)
             FileUtils.mkdir_p(patch_dir)
 
             file_dir = File.dirname(file)

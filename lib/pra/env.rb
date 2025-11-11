@@ -18,14 +18,6 @@ module Pra
     # ptrk env name pattern validation (lowercase alphanumeric, dash, underscore)
     ENV_NAME_PATTERN = /^[a-z0-9_-]+$/
 
-    # ルートディレクトリ
-    PROJECT_ROOT = Dir.pwd
-    # ptrk_env/ consolidated directory structure (Phase 4.1)
-    CACHE_DIR = File.join(PROJECT_ROOT, ENV_DIR, '.cache')
-    PATCH_DIR = File.join(PROJECT_ROOT, ENV_DIR, 'patch')
-    STORAGE_HOME = File.join(PROJECT_ROOT, 'storage', 'home')
-    ENV_FILE = File.join(PROJECT_ROOT, ENV_DIR, '.picoruby-env.yml')
-
     # リポジトリ定義
     REPOS = {
       'R2P2-ESP32' => 'https://github.com/picoruby/R2P2-ESP32.git',
@@ -39,7 +31,55 @@ module Pra
       'picoruby-esp32' => 'picoruby'
     }.freeze
 
+    # ====== CRITICAL FIX: Cache initial project root ======
+    # PROBLEM: Dynamic methods using Dir.pwd break when tests chdir
+    # - export_repo_changes does Dir.chdir(work_path)
+    # - Inside that, Pra::Env.patch_dir calls Dir.pwd
+    # - Gets wrong path (work_path/ptrk_env/patch instead of original/ptrk_env/patch)
+    # - Test assertion fails: Dir.exist?(patch_dir) returns false
+    #
+    # SOLUTION: Cache the initial project_root once, then use cached value
+    # Only reset in tests via @reset_cached_root call
+    @cached_project_root = Dir.pwd.freeze
+    @reset_cached_root_enabled = true
+
     class << self
+      # ====== ダイナミックディレクトリパス（キャッシュベース） ======
+      # NOTE: Caches initial project_root to prevent Dir.chdir interference
+      # This ensures patch_dir, cache_dir always point to the original project root
+      # not the current working directory
+
+      # ルートディレクトリ（初期化時のDirパスをキャッシュ）
+      def project_root
+        @project_root ||= Dir.pwd
+      end
+
+      # テスト用：キャッシュされた project_root をリセット
+      def reset_cached_root!
+        return unless @reset_cached_root_enabled
+        @project_root = Dir.pwd
+      end
+
+      # キャッシュディレクトリ
+      def cache_dir
+        File.join(project_root, ENV_DIR, '.cache')
+      end
+
+      # パッチディレクトリ
+      def patch_dir
+        File.join(project_root, ENV_DIR, 'patch')
+      end
+
+      # ストレージホームディレクトリ
+      def storage_home
+        File.join(project_root, 'storage', 'home')
+      end
+
+      # 環境定義ファイルパス
+      def env_file
+        File.join(project_root, ENV_DIR, '.picoruby-env.yml')
+      end
+
       # ====== 環境名検証 ======
 
       # 環境名が有効なパターンか検証
@@ -54,14 +94,14 @@ module Pra
 
       # .picoruby-env.yml を読み込み（環境定義のメタデータ）
       def load_env_file
-        return {} unless File.exist?(ENV_FILE)
-        YAML.load_file(ENV_FILE) || {}
+        return {} unless File.exist?(env_file)
+        YAML.load_file(env_file) || {}
       end
 
       # .picoruby-env.yml に保存
       def save_env_file(data)
-        FileUtils.mkdir_p(File.dirname(ENV_FILE))
-        File.write(ENV_FILE, YAML.dump(data))
+        FileUtils.mkdir_p(File.dirname(env_file))
+        File.write(env_file, YAML.dump(data))
       end
 
       # 指定された名前の環境定義を読み込み（.picoruby-env.yml から）
@@ -239,14 +279,14 @@ module Pra
 
       # キャッシュディレクトリパスを取得（不変リポジトリコピーの場所）
       def get_cache_path(repo_name, commit_hash)
-        File.join(CACHE_DIR, repo_name, commit_hash)
+        File.join(cache_dir, repo_name, commit_hash)
       end
 
       # ビルド環境ディレクトリパスを取得（ワーキングディレクトリの場所）
       def get_build_path(env_name)
         # Phase 4: Build path uses env_name instead of env_hash
         # Pattern: ptrk_env/{env_name} instead of build/{env_hash}
-        File.join(PROJECT_ROOT, ENV_DIR, env_name)
+        File.join(project_root, ENV_DIR, env_name)
       end
 
       # Symlink操作
@@ -276,6 +316,30 @@ module Pra
         end
 
         working_dir ? Dir.chdir(working_dir, &execute_block) : execute_block.call
+      end
+    end
+
+    # 後方互換性のための定数インターフェース
+    # MODULE レベルで定義：モジュール上の定数ルックアップで呼び出される
+    # （既存コードで Pra::Env::PROJECT_ROOT のような参照があった場合）
+    # NOTE: CRITICAL FIX - Use project_root method, not Dir.pwd directly
+    # This ensures const_missing returns cached values, consistent with dynamic methods
+    def self.const_missing(name)
+      case name
+      when :PROJECT_ROOT
+        project_root
+      when :CACHE_DIR
+        cache_dir
+      when :PATCH_DIR
+        patch_dir
+      when :STORAGE_HOME
+        storage_home
+      when :ENV_FILE
+        env_file
+      when :BUILD_DIR
+        File.join(project_root, 'build')
+      else
+        super
       end
     end
   end
