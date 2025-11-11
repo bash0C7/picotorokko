@@ -72,7 +72,7 @@ class PraTestCase < Test::Unit::TestCase
     # （.gitignore されているものだけを削除するため、リポジトリ管理物は損壊しない）
     begin
       dirs_to_cleanup = [
-        File.join(Pra::Env.project_root, 'build'),    # build/
+        File.join(Pra::Env.project_root, "build"),    # build/
         Pra::Env.patch_dir,                           # ptrk_env/patch/
         Pra::Env.cache_dir                            # ptrk_env/.cache/
       ]
