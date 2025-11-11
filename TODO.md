@@ -34,20 +34,20 @@
 
 ---
 
-### [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-REFACTOR] 🔧 MEDIUM PRIORITY - Code Quality
+### [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-REFACTOR] ✅ COMPLETED - Phase 0 (Session 6)
 
-**Status**: 🚨 **IDENTIFIED** - Refinement-based mocking doesn't work across lexical scopes (commit 0393bea)
+**Status**: ✅ **COMPLETED** (commits d8c2c89, 4b3397c, 95f2caf)
 
-**Problem Summary**:
-- 3 system() mocking tests in env_test.rb fail due to Ruby Refinement limitations
-- Refinement activated in env_test.rb doesn't affect system() calls inside lib/pra/env.rb
-- Real git commands execute instead of mocks, causing test failures
+**Problem Summary (Original)**:
+- 3 system() mocking tests in env_test.rb failed due to Ruby Refinement limitations
+- Refinement activated in env_test.rb didn't affect system() calls inside lib/pra/env.rb
+- Real git commands executed instead of mocks, causing test failures
 
-**Root Cause**:
+**Root Cause (Original)**:
 - **Ruby Refinements are lexically scoped, not dynamically scoped**
-- `using SystemCommandMocking::SystemRefinement` in env_test.rb only affects code **in that file**
+- `using SystemCommandMocking::SystemRefinement` in env_test.rb only affected code **in that file**
 - When env_test.rb calls `Pra::Env.clone_repo()`, which then calls `system()` in lib/pra/env.rb:
-  - The `system()` call happens in lib/pra/env.rb's lexical scope
+  - The `system()` call happened in lib/pra/env.rb's lexical scope
   - Refinement is NOT active in that scope
   - Real Kernel#system is called instead of mock
 
@@ -81,40 +81,58 @@ fatal: could not read Username for 'https://github.com': No such device or addre
 2. Cannot verify system() error handling without production code refactoring
 3. 3 tests permanently omitted until resolved
 
-**Solution Options**:
+**Solution Implemented (Phase 0 - Session 6)**:
 
-**Option A: Dependency Injection (Recommended)**
-- Refactor lib/pra/env.rb to accept system executor as dependency
-- Default: real Kernel#system
-- Test: inject mock executor
-- Pros: Clean separation, testable design
-- Cons: Requires production code changes
+**Option A: Dependency Injection** ✅ **CHOSEN & COMPLETED**
 
-**Option B: Extract Testable Wrapper**
-- Create `Pra::SystemCommand.execute(cmd)` wrapper in lib/pra/
-- Use wrapper throughout lib/pra/env.rb
-- Mock wrapper in tests
-- Pros: Minimal changes, centralized system() calls
-- Cons: Extra indirection layer
+Architecture:
+```ruby
+# lib/pra/executor.rb
+module Pra
+  module Executor
+    def execute(command, working_dir = nil)
+      # Returns [stdout, stderr]
+      # Raises RuntimeError on non-zero exit (via Open3.capture3)
+    end
+  end
 
-**Option C: Global Singleton Mock (Not Recommended)**
-- Dynamically replace Kernel#system in tests
-- Carefully cleanup after each test
-- Pros: No production code changes
-- Cons: Fragile, CI compatibility concerns, test isolation risks
+  class ProductionExecutor < Executor  # Uses Open3
+  class MockExecutor < Executor        # For testing
+end
 
-**Option D: Accept Limitation (Current Status)**
-- Keep tests omitted
-- Document with TODO marker
-- Accept reduced branch coverage
-- Pros: No refactoring effort
-- Cons: Technical debt, incomplete test coverage
+# lib/pra/env.rb refactored:
+def execute_with_esp_env(command, working_dir = nil)
+  executor.execute(command, working_dir)
+end
+```
 
-**Next Steps** (when prioritized):
-1. Choose solution approach (recommend Option A or B)
-2. Refactor lib/pra/env.rb system() calls
-3. Re-enable 3 omitted tests
-4. Verify branch coverage improvement
+Implementation Details:
+- ✅ **lib/pra/executor.rb**: ProductionExecutor (Open3.capture3) + MockExecutor
+- ✅ **lib/pra/env.rb**: Dependency injection via `set_executor(executor)` / `executor` accessors
+- ✅ **clone_repo / clone_with_submodules / execute_with_esp_env**: All refactored to use executor
+- ✅ **No Dir.chdir boilerplate**: Working directory passed to executor.execute()
+- ✅ **Error handling**: RuntimeError thrown on non-zero exit with detailed stderr
+
+Test Re-enablement (env_test.rb):
+- ✅ **Test 1**: "clone_repo raises error when git clone fails" - MockExecutor.set_result(fail: true)
+- ✅ **Test 2**: "clone_repo raises error when git checkout fails" - Dual mock setup
+- ✅ **Test 3**: "clone_with_submodules raises error when submodule init fails" - Triple mock setup
+
+Results:
+- ✅ 3 tests re-enabled (previously omitted)
+- ✅ Branch coverage: 64.11% (was 63.64%, +0.47%)
+- ✅ Line coverage: 85.86% (was 84.51%, +1.35%)
+- ✅ All 151 tests passing, 0 failures, 0 errors
+- ✅ RuboCop: 0 violations
+- ✅ SimpleCov: Coverage validated
+
+Benefits:
+1. **Testability**: Clean dependency injection, zero global state pollution
+2. **Maintainability**: Single point of control for command execution (executor)
+3. **Clarity**: Reduced boilerplate (no nested Dir.chdir + system handling)
+4. **Flexibility**: Easy to add command tracing, caching, or alternate backends
+
+Phase 1 Next: Apply same pattern to device.rb + device_test.rb (with_esp_env_mocking → MockExecutor)
 
 ---
 
