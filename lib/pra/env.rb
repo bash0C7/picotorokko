@@ -62,27 +62,6 @@ module Pra
         File.join(project_root, ENV_DIR, '.picoruby-env.yml')
       end
 
-      # 後方互換性のための定数インターフェース
-      # （既存コードで Pra::Env::PROJECT_ROOT のような参照があった場合）
-      def self.const_missing(name)
-        case name
-        when :PROJECT_ROOT
-          Dir.pwd
-        when :CACHE_DIR
-          File.join(Dir.pwd, ENV_DIR, '.cache')
-        when :PATCH_DIR
-          File.join(Dir.pwd, ENV_DIR, 'patch')
-        when :STORAGE_HOME
-          File.join(Dir.pwd, 'storage', 'home')
-        when :ENV_FILE
-          File.join(Dir.pwd, ENV_DIR, '.picoruby-env.yml')
-        when :BUILD_DIR
-          File.join(Dir.pwd, 'build')
-        else
-          super
-        end
-      end
-
       # ====== 環境名検証 ======
 
       # 環境名が有効なパターンか検証
@@ -319,6 +298,28 @@ module Pra
         end
 
         working_dir ? Dir.chdir(working_dir, &execute_block) : execute_block.call
+      end
+    end
+
+    # 後方互換性のための定数インターフェース
+    # MODULE レベルで定義：モジュール上の定数ルックアップで呼び出される
+    # （既存コードで Pra::Env::PROJECT_ROOT のような参照があった場合）
+    def self.const_missing(name)
+      case name
+      when :PROJECT_ROOT
+        Dir.pwd
+      when :CACHE_DIR
+        File.join(Dir.pwd, ENV_DIR, '.cache')
+      when :PATCH_DIR
+        File.join(Dir.pwd, ENV_DIR, 'patch')
+      when :STORAGE_HOME
+        File.join(Dir.pwd, 'storage', 'home')
+      when :ENV_FILE
+        File.join(Dir.pwd, ENV_DIR, '.picoruby-env.yml')
+      when :BUILD_DIR
+        File.join(Dir.pwd, 'build')
+      else
+        super
       end
     end
   end
