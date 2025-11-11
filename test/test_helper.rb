@@ -26,6 +26,7 @@ require "pra"
 
 require "test-unit"
 require "tmpdir"
+require "securerandom"
 
 # Ptrk as alias for Pra (for tests using Ptrk namespace)
 Ptrk = Pra unless defined?(Ptrk)
