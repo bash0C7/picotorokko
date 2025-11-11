@@ -9,28 +9,11 @@ Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
   test_files = FileList["test/**/*_test.rb"].sort
-  # NOTE: (Phase 0 - Session 6) device_test.rb is excluded from main suite to run last
-  # - Thor execution can interfere with test-unit registration
-  # - Executor abstraction ensures clean test isolation when run separately
-  # - device_test.rb is executed last via test:device task dependency
-  # - All 151 main + 14 device = 165 total tests run via default task
-  test_files.delete_if { |f| f.include?("device_test.rb") }
 
   t.test_files = test_files
 
   # Ruby warning suppress: method redefinition warnings in test mocks
   # See: test/commands/env_test.rb, test/commands/cache_test.rb
-  t.ruby_opts = ["-W1"]
-end
-
-# ============================================================================
-# DEVICE TEST TASK (Run Separately)
-# ============================================================================
-Rake::TestTask.new("test:device") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = ["test/commands/device_test.rb"]
-  # Ruby warning suppress
   t.ruby_opts = ["-W1"]
 end
 
@@ -260,12 +243,11 @@ end
 desc "Run all tests (main suite + device suite)"
 task "test:all" => :reset_coverage do
   sh "bundle exec rake test"
-  sh "bundle exec rake test:device 2>&1 | grep -E '^(Started|Finished|[0-9]+ tests)' || true"
 end
 
 # CI専用タスク：全テスト + RuboCop（チェックのみ） + カバレッジ検証
-# NOTE: test:all runs reset_coverage → test → test:device (sequential, cumulative coverage)
-# Total: 151 + 14 = 165 tests with proper coverage from main suite
+# NOTE: test:all runs reset_coverage → test (includes device_test.rb in main suite)
+# Total: 151 + 14 = 165 tests with proper coverage
 desc "Run all tests, RuboCop checks, and validate coverage (for CI)"
 task ci: %i[test rubocop coverage_validation] do
   puts "\n✓ CI checks passed! All tests + RuboCop + coverage validated."
