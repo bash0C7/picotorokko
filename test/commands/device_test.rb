@@ -3,6 +3,23 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
+# ========================================================================
+# ⚠️  OMITTED FROM MAIN TEST SUITE (Rakefile)
+# ========================================================================
+# Reason: Rake::TestTask + test-unit incompatibility causes test registration failure
+# See: TODO.md [TODO-INFRASTRUCTURE-DEVICE-TEST-FRAMEWORK] 🚨 HIGHEST PRIORITY
+#
+# Problem:
+#   - When included in Rake::TestTask: Only 59/167 tests register (missing 108 tests)
+#   - When run directly: All tests pass correctly ✓
+#
+# How to run these tests:
+#   bundle exec ruby -Ilib:test test/commands/device_test.rb
+#
+# Status: 19 tests in this file are functional but excluded from CI
+#         until framework issue is resolved
+# ========================================================================
+
 # SystemCommandMocking is now defined in test_helper.rb
 
 class PraCommandsDeviceTest < PraTestCase

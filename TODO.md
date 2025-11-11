@@ -2,33 +2,55 @@
 
 ## 📋 Outstanding Issues
 
-### [TODO-INFRASTRUCTURE-DEVICE-TEST-FRAMEWORK]
-**Status**: ROOT CAUSE IDENTIFIED - device_test.rb uses global singleton method mocking
-**Problem**: Including device_test.rb in Rake::TestTask causes test framework interaction due to global state pollution
-- When device_test.rb excluded: 148 tests load and pass
-- When device_test.rb included: Only 59 tests load (test framework interference)
-- Device tests pass independently: All 17 tests pass when run separately
-- Impact: Cannot run full device test coverage in CI pipeline
+### [TODO-INFRASTRUCTURE-DEVICE-TEST-FRAMEWORK] 🚨 HIGHEST PRIORITY - CI BLOCKER
 
-**Root Cause**:
-- device_test.rb uses `Pra::Env.define_singleton_method(:execute_with_esp_env)` to mock system commands
-- Singleton method redefinition causes **global state pollution** across test files
-- This interferes with test-unit's file loading mechanism in Rake::TestTask
+**Status**: ROOT CAUSE IDENTIFIED - Rake::TestTask breaks test-unit registration mechanism
 
-**Solution**: Refactor device_test.rb to use **Refinements-based system() mocking**
-1. Follow pattern in `test/commands/env_test.rb:SystemCommandMocking` module
-2. Create `DeviceCommandMocking` module with `SystemRefinement`
-3. Mock `system()` calls instead of `Pra::Env.execute_with_esp_env`
-4. Use thread-local storage (`Thread.current[:system_mock_context]`) for mock state
-5. Apply refinement with `using DeviceCommandMocking::SystemRefinement`
+**Problem Summary**:
+- Including device_test.rb in Rake::TestTask causes only 59 tests to load (expected: 167 tests)
+- Direct `require` loads all 167 tests correctly ✓
+- Individual device tests run successfully (17 tests, 23 assertions, 0 errors) ✓
+- **CI fails with non-zero exit status** due to stderr pollution ✗
 
-**Benefits**:
-- No global state pollution (refinements are lexically scoped)
-- CI-compatible (no test framework interference)
-- Can verify exact commands being executed (better test coverage)
-- Consistent with env_test.rb mocking strategy
+**What is happening**:
+1. **Test Registration Failure**: When device_test.rb is included in FileList["test/**/*_test.rb"], test-unit's registration mechanism breaks
+   - Expected: 167 tests (148 existing + 19 device tests)
+   - Actual: 59 tests registered
+   - Missing: 108 tests silently fail to register
 
-**Priority**: HIGH - Blocks device.rb coverage expansion (currently 51.35%)
+2. **Stderr Pollution**: "test: raises error when build environment not found" outputs to stderr:
+   ```
+   rake aborted!
+   Don't know how to build task 'flash'
+   ```
+   - Test itself passes (assert_raise catches the error)
+   - But stderr output causes CI to fail with exit 1
+
+**Why this happens**:
+1. **Rake::TestTask + test-unit incompatibility**: The combination of Rake's rake_test_loader.rb and test-unit's AutoRunner creates a registration conflict when device_test.rb is loaded
+2. **Execution environment difference**:
+   - Direct require: test-unit loads files in Ruby interpreter context → Works ✓
+   - Rake::TestTask: Uses rake_test_loader.rb → Breaks test registration ✗
+3. **Stderr from Thor/Rake**: Some code path in device.rb triggers Rake error messages that escape to stderr even though the test passes
+
+**Current Workaround**:
+- `capture_stdout` now captures both stdout and stderr (commit 6ede610)
+- This suppresses stderr pollution for individual test runs
+- However, full test suite run (via Rake::TestTask) still shows errors
+
+**Tests affected** (currently OMITTED due to framework issues):
+- All 19 tests in device_test.rb are omitted from main test suite
+- See: test/commands/device_test.rb lines 14-421
+
+**Priority**: 🚨 **CRITICAL** - Blocks:
+1. CI pipeline (exit status non-zero)
+2. device.rb coverage expansion (currently 51.35%)
+3. Full test suite execution (missing 108 tests)
+
+**Next Steps**:
+1. Implement custom test task (Option B below) to bypass Rake::TestTask
+2. OR: Deeply investigate rake_test_loader.rb + test-unit AutoRunner interaction
+3. Re-enable device tests once framework issue is resolved
 
 ---
 
