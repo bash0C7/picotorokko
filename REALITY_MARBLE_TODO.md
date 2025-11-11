@@ -604,6 +604,461 @@ This challenge affects the **architectural foundation** of 案2:
 
 ---
 
+## 🔮 案3: TracePoint-Based Global Interception Approach
+
+### Overview
+
+**Core Idea**: Use Ruby's TracePoint API to globally intercept method calls across file boundaries, bypassing Refinements' lexical scope limitation.
+
+**Key Difference from 案2**:
+- 案2: Refinements (lexically scoped) → Cannot reach production code
+- 案3: TracePoint (globally scoped) → **Can reach production code**
+
+### How TracePoint Works
+
+TracePoint is Ruby's built-in instrumentation API that can monitor various events (`:call`, `:c_call`, `:return`, etc.) **globally** across all code execution.
+
+**Key capabilities**:
+```ruby
+TracePoint.new(:call) do |tp|
+  tp.defined_class  # => Class where method is defined
+  tp.method_id      # => Method name
+  tp.self           # => Receiver object
+  tp.binding        # => Binding at call site
+  tp.lineno         # => Line number
+  tp.path           # => File path
+end
+```
+
+**Critical insight**: TracePoint fires **regardless of which file the code is in** — it's not bound by lexical scope.
+
+### Proposed 案3 Architecture
+
+#### 1. API Design (Similar to 案2)
+
+```ruby
+require 'test/unit'
+require 'reality_marble'
+
+class GitTest < Test::Unit::TestCase
+  # Step 1: Define mock rules (NOT Refinements)
+  git_marble = RealityMarble.chant do
+    mock Kernel, :system do |cmd|
+      case cmd
+      when /git clone/ then true
+      when /git checkout/ then false
+      else
+        original(cmd)  # Call original method
+      end
+    end
+  end
+
+  # Step 2: Activate (enables TracePoint)
+  def test_git_commands
+    git_marble.activate do |trace|
+      # This will trigger production code
+      Pra::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
+
+      # Production code calls system() internally → TracePoint intercepts!
+
+      # Verify with trace
+      assert_equal 1, trace[Kernel, :system].invocations
+      assert trace[Kernel, :system].summoned_with?(/git clone/)
+    end
+  end
+end
+```
+
+#### 2. Core Mechanism: TracePoint + Exception-Based Interception
+
+**Challenge**: TracePoint can **observe** method calls but cannot **intercept** them (no built-in "return value override").
+
+**Solution**: Use exception-based control flow to abort original execution and return mock value.
+
+```ruby
+class RealityMarble
+  class Activation
+    def activate(&test_block)
+      context = Context.new
+      Thread.current[:reality_marble_context] = context
+
+      # Create TracePoint for method call interception
+      trace = TracePoint.new(:call, :c_call) do |tp|
+        # Check if this method should be mocked
+        mock = context.find_mock(tp.defined_class, tp.method_id)
+        next unless mock
+
+        # Extract arguments from binding
+        args, kwargs = extract_arguments(tp)
+
+        # Record invocation
+        record = context.trace_for(tp.defined_class, tp.method_id).start_call(args, kwargs, nil)
+
+        # Execute mock and intercept original call
+        begin
+          result = mock.call(*args, **kwargs)
+          record.finish(result)
+
+          # Abort original method execution using exception
+          throw :reality_marble_intercept, result
+        rescue => e
+          record.finish_with_error(e)
+          throw :reality_marble_intercept, e
+        end
+      end
+
+      # Enable TracePoint during test block
+      trace.enable
+
+      begin
+        # Wrap test execution with catch to receive thrown values
+        result = catch(:reality_marble_intercept) do
+          test_block.call(context.trace)
+        end
+
+        # If we caught an exception from mock, re-raise it
+        raise result if result.is_a?(Exception)
+      ensure
+        trace.disable
+        Thread.current[:reality_marble_context] = nil
+      end
+    end
+
+    private
+
+    def extract_arguments(tp)
+      # Use binding to extract method parameters
+      params = tp.parameters
+      binding = tp.binding
+
+      args = []
+      kwargs = {}
+
+      params.each do |(type, name)|
+        case type
+        when :req, :opt
+          args << binding.local_variable_get(name)
+        when :key, :keyreq
+          kwargs[name] = binding.local_variable_get(name)
+        # ... handle rest, block, etc.
+        end
+      end
+
+      [args, kwargs]
+    end
+  end
+end
+```
+
+#### 3. How Interception Works
+
+**Step-by-step execution**:
+
+```ruby
+# Test code (test/commands/env_test.rb)
+git_marble.activate do
+  Pra::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
+  # ↓
+end
+
+# Production code (lib/pra/env.rb) - NO using declaration
+def clone_repo(repo_url, dest_path, commit)
+  system("git clone #{Shellwords.escape(repo_url)} ...")
+  # ↓ When system() is called...
+end
+
+# TracePoint hook fires BEFORE system() executes
+trace = TracePoint.new(:call) do |tp|
+  # tp.method_id => :system
+  # tp.defined_class => Kernel
+
+  # Check if we have a mock for Kernel#system
+  mock = find_mock(Kernel, :system)
+
+  # Execute mock
+  result = mock.call("git clone https://...")  # => true
+
+  # Throw to abort original system() call
+  throw :reality_marble_intercept, result
+end
+# ↓
+# Original system() NEVER executes (intercepted!)
+# Test receives `true` from mock
+```
+
+**Key insight**: `throw :reality_marble_intercept` unwinds the stack and prevents the original method from executing.
+
+### Technical Deep Dive
+
+#### Advantage 1: File Boundary Traversal ✅
+
+**Problem in 案2**: Refinements cannot reach `lib/pra/env.rb` because it has no `using` declaration.
+
+**Solution in 案3**: TracePoint is **globally active** when enabled.
+
+```ruby
+# test/commands/env_test.rb
+git_marble.activate do
+  # TracePoint is now monitoring ALL method calls in ALL files
+
+  Pra::Env.init(...)
+  # ↓ calls
+  # lib/pra/env.rb: clone_repo(...)
+  # ↓ calls
+  # lib/pra/env.rb: system("git clone ...")
+  # ↑ TracePoint catches this call even though lib/pra/env.rb has no `using`!
+end
+```
+
+**Verdict**: ✅ **Solves the Production Code Boundary Problem completely**
+
+#### Advantage 2: No Code Modification Required ✅
+
+**案2**: Requires `using` declaration in every test file.
+
+**案3**: No `using` needed. Just call `git_marble.activate`.
+
+**Verdict**: ✅ **More transparent to users**
+
+#### Advantage 3: True Dynamic Scoping ✅
+
+**案2**: Refinements are lexically scoped (compile-time).
+
+**案3**: TracePoint can be enabled/disabled at runtime (dynamic).
+
+```ruby
+# Outside activate → TracePoint disabled → No interception
+system('ls')  # Real system call
+
+# Inside activate → TracePoint enabled → Interception
+git_marble.activate do
+  system('git')  # Mocked
+end
+
+# Outside again → Disabled
+system('pwd')  # Real system call
+```
+
+**Verdict**: ✅ **More intuitive on/off behavior**
+
+### Critical Challenges and Limitations
+
+#### Challenge 1: Exception-Based Interception Is Fragile ❌
+
+**Problem**: Using `throw`/`catch` to abort original method execution is a hack.
+
+**Issues**:
+1. **Ensure blocks not executed**: Original method's `ensure` blocks will NOT run (stack unwound)
+2. **Rescue interference**: If test code has `rescue Exception`, it might catch our throw
+3. **Debugging nightmare**: Stack traces become confusing
+
+**Example of breakage**:
+```ruby
+def important_cleanup
+  system('git clone ...')
+ensure
+  cleanup_resources  # ← This will NOT run if we throw!
+end
+```
+
+**Severity**: 🔴 **High** — Can cause resource leaks, unclosed files, etc.
+
+#### Challenge 2: Performance Overhead ❌
+
+**TracePoint overhead**: ~5000ns per method call (when enabled)
+
+**案2 overhead**: ~161ns per method call
+
+**Comparison**: **30x slower**
+
+**Impact in tests**:
+```ruby
+# Test suite with 10,000 method calls
+# 案2: 10,000 × 161ns = 1.61ms overhead
+# 案3: 10,000 × 5000ns = 50ms overhead
+
+# For large test suites (100,000 calls):
+# 案2: 16ms
+# 案3: 500ms (half a second!)
+```
+
+**Severity**: 🟡 **Medium** — Acceptable for tests, but noticeably slower for large suites
+
+#### Challenge 3: Global Scope Pollution ❌
+
+**Problem**: TracePoint monitors **ALL** method calls when enabled, not just mocked ones.
+
+**案2**: Only affects code with `using` declaration (lexically scoped)
+
+**案3**: Affects **everything** during `activate` block (globally scoped)
+
+**Example**:
+```ruby
+git_marble.activate do
+  # TracePoint is firing for EVERY method call:
+  assert_equal(...)  # ← Fires
+  result.to_s        # ← Fires
+  [1, 2, 3].map {...} # ← Fires 3 times
+  # ... hundreds of TracePoint callbacks
+end
+```
+
+**Mitigation**: Add early-exit filter in TracePoint callback:
+```ruby
+TracePoint.new(:call) do |tp|
+  # Quick check: Is this method mocked?
+  next unless context.has_mock?(tp.defined_class, tp.method_id)
+
+  # Only proceed for mocked methods
+  # ...
+end
+```
+
+**Severity**: 🟡 **Medium** — Mitigable with early filtering, but still overhead
+
+#### Challenge 4: C Extension Opaqueness ❌
+
+**Problem**: C-implemented methods (`:c_call`) don't provide full binding information.
+
+```ruby
+TracePoint.new(:c_call) do |tp|
+  tp.binding  # => nil (C methods don't create Ruby bindings!)
+  # Cannot extract arguments!
+end
+```
+
+**Impact**: Cannot mock C methods with argument inspection.
+
+**Workaround**: Only support Ruby-implemented methods (`:call` event).
+
+**Severity**: 🟡 **Medium** — Can document as limitation (similar to 案2's special method name issue)
+
+#### Challenge 5: Thread Safety Complexity ❌
+
+**Problem**: Multiple threads enabling TracePoint simultaneously.
+
+**Scenario**:
+```ruby
+Thread.new do
+  git_marble.activate { ... }  # Enables TracePoint
+end
+
+Thread.new do
+  file_marble.activate { ... }  # Enables ANOTHER TracePoint?
+end
+```
+
+**Solution**: Thread-local TracePoint instances + context registry.
+
+**Severity**: 🟢 **Low** — Solvable with Thread-local storage (same as 案2)
+
+### API Comparison: 案2 vs 案3
+
+| Aspect | 案2 (Refinements) | 案3 (TracePoint) |
+|--------|-------------------|------------------|
+| **File boundary** | ❌ Cannot cross | ✅ Can cross |
+| **Production code** | ❌ Cannot reach | ✅ Can reach |
+| **Performance** | ✅ Fast (~161ns) | ❌ Slow (~5000ns) |
+| **Scope** | ✅ Lexical (safe) | ❌ Global (risky) |
+| **`using` declaration** | ❌ Required per file | ✅ Not needed |
+| **Ruby syntax** | ✅ Normal `refine`/`def` | ⚠️ DSL (`mock`/`original`) |
+| **Resource safety** | ✅ Ensure blocks run | ❌ Throw bypasses ensure |
+| **C methods** | ⚠️ Limited support | ⚠️ No binding access |
+| **Complexity** | 🟢 Low | 🔴 High |
+
+### Use Case Analysis
+
+#### When 案3 Excels ✅
+
+1. **Integration-style tests**: Testing production code paths that make system calls
+   ```ruby
+   def test_full_env_initialization
+     git_marble.activate do
+       Pra::Env.init(...)  # Crosses into lib/pra/env.rb
+     end
+   end
+   ```
+
+2. **Third-party gem mocking**: Mocking gems you can't modify
+   ```ruby
+   http_marble.activate do
+     Net::HTTP.get(...)  # Mock gem code
+   end
+   ```
+
+3. **Legacy codebases**: Where adding DI would require massive refactoring
+
+#### When 案2 Excels ✅
+
+1. **Test helper methods**: Code directly in test files
+   ```ruby
+   using GitMarble
+
+   def helper_that_calls_system
+     system('git status')  # Direct call in test file
+   end
+   ```
+
+2. **Performance-critical tests**: Large test suites with many iterations
+
+3. **Safety-first approach**: Where `ensure` blocks must always run
+
+### Implementation Roadmap for 案3
+
+**Phase 0**: Proof of Concept
+- [ ] Implement basic TracePoint hooking
+- [ ] Test throw/catch interception mechanism
+- [ ] Measure performance overhead
+- [ ] **Test ensure block behavior** (critical!)
+
+**Phase 1**: Core Implementation
+- [ ] Implement `RealityMarble.chant` (mock definition DSL)
+- [ ] Implement `Marble#activate` with TracePoint
+- [ ] Implement argument extraction from binding
+- [ ] Implement context + trace recording
+
+**Phase 2**: Robustness
+- [ ] Handle C methods (`:c_call` events)
+- [ ] Thread-local TracePoint management
+- [ ] Error handling for binding extraction failures
+- [ ] Early-exit filtering for performance
+
+**Phase 3**: Edge Cases
+- [ ] Keyword arguments, blocks, splats
+- [ ] Methods without bindings
+- [ ] Nested `activate` calls
+- [ ] Mock priority/ordering
+
+### Open Questions
+
+1. **Ensure block problem**: Can we make throws safe?
+   - Option A: Document as limitation ("Don't mock methods with critical ensure blocks")
+   - Option B: Use `return` injection instead of `throw` (requires deeper VM hacking)
+   - Option C: Accept that 案3 is unsuitable for resource-managing code
+
+2. **Performance**: Is 30x slowdown acceptable?
+   - Need real-world benchmarks with actual test suites
+   - May be acceptable if test suite takes <1 second total
+
+3. **Hybrid approach**: Can we combine 案2 + 案3?
+   - 案2 for test file direct calls (fast path)
+   - 案3 for production code calls (slow path, on-demand)
+
+### Recommendation Status: Evaluation Needed
+
+**案3 viability depends on**:
+1. ✅ Ensure block safety is acceptable risk
+2. ✅ Performance overhead is acceptable for test context
+3. ✅ Global scope is mitigated with early filtering
+
+**Next steps**:
+1. Implement Phase 0 proof-of-concept
+2. Benchmark against 案2
+3. Test ensure block behavior with real-world code
+4. Decide: 案2, 案3, or Hybrid approach
+
+---
+
 ## Implementation Plan
 
 ### Phase 0: Project Setup
