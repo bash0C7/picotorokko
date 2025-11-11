@@ -1,6 +1,8 @@
-# [PicoRuby](https://github.com/picoruby) Application on [R2P2-ESP32](https://github.com/picoruby/R2P2-ESP32) Development Kit
+# picotorokko (ptrk)
 
-**picotorokko** (ptrk) is a modern build system CLI for ESP32 + PicoRuby development that manages multiple versions of R2P2-ESP32 and its nested submodules (picoruby-esp32 → picoruby) in parallel, enabling seamless environment switching and validation across versions.
+**picotorokko** — [PicoRuby](https://github.com/picoruby) Application on [R2P2-ESP32](https://github.com/picoruby/R2P2-ESP32) Development Kit — is a modern build system CLI for ESP32 + PicoRuby development.
+
+The name "picotorokko" draws inspiration from **torokko** (トロッコ), a simple lightweight railway system in Japan. Just as "Rails" in Ruby on Rails evokes railways, the "torokko" in picotorokko represents a simplified development framework that provides structure and conventions without heavyweight complexity. It manages multiple versions of R2P2-ESP32 and its nested submodules (picoruby-esp32 → picoruby) in parallel, enabling seamless environment switching and validation across versions.
 
 [![Ruby](https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/actions/workflows/main.yml/badge.svg)](https://github.com/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/bash0C7/picoruby-application-on-r2p2-esp32-development-kit/branch/main/graph/badge.svg)](https://codecov.io/gh/bash0C7/picoruby-application-on-r2p2-esp32-development-kit)
