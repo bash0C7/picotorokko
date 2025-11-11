@@ -12,6 +12,29 @@
 - **Git Integration**: Clone and manage repositories with automatic submodule handling
 - **Patch Management**: Export, apply, and diff patches across environments
 - **Task Delegation**: Build/flash/monitor tasks transparently delegated to R2P2-ESP32's Rakefile
+- **Executor Abstraction**: Clean dependency injection for command execution with Open3 integration ✅ Phase 0 Complete
+
+## Development Status
+
+### ✅ Phase 0: Infrastructure & System Mocking (COMPLETED)
+
+- Executor abstraction with ProductionExecutor (Open3) and MockExecutor (testing)
+- Pra::Env refactoring with dependency injection pattern
+- 3 git error handling tests re-enabled via MockExecutor
+- All 151 main tests + 14 device tests passing (165 total)
+- Coverage: 85.86% line, 64.11% branch
+
+### ✅ AST-Based Template Engine (COMPLETED)
+
+- RubyTemplateEngine: Prism-based AST manipulation for .rb files
+- YamlTemplateEngine: Psych-based recursive placeholder replacement
+- CTemplateEngine: Simple string substitution for C templates
+- Full test coverage for all template engines
+
+### 🔮 Upcoming: Phase 1 Device Integration
+
+- Apply executor pattern to device.rb and device_test.rb
+- Unify test execution model for seamless development workflow
 
 ## Installation
 
