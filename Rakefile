@@ -5,11 +5,14 @@ require "English"
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
-  test_files = FileList["test/**/*_test.rb"]
+  test_files = FileList["test/**/*_test.rb"].sort
   # device_test.rb now included - Refinement issue resolved
   # - Removed "using SystemCommandMocking::SystemRefinement" from class level
   # - device_test.rb uses with_esp_env_mocking instead (doesn't need Refinement)
   # - One test "help command displays available tasks" is omitted (low priority)
+  # - FileList is explicitly sorted to fix test-unit registration issue where
+  #   unsorted glob results cause 105 tests to be lost (54 vs 159 expected)
+  #   See: TODO.md [TODO-INFRASTRUCTURE-RAKE-TEST-DISCOVERY]
 
   t.test_files = test_files
 
