@@ -1195,34 +1195,40 @@ class PraCommandsEnvTest < PraTestCase
   end
 
   # ⚠️ [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-TESTS]
-  # These 3 tests are omitted pending refactoring. See Phase 4.7 TODO.md:
-  # Problem: Kernel.method(:system) mocking fails in CI (environment-dependent)
-  # Solution: Use Ruby Refinement or test::unit mock/stub for clean mocking
-  # Impact: Missing branch coverage for clone_repo/clone_with_submodules error paths
-  # Action: Refactor to use testable dependency injection + mocking patterns
-
   # Branch coverage tests: Uncovered error paths and conditionals
+  # NOTE: Now using MockExecutor dependency injection (Phase 0 refactor)
+  # - Replaces Refinement-based mocking which had lexical scope issues
+  # - Tests inject MockExecutor to control command success/failure
+  # - Clean, testable, no global state pollution
+
   sub_test_case "branch coverage: clone_repo error handling" do
     test "clone_repo raises error when git clone fails" do
-      # OMITTED: Refinement-based system() mocking doesn't work across lexical scopes
-      # - Refinement activated in env_test.rb doesn't affect system() calls inside lib/pra/env.rb
-      # - Real git commands execute instead of mocks, causing test failures
-      # - Root cause: Ruby Refinements are lexically scoped, not dynamically scoped
-      # - Solution: Requires production code refactoring (dependency injection or testable system() wrapper)
-      # - Priority: MEDIUM (error handling tests, affects branch coverage)
-      # - See: TODO.md [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-REFACTOR]
-      omit "Refinement-based mocking doesn't work across lexical scopes - see TODO.md"
-
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          with_system_mocking(fail_clone: true) do |mock|
+          # Create a mock executor that fails on git clone
+          mock_executor = Pra::MockExecutor.new
+          mock_executor.set_result(
+            "git clone https://github.com/test/repo.git dest",
+            fail: true,
+            stderr: "fatal: could not read Username"
+          )
+
+          # Save original executor and inject mock
+          original_executor = Pra::Env.executor
+          Pra::Env.set_executor(mock_executor)
+
+          begin
             error = assert_raise(RuntimeError) do
-              Pra::Env.clone_repo('https://github.com/test/repo.git', 'dest', 'abc1234')
+              Pra::Env.clone_repo("https://github.com/test/repo.git", "dest", "abc1234")
             end
-            assert_match(/Command failed.*git clone/, error.message)
-            assert_equal(1, mock[:call_count][:clone])
+
+            assert_include error.message, "Command failed"
+            assert_equal 1, mock_executor.calls.length
+            assert_include mock_executor.calls[0][:command], "git clone"
+          ensure
+            Pra::Env.set_executor(original_executor)
           end
         ensure
           Dir.chdir(original_dir)
@@ -1231,24 +1237,32 @@ class PraCommandsEnvTest < PraTestCase
     end
 
     test "clone_repo raises error when git checkout fails" do
-      # OMITTED: Same Refinement lexical scope limitation as above
-      # - See TODO.md [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-REFACTOR]
-      omit "Refinement-based mocking doesn't work across lexical scopes - see TODO.md"
-
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          # Don't pre-create dest: let clone succeed, but checkout fails
-          with_system_mocking(fail_checkout: true) do |mock|
+          # Mock clone succeeds, checkout fails
+          mock_executor = Pra::MockExecutor.new
+          clone_cmd = "git clone https://github.com/test/repo.git dest"
+          mock_executor.set_result(clone_cmd, stdout: "Cloning...")
+
+          checkout_cmd = "git checkout abc1234"
+          mock_executor.set_result(checkout_cmd, fail: true, stderr: "fatal: reference not found: abc1234")
+
+          original_executor = Pra::Env.executor
+          Pra::Env.set_executor(mock_executor)
+
+          begin
             error = assert_raise(RuntimeError) do
-              Pra::Env.clone_repo('https://github.com/test/repo.git', 'dest', 'abc1234')
+              Pra::Env.clone_repo("https://github.com/test/repo.git", "dest", "abc1234")
             end
-            assert_match(/Command failed.*git checkout/, error.message)
-            # clone should be called successfully
-            assert_equal(1, mock[:call_count][:clone])
-            # checkout should be attempted (counter increments before fail check)
-            assert_equal(1, mock[:call_count][:checkout])
+
+            assert_include error.message, "Command failed"
+            assert_equal 2, mock_executor.calls.length
+            assert_include mock_executor.calls[0][:command], "git clone"
+            assert_include mock_executor.calls[1][:command], "git checkout"
+          ensure
+            Pra::Env.set_executor(original_executor)
           end
         ensure
           Dir.chdir(original_dir)
@@ -1259,21 +1273,37 @@ class PraCommandsEnvTest < PraTestCase
 
   sub_test_case "branch coverage: clone_with_submodules error handling" do
     test "clone_with_submodules raises error when submodule init fails" do
-      # OMITTED: Same Refinement lexical scope limitation as above
-      # - See TODO.md [TODO-INFRASTRUCTURE-SYSTEM-MOCKING-REFACTOR]
-      omit "Refinement-based mocking doesn't work across lexical scopes - see TODO.md"
-
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          with_system_mocking(fail_submodule: true) do |mock|
+          # Mock clone + checkout succeed, submodule init fails
+          mock_executor = Pra::MockExecutor.new
+          clone_cmd = "git clone https://github.com/test/repo.git dest"
+          mock_executor.set_result(clone_cmd, stdout: "Cloning...")
+
+          checkout_cmd = "git checkout abc1234"
+          mock_executor.set_result(checkout_cmd, stdout: "")
+
+          submodule_cmd = "git submodule update --init --recursive"
+          mock_executor.set_result(submodule_cmd, fail: true, stderr: "fatal: submodule error")
+
+          original_executor = Pra::Env.executor
+          Pra::Env.set_executor(mock_executor)
+
+          begin
             error = assert_raise(RuntimeError) do
-              Pra::Env.clone_with_submodules('https://github.com/test/repo.git', 'dest', 'abc1234')
+              Pra::Env.clone_with_submodules("https://github.com/test/repo.git", "dest", "abc1234")
             end
-            assert_match(/Command failed.*git submodule/, error.message)
-            assert_equal(1, mock[:call_count][:clone])
-            assert_equal(1, mock[:call_count][:submodule])
+
+            assert_include error.message, "Command failed"
+            # All 3 commands should be recorded (clone, checkout, submodule)
+            assert_equal 3, mock_executor.calls.length
+            assert_include mock_executor.calls[0][:command], "git clone"
+            assert_include mock_executor.calls[1][:command], "git checkout"
+            assert_include mock_executor.calls[2][:command], "git submodule"
+          ensure
+            Pra::Env.set_executor(original_executor)
           end
         ensure
           Dir.chdir(original_dir)
