@@ -360,6 +360,250 @@ end
 
 ---
 
+## 🚨 Critical Remaining Challenge: Production Code Boundary Problem
+
+### The Problem: Refinements Cannot Reach Across File Boundaries
+
+**Discovery**: During specification exploration, we identified a fundamental limitation that affects Reality Marble's applicability to real-world test scenarios.
+
+#### Concrete Example (from pra gem)
+
+**Test file** (`test/commands/env_test.rb`, lines 1272-1332):
+```ruby
+using SystemCommandMocking::SystemRefinement  # ← Refinement declared here
+
+class EnvCommandTest < Test::Unit::TestCase
+  def test_init_clones_repository
+    # This test calls Env.init which internally calls lib/pra/env.rb code
+    Pra::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
+    # ...
+  end
+end
+```
+
+**Production code** (`lib/pra/env.rb`, line 111-117):
+```ruby
+# This file has NO `using` declaration
+module Pra
+  class Env
+    def clone_repo(repo_url, dest_path, commit)
+      return if Dir.exist?(dest_path)
+
+      puts "Cloning #{repo_url} to #{dest_path}..."
+      unless system("git clone #{Shellwords.escape(repo_url)} #{Shellwords.escape(dest_path)}")
+        # ↑ This system() call is NOT affected by test file's Refinement!
+        raise "Failed to clone repository"
+      end
+      # ...
+    end
+  end
+end
+```
+
+**What happens**:
+1. Test file declares `using SystemCommandMocking::SystemRefinement`
+2. Test calls `Pra::Env.init` (production code in separate file)
+3. Production code calls `system()` internally
+4. **Refinement does NOT apply** → Real `system()` executes → Real git command runs!
+
+**Test failure output**:
+```
+Cloning https://github.com/picoruby/picoruby.git to /tmp/d20250111-9999-abcdef...
+Cloning into '/tmp/d20250111-9999-abcdef'...
+remote: Enumerating objects: 15234, done.
+# ← Real git clone executed instead of mock!
+```
+
+#### Why This Happens
+
+**Refinements lexical scope constraint**:
+- `using` only affects **code defined in the same file** where `using` appears
+- Code in `lib/pra/env.rb` has no `using` declaration
+- Therefore, `system()` call inside `lib/pra/env.rb` is NOT refined
+
+**Call chain visualization**:
+```
+[test/commands/env_test.rb]  ← using declared here
+  ↓ calls
+[lib/pra/env.rb]             ← NO using here
+  ↓ calls
+system('git clone ...')      ← Original Kernel#system, NOT refined version
+```
+
+### Why This Matters
+
+This limitation affects Reality Marble's **value proposition** and **target use cases**:
+
+#### ❌ Invalid Use Cases (Cannot Work)
+
+1. **Testing production code that makes system calls internally**
+   - Example: Testing `Pra::Env.init` which calls `system()` in separate file
+   - Refinement cannot reach the actual call site
+
+2. **Deep call chains crossing file boundaries**
+   - Test → ProductionClass → AnotherClass → system()
+   - Only the first arrow is in `using` scope
+
+3. **Third-party library method calls**
+   - Test → YourCode → GemCode → File.read
+   - GemCode has no `using` declaration (and you can't modify it)
+
+#### ✅ Valid Use Cases (Can Work)
+
+1. **Direct method calls in test code**
+   - Test file has `using`
+   - Test directly calls `system()` or `File.read`
+   - Works perfectly
+
+2. **Boundary mocking**
+   - Mock the entry point to production code, not internal calls
+   - Example: Mock `Pra::Env.init` itself, not the internal `system()` calls
+
+3. **Test helper methods**
+   - Helper methods defined in test files with `using`
+   - These methods call system/File/etc.
+   - Works perfectly
+
+### Potential Solutions (Not Yet Decided)
+
+#### Option 1: Explicit Scope Limitation
+
+**Approach**: Accept this as a design constraint and document clearly.
+
+**Documentation strategy**:
+```markdown
+## Reality Marble Scope
+
+Reality Marble is designed for:
+- ✅ Direct method calls in test code
+- ✅ Test helper methods
+- ✅ Boundary mocking
+
+NOT designed for:
+- ❌ Testing production code's internal system calls
+- ❌ Deep call chains across files
+- ❌ Third-party library internals
+
+For these cases, use integration tests or dependency injection.
+```
+
+**Pros**:
+- Honest about capabilities
+- Avoids misleading users
+- Simple mental model
+
+**Cons**:
+- Limits applicability
+- Users expect mocking to "just work" everywhere
+
+#### Option 2: Production Code Refactoring (Dependency Injection)
+
+**Approach**: Refactor production code to accept callable dependencies.
+
+**Example refactor**:
+```ruby
+# lib/pra/env.rb (BEFORE)
+def clone_repo(repo_url, dest_path, commit)
+  system("git clone #{Shellwords.escape(repo_url)} ...")
+end
+
+# lib/pra/env.rb (AFTER)
+def clone_repo(repo_url, dest_path, commit, system_executor: method(:system))
+  system_executor.call("git clone #{Shellwords.escape(repo_url)} ...")
+end
+
+# test/commands/env_test.rb
+def test_clone_repo
+  mock_system = ->(cmd) { true }
+  env.clone_repo(url, path, commit, system_executor: mock_system)
+end
+```
+
+**Pros**:
+- Works without Refinements magic
+- Testable at unit level
+- Industry-standard pattern
+
+**Cons**:
+- Requires production code changes
+- More verbose
+- Defeats purpose of Reality Marble (non-invasive mocking)
+
+#### Option 3: Integration Test Territory
+
+**Approach**: Accept these as integration tests, not unit tests.
+
+**Strategy**:
+```ruby
+# test/integration/env_integration_test.rb
+class EnvIntegrationTest < Test::Unit::TestCase
+  def test_init_with_real_git
+    # Use temporary directories
+    # Call real git (or stub at shell level with test doubles)
+    Dir.mktmpdir do |tmpdir|
+      # ...
+    end
+  end
+end
+```
+
+**Pros**:
+- Tests real behavior
+- No mocking complexity
+- Catches integration bugs
+
+**Cons**:
+- Slower tests
+- Requires git installed
+- May hit network (if cloning real repos)
+
+#### Option 4: Hybrid Approach
+
+**Combination**:
+1. Reality Marble for **test code's direct calls** (Option 1)
+2. Dependency injection for **critical production paths** (Option 2)
+3. Integration tests for **full system behavior** (Option 3)
+
+**Test pyramid**:
+```
+     /\
+    /  \  ← Integration tests (real git, full behavior)
+   /____\
+  /      \
+ / Unit   \ ← Reality Marble (test helpers, direct calls)
+/__________\
+```
+
+### Impact on Reality Marble Design (案2)
+
+This challenge affects the **architectural foundation** of 案2:
+
+**Current 案2 assumptions**:
+- Alias-Rename + Guarded Dispatch pattern works ✅
+- Thread-local context for activation control ✅
+- Automatic trace recording ✅
+- **Can mock production code's internal calls** ❌ ← **INVALID**
+
+**Revised understanding**:
+- Reality Marble's Refinements are lexically scoped
+- Therefore, can only affect **code in files with `using` declaration**
+- Cannot transparently mock deep call chains
+
+**Questions for 案3**:
+1. Should we fundamentally change the approach?
+2. Should we accept scope limitation and optimize for valid use cases?
+3. Should we combine Refinements with other techniques?
+
+### Status: Awaiting 案3
+
+**Current state**: 案2 is **architecturally sound** (Alias-Rename + Guarded Dispatch pattern works), but **scope-limited** (cannot reach production code).
+
+**Next step**: 案3 will propose an alternative design approach that addresses this fundamental limitation.
+
+**Decision pending**: User will provide 案3 in next chat session, then we'll evaluate tradeoffs and choose the best path forward.
+
+---
+
 ## Implementation Plan
 
 ### Phase 0: Project Setup
