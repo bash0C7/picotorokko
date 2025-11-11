@@ -167,29 +167,29 @@ module SystemCommandMocking
       def system(*args)
         # Check if mock context is active in thread-local storage
         mock_context = Thread.current[:system_mock_context]
-        return SystemCommandMocking::ORIGINAL_SYSTEM.bind(self).call(*args) unless mock_context
+        return SystemCommandMocking::ORIGINAL_SYSTEM.bind_call(self, *args) unless mock_context
 
-        cmd = args.join(' ')
+        cmd = args.join(" ")
 
         # Track all system calls
         mock_context[:commands_executed] << cmd
 
         # Mock git clone
-        if cmd.include?('git clone')
+        if cmd.include?("git clone")
           mock_context[:call_count][:clone] += 1
           return false if mock_context[:fail_clone]
 
           # Create dummy git repository at destination path
           if cmd =~ /git clone.* (\S+)\s*$/
-            dest_path = ::Regexp.last_match(1).gsub(/['"]/, '')
+            dest_path = ::Regexp.last_match(1).gsub(/['"]/, "")
             FileUtils.mkdir_p(dest_path)
-            FileUtils.mkdir_p(File.join(dest_path, '.git'))
+            FileUtils.mkdir_p(File.join(dest_path, ".git"))
           end
           return true
         end
 
         # Mock git checkout
-        if cmd.include?('git checkout')
+        if cmd.include?("git checkout")
           mock_context[:call_count][:checkout] += 1
           return false if mock_context[:fail_checkout]
 
@@ -197,7 +197,7 @@ module SystemCommandMocking
         end
 
         # Mock git submodule update
-        if cmd.include?('git submodule update')
+        if cmd.include?("git submodule update")
           mock_context[:call_count][:submodule] += 1
           return false if mock_context[:fail_submodule]
 
@@ -205,7 +205,7 @@ module SystemCommandMocking
         end
 
         # Mock rake commands (for device_test.rb)
-        if cmd.include?('rake')
+        if cmd.include?("rake")
           mock_context[:call_count][:rake] += 1
           return false if mock_context[:fail_rake]
 
@@ -213,7 +213,7 @@ module SystemCommandMocking
         end
 
         # Fallback to original system() for other commands
-        SystemCommandMocking::ORIGINAL_SYSTEM.bind(self).call(*args)
+        SystemCommandMocking::ORIGINAL_SYSTEM.bind_call(self, *args)
       end
     end
   end
