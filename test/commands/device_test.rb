@@ -473,11 +473,8 @@ class PraCommandsDeviceTest < PraTestCase
 
     Pra::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
 
-    r2p2_hash = "#{r2p2_info["commit"]}-#{r2p2_info["timestamp"]}"
-    esp32_hash = "#{esp32_info["commit"]}-#{esp32_info["timestamp"]}"
-    picoruby_hash = "#{picoruby_info["commit"]}-#{picoruby_info["timestamp"]}"
-    env_hash = Pra::Env.generate_env_hash(r2p2_hash, esp32_hash, picoruby_hash)
-    build_path = Pra::Env.get_build_path(env_hash)
+    # Phase 4: get_build_path uses env_name, not env_hash
+    build_path = Pra::Env.get_build_path(env_name)
     r2p2_path = File.join(build_path, "R2P2-ESP32")
     FileUtils.mkdir_p(r2p2_path)
 
