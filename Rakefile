@@ -201,6 +201,58 @@ Rake::TestTask.new("test:diag_device_mrbgems") do |t|
   t.ruby_opts = ["-W1"]
 end
 
+# DIAGNOSTIC: Device test AFTER env test (reverse order)
+Rake::TestTask.new("test:diag_env_device") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = [
+    "test/commands/env_test.rb",
+    "test/commands/device_test.rb"
+  ]
+  t.ruby_opts = ["-W1"]
+end
+
+# DIAGNOSTIC: Just env_test (baseline)
+Rake::TestTask.new("test:diag_env_only") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = ["test/commands/env_test.rb"]
+  t.ruby_opts = ["-W1"]
+end
+
+# DIAGNOSTIC: Device stub (empty) + env_test
+Rake::TestTask.new("test:diag_device_stub_env") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = [
+    "test/commands/device_stub_test.rb",
+    "test/commands/env_test.rb"
+  ]
+  t.ruby_opts = ["-W1"]
+end
+
+# DIAGNOSTIC: Device debug (minimal) + env_test
+Rake::TestTask.new("test:diag_device_debug_env") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = [
+    "test/commands/device_debug_test.rb",
+    "test/commands/env_test.rb"
+  ]
+  t.ruby_opts = ["-W1"]
+end
+
+# DIAGNOSTIC: Device incremental (step by step) + env_test
+Rake::TestTask.new("test:diag_device_incremental_env") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = [
+    "test/commands/device_incremental_test.rb",
+    "test/commands/env_test.rb"
+  ]
+  t.ruby_opts = ["-W1"]
+end
+
 require "rubocop/rake_task"
 
 RuboCop::RakeTask.new do |task|
