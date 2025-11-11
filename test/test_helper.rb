@@ -231,6 +231,21 @@ module SystemCommandMocking
     end
   end
 
+  # Helper method to set up MockExecutor for device tests
+  # Usage: with_mock_executor { |mock| ... test code ... }
+  # This uses dependency injection to provide MockExecutor via Env.set_executor
+  # More idiomatic than with_esp_env_mocking (no method redefinition)
+  def with_mock_executor
+    mock = Picotorokko::MockExecutor.new
+    original = Picotorokko::Env.executor
+    Picotorokko::Env.set_executor(mock)
+    begin
+      yield(mock)
+    ensure
+      Picotorokko::Env.set_executor(original)
+    end
+  end
+
   # Helper method to mock Picotorokko::Env.execute_with_esp_env for device tests
   # Usage: with_esp_env_mocking { |mock| ... }
   # This mocks execute_with_esp_env to track commands instead of executing them
