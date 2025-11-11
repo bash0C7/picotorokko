@@ -1813,6 +1813,271 @@ end
 
 ---
 
+## 🎓 Reality Check: How pra Gem Actually Solved the Problem
+
+### Context: After Merging origin/main (Session 7)
+
+After designing 案2, 案3.1, and 案3.2, we merged `origin/main` (commit b9a63b0) which contains the **actual implementation** of how the pra gem solved the Production Code Boundary Problem.
+
+**Key changes in origin/main**:
+- Commit 4815ae5: "Phase 0 (INFRASTRUCTURE-SYSTEM-MOCKING-REFACTOR) COMPLETED"
+- Added `lib/pra/executor.rb` (75 lines)
+- Refactored `lib/pra/env.rb` to use executor abstraction
+- Updated `test/commands/env_test.rb` to use MockExecutor
+- Removed SystemCommandMocking module (Refinements-based mocking)
+- Added `docs/PHASE_0_EXECUTOR_ABSTRACTION.md` documentation
+
+### The Actual Solution: Dependency Injection Pattern
+
+**What was implemented**: **案2's "Option 2: Production Code Refactoring (Dependency Injection)"**
+
+This is the exact approach documented in REALITY_MARBLE_TODO.md at line 499-530 under "Production Code Boundary Problem → Option 2".
+
+#### Architecture
+
+```ruby
+# lib/pra/executor.rb (NEW)
+module Pra
+  module Executor
+    def execute(command, working_dir = nil)
+      raise NotImplementedError
+    end
+  end
+
+  class ProductionExecutor
+    include Executor
+    def execute(command, working_dir = nil)
+      stdout, stderr, status = Open3.capture3(command)
+      raise "Command failed..." unless status.success?
+      [stdout, stderr]
+    end
+  end
+
+  class MockExecutor
+    include Executor
+    def initialize
+      @calls = []
+      @results = {}
+    end
+
+    def execute(command, working_dir = nil)
+      @calls << { command: command, working_dir: working_dir }
+      if @results[command]
+        stdout, stderr, should_fail = @results[command]
+        raise "Command failed..." if should_fail
+        return [stdout, stderr]
+      end
+      ["", ""]  # Default success
+    end
+
+    def set_result(command, stdout: "", stderr: "", fail: false)
+      @results[command] = [stdout, stderr, fail]
+    end
+
+    attr_reader :calls
+  end
+end
+```
+
+#### Refactored Production Code
+
+```ruby
+# lib/pra/env.rb (REFACTORED)
+module Pra
+  class Env
+    class << self
+      # Executor management (NEW)
+      def set_executor(executor)
+        @executor = executor
+      end
+
+      def executor
+        @executor ||= ProductionExecutor.new
+      end
+
+      # Refactored to use executor (BEFORE: system() calls)
+      def clone_repo(repo_url, dest_path, commit)
+        cmd = "git clone #{Shellwords.escape(repo_url)} #{Shellwords.escape(dest_path)}"
+        executor.execute(cmd)  # ← NEW: Uses injected executor
+
+        cmd = "git checkout #{Shellwords.escape(commit)}"
+        executor.execute(cmd, dest_path)
+      end
+
+      def execute_with_esp_env(command, working_dir = nil)
+        executor.execute(command, working_dir)  # ← NEW
+      end
+    end
+  end
+end
+```
+
+#### Test Usage
+
+```ruby
+# test/commands/env_test.rb (UPDATED)
+test "clone_repo raises error when git clone fails" do
+  # 1. Create mock executor
+  mock_executor = Pra::MockExecutor.new
+
+  # 2. Configure failure
+  mock_executor.set_result(
+    "git clone https://github.com/test/repo.git dest",
+    fail: true,
+    stderr: "fatal: could not read Username"
+  )
+
+  # 3. Inject mock (save original for restoration)
+  original_executor = Pra::Env.executor
+  Pra::Env.set_executor(mock_executor)
+
+  begin
+    # 4. Test failure path
+    error = assert_raise(RuntimeError) do
+      Pra::Env.clone_repo("https://github.com/test/repo.git", "dest", "abc1234")
+    end
+
+    # 5. Verify
+    assert_include error.message, "Command failed"
+    assert_equal 1, mock_executor.calls.length
+    assert_include mock_executor.calls[0][:command], "git clone"
+  ensure
+    # 6. Restore original executor
+    Pra::Env.set_executor(original_executor)
+  end
+end
+```
+
+### Why This Approach Was Chosen
+
+**Decision rationale** (documented in `docs/PHASE_0_EXECUTOR_ABSTRACTION.md`):
+
+1. ✅ **Testability**: 3 previously omitted tests (lines 1206, 1239, 1275) now passing
+2. ✅ **Branch coverage**: Error handling paths now testable
+3. ✅ **No global pollution**: Mock is scoped to individual tests (explicit injection)
+4. ✅ **Clear ownership**: Each test explicitly manages executor lifecycle
+5. ✅ **Industry standard**: DI is well-understood pattern
+6. ✅ **Production code clarity**: `executor.execute()` makes external dependency explicit
+
+**What was rejected**:
+- ❌ **Refinements (案2)**: Cannot cross file boundaries
+- ❌ **TracePoint (案3/案3.1/案3.2)**: Too complex for this specific use case
+
+### Comparison: Reality Marble Proposals vs Actual Solution
+
+| Aspect | 案2 (Refinements) | 案3.2 (Upfront) | **Actual (DI)** |
+|--------|-------------------|-----------------|-----------------|
+| **File boundary** | ❌ Cannot cross | ✅ Can cross | ✅ Not applicable |
+| **First call** | ✅ Intercepted | ✅ Intercepted | ✅ Controlled |
+| **Complexity** | 🟢 Low | 🟡 Medium-High | 🟢 **Very Low** |
+| **Production changes** | ✅ None needed | ✅ None needed | ⚠️ **Requires refactor** |
+| **Test explicitness** | 🟡 `using` declaration | 🟡 `activate` block | ✅ **Explicit injection** |
+| **Scope** | 🟢 Lexical (safe) | ⚠️ Global (guarded) | 🟢 **Test-local** |
+| **Performance** | 🟡 ~161ns/call | ✅ ~50ns/call | ✅ **~10ns/call** (direct call) |
+| **Maintenance** | 🟡 Moderate | 🔴 High | 🟢 **Low** |
+| **Learning curve** | 🟡 Refinements | 🔴 TracePoint magic | 🟢 **Standard OOP** |
+
+### Key Insights
+
+#### 1. Context Matters
+
+**Reality Marble focus**: Generic mocking library for any Ruby project
+**pra gem context**: Internal testing of 10-20 system commands in a single codebase
+
+**Verdict**: For pra gem's specific use case, **DI is simpler and sufficient**.
+
+#### 2. "Perfect is the Enemy of Good"
+
+**Reality Marble ambition**: Zero-intrusion, no production code changes
+**pra gem reality**: Small, focused refactor (75-line abstraction) solved the problem completely
+
+**Verdict**: **Pragmatic DI beats ambitious but complex solutions** for this scope.
+
+#### 3. Reality Marble Still Has Value
+
+**Where DI falls short**:
+- ❌ Cannot mock third-party gems (no control over their code)
+- ❌ Cannot mock standard library calls (`File.read`, `Dir.glob`) without extensive refactoring
+- ❌ Requires production code modification (not acceptable for libraries)
+
+**Where Reality Marble excels**:
+- ✅ **Library/gem development**: Cannot modify user's production code
+- ✅ **Third-party mocking**: Mock gems you don't control
+- ✅ **Exploratory testing**: Rapidly mock without refactoring
+
+**Example use case**:
+```ruby
+# Testing a gem that uses Net::HTTP internally (you can't modify gem code)
+http_marble = RealityMarble.chant do
+  mock Net::HTTP, :get do |uri|
+    '{"status": "mocked"}'
+  end
+end
+
+http_marble.activate do
+  # ThirdPartyGem internally calls Net::HTTP.get
+  result = ThirdPartyGem.fetch_data("https://api.example.com")
+  assert_equal "mocked", JSON.parse(result)["status"]
+end
+```
+
+### Recommendation: When to Use Which Approach
+
+#### Use DI Pattern (Actual pra Solution) When:
+- ✅ You control the production codebase
+- ✅ Only a few methods need mocking (10-20 commands)
+- ✅ Team values explicitness and simplicity
+- ✅ Mocking is internal to your project
+
+**Implementation cost**: Low (one-time 75-line abstraction + per-method refactor)
+
+#### Use Reality Marble (案3.2) When:
+- ✅ Developing a library/gem (cannot modify user code)
+- ✅ Need to mock third-party dependencies
+- ✅ Hundreds of methods need mocking (high DI refactor cost)
+- ✅ Exploratory testing / rapid prototyping
+- ✅ Want a reusable mocking solution across projects
+
+**Implementation cost**: High (complex registry, visibility preservation, C methods)
+
+#### Never Use (Rejected):
+- ❌ 案2 (Refinements): Production Code Boundary Problem is fatal
+- ❌ 案3/案3.1 (TracePoint throw/catch): Ensure blocks not executed, first call timing issue
+
+### Updated Reality Marble Roadmap
+
+**Phase 0**: Proof-of-concept for 案3.2
+- Focus: C methods, visibility, nested activate
+- Goal: Validate complexity vs. value tradeoff
+
+**Phase 1**: Minimal viable implementation
+- Core: Upfront redefinition, Thread-local guard, restoration
+- Scope: Ruby methods only (defer C methods)
+
+**Phase 2**: Production hardening
+- Add: C method support, visibility preservation, emergency restore
+- Test: Concurrent activation, nested contexts, edge cases
+
+**Phase 3**: Ecosystem integration
+- Documentation: Clear use case guidance (when DI is better)
+- Examples: Third-party gem mocking, library development
+
+**Decision gate**: After Phase 0 PoC, **reassess if complexity is justified** compared to DI pattern.
+
+### Conclusion: Lessons Learned
+
+1. **DI is often good enough** — For internal projects with controlled codebases, simple beats clever.
+
+2. **Reality Marble has a niche** — Library development, third-party mocking, exploratory testing justify the complexity.
+
+3. **案3.2 is the right architecture** — If Reality Marble is built, 案3.2 (Upfront Bulk Redefinition) is the only viable approach.
+
+4. **Don't build it unless needed** — pra gem chose wisely: solve the specific problem (3 failing tests) with the simplest solution (DI).
+
+**Final verdict**: Reality Marble remains **a valid design exercise** and **potential future gem**, but for pra gem specifically, **DI was the correct choice**.
+
+---
+
 ## Implementation Plan
 
 ### Phase 0: Project Setup
