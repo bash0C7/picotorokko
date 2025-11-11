@@ -351,7 +351,7 @@ class PraCommandsDeviceTest < PraTestCase
   end
 
   # method_missing による動的Rakeタスク委譲のテスト
-  sub_test_case "rake task forwarding" do
+  sub_test_case "rake task proxy" do
     test "delegates custom_task to R2P2-ESP32 rake task" do
       with_fresh_project_root do
         Dir.mktmpdir do |tmpdir|
