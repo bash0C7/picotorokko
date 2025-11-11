@@ -4,6 +4,7 @@ require 'fileutils'
 require 'yaml'
 require 'time'
 require 'shellwords'
+require_relative 'executor'
 
 module Pra
   # PicoRuby環境定義・ビルド環境管理モジュール
@@ -44,6 +45,19 @@ module Pra
     @reset_cached_root_enabled = true
 
     class << self
+      # ====== Executor（外部コマンド実行） ======
+      # NOTE: Configurable for testing (MockExecutor) and production (ProductionExecutor)
+
+      # executor を設定（テスト用）
+      def set_executor(executor)
+        @executor = executor
+      end
+
+      # 現在の executor を取得（デフォルトは ProductionExecutor）
+      def executor
+        @executor ||= ProductionExecutor.new
+      end
+
       # ====== ダイナミックディレクトリパス（キャッシュベース） ======
       # NOTE: Caches initial project_root to prevent Dir.chdir interference
       # This ensures patch_dir, cache_dir always point to the original project root
@@ -154,30 +168,20 @@ module Pra
 
         puts "Cloning #{repo_url} to #{dest_path}..."
         cmd = "git clone #{Shellwords.escape(repo_url)} #{Shellwords.escape(dest_path)}"
-        unless system(cmd)
-          raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd}"
-        end
+        executor.execute(cmd)
 
         # 指定コミットにチェックアウト
-        Dir.chdir(dest_path) do
-          cmd = "git checkout #{Shellwords.escape(commit)}"
-          unless system(cmd)
-            raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd}"
-          end
-        end
+        cmd = "git checkout #{Shellwords.escape(commit)}"
+        executor.execute(cmd, dest_path)
       end
 
       # リポジトリをクローン＆submodule初期化
       def clone_with_submodules(repo_url, dest_path, commit)
         clone_repo(repo_url, dest_path, commit)
 
-        Dir.chdir(dest_path) do
-          # Submodule初期化
-          cmd = 'git submodule update --init --recursive'
-          unless system(cmd)
-            raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd} (in #{dest_path})"
-          end
-        end
+        # Submodule初期化
+        cmd = 'git submodule update --init --recursive'
+        executor.execute(cmd, dest_path)
       end
 
       # コミット情報からcommit-hash形式を生成
@@ -306,16 +310,7 @@ module Pra
       # pra gem は R2P2-ESP32 ディレクトリで Rake コマンドを実行するのみ
       # （直接 ESP-IDF に依存しない - CI 環境で ESP-IDF がない場合も対応可能）
       def execute_with_esp_env(command, working_dir = nil)
-        execute_block = lambda do |_dir = nil|
-          success = system(command)
-          return if success
-
-          exit_status = $CHILD_STATUS&.exitstatus || "unknown"
-          location = working_dir ? " (in #{working_dir})" : ""
-          raise "Command failed (exit status: #{exit_status}): #{command}#{location}"
-        end
-
-        working_dir ? Dir.chdir(working_dir, &execute_block) : execute_block.call
+        executor.execute(command, working_dir)
       end
     end
 
