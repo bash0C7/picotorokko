@@ -111,6 +111,71 @@ rake dev          # Development: RuboCop auto-fix + tests + coverage
 
 ---
 
+## 🚨 Critical Priority: ptrk init Command Implementation
+
+**Background**: New users cannot start projects without initialization command. Manual setup requires 10+ steps and is prone to errors. SPEC.md defines directory structure but no command exists to create it. Template engine is fully implemented and ready to use.
+
+**Goal**: Implement `ptrk init` command to initialize complete PicoRuby project structure with single command.
+
+### Phase 0: Specification (1 day)
+
+- [ ] Define `ptrk init` command specification in SPEC.md
+- [ ] Design project template structure (`lib/picotorokko/templates/project/`)
+- [ ] Document expected output directory structure and files
+- [ ] Define user stories ("new user creates project in 5 minutes")
+
+### Phase 1: Minimum Implementation (2-3 days, TDD)
+
+- [ ] Create `lib/picotorokko/commands/init.rb`
+- [ ] Register `init` subcommand in `lib/picotorokko/cli.rb`
+- [ ] Implement basic directory creation (storage/home, patch/{R2P2-ESP32,picoruby-esp32,picoruby}, ptrk_env/)
+- [ ] Generate `.gitignore` file (exclude .cache/, build/, ptrk_env/*/)
+- [ ] Generate `ptrk_env/.picoruby-env.yml` (empty environment definition template)
+- [ ] Add comprehensive tests in `test/commands/init_test.rb`
+- [ ] RuboCop clean, coverage ≥85%/60%
+
+### Phase 2: Template Expansion (1-2 days, TDD)
+
+- [ ] Create `lib/picotorokko/templates/project/` directory structure
+- [ ] Add project README.md template (ERB-based)
+- [ ] Add sample application (storage/home/main.rb)
+- [ ] Add Gemfile template (with picotorokko dependency)
+- [ ] Add CLAUDE.md template (ptrk user context, auto-generated)
+- [ ] Test: verify all templates render correctly with variables
+- [ ] RuboCop clean, coverage ≥85%/60%
+
+### Phase 3: Optional Features (1-2 days, TDD)
+
+- [ ] `--with-mrbgem NAME` option (integrate existing `ptrk mrbgems generate`)
+- [ ] `--with-ci` option (copy docs/github-actions/esp32-build.yml)
+- [ ] `--author "Name"` option (get from git config user.name)
+- [ ] `--path PATH` option (create project in specified directory)
+- [ ] Test: verify all option combinations work correctly
+- [ ] RuboCop clean, coverage ≥85%/60%
+
+### Phase 4: Documentation (half day)
+
+- [ ] Update README.md "Quick Start" section (start with `ptrk init` command)
+- [ ] Update SPEC.md with `ptrk init` command reference and full specification
+- [ ] Update docs/CI_CD_GUIDE.md (mention `--with-ci` option)
+- [ ] Create docs/PROJECT_INITIALIZATION_GUIDE.md (detailed user guide)
+- [ ] Add examples of generated project structure
+
+### Phase 5: User Testing (1 day)
+
+- [ ] Complete walkthrough from new user perspective
+- [ ] Test in `playground/` experimental directory
+- [ ] Improve error messages based on feedback
+- [ ] Create FAQ for common issues
+
+**Success Criteria**:
+- New users can create complete projects with `ptrk init` command
+- Manual setup steps reduced from 10+ to 0
+- All generated files follow project conventions
+- Tests cover all code paths (≥85% line coverage)
+
+---
+
 ## Quality Gates
 
 All features must meet these criteria before merging:
