@@ -64,3 +64,8 @@ ptrk_env/
 
 # Manual verification directory
 manual-test/
+
+# Gem development playground (experimental projects)
+playground/
+!playground/README.md
+!playground/Gemfile

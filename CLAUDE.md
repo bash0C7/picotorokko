@@ -66,6 +66,36 @@ There are two distinct audiences in this project:
 - "The template uses `ptrk device build` which doesn't exist yet" → Add to TODO.md ✅ (note the dependency)
 - "I must implement `ptrk device build` NOW before finishing the template" ❌ (unless explicitly requested)
 
+## Playground Directory: Strict Access Control
+
+**🚨 ABSOLUTE RULE: NEVER touch `playground/` during gem development**
+
+The `playground/` directory is a separate experimental space for testing ptrk commands. When you are working as a gem developer (root: `/Users/bash/src/picotorokko/`):
+
+**Prohibited Actions**:
+- 🚫 DO NOT read files in `playground/`
+- 🚫 DO NOT write files in `playground/`
+- 🚫 DO NOT search/grep in `playground/`
+- 🚫 DO NOT reference `playground/` in any way
+- 🚫 DO NOT navigate to `playground/` subdirectories
+
+**When to Access `playground/`**:
+- ⚠️ ONLY when explicitly instructed by the user
+- ⚠️ ONLY when user provides context tag like `[ptrkユーザー実験]` or `[playground報告]`
+- ⚠️ ONLY when user asks you to investigate ptrk usage reports from playground/
+
+**Context Separation Protocol**:
+
+The user will explicitly indicate their current context via prompt prefix:
+- **Default or `[gem開発]`** → Gem development context (DO NOT access playground/)
+- **`[ptrkユーザー実験]`** → ptrk user experiment context (work in playground/)
+- **`[playground報告]`** → User reporting findings from playground/
+
+**Security Principle: Complete Isolation**:
+- `playground/` must be independently portable (no parent directory awareness)
+- Exception: `playground/Gemfile` references `../` to use development gem only
+- `playground/README.md` describes ptrk experiments only (not gem development context)
+
 ## Core Principles
 
 - **Simplicity**: Write simple, linear code. Avoid unnecessary complexity.
