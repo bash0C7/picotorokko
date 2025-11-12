@@ -9,11 +9,9 @@ Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
   test_files = FileList["test/**/*_test.rb"].sort
-  # NOTE: (Phase 0 - Session 6) device_test.rb is excluded from main suite to run last
-  # - Thor execution can interfere with test-unit registration
-  # - Executor abstraction ensures clean test isolation when run separately
-  # - device_test.rb is executed last via test:device task dependency
-  # - All 151 main + 14 device = 165 total tests run via default task
+  # NOTE: device_test.rb is excluded from main suite to avoid test registration interference
+  # - It runs separately via test:device task
+  # - Default task runs: main suite (183 tests) + device suite (14 tests)
   test_files.delete_if { |f| f.include?("device_test.rb") }
 
   t.test_files = test_files
@@ -31,190 +29,6 @@ Rake::TestTask.new("test:device") do |t|
   t.libs << "lib"
   t.test_files = ["test/commands/device_test.rb"]
   # Ruby warning suppress
-  t.ruby_opts = ["-W1"]
-end
-
-# ============================================================================
-# DIAGNOSTIC TASKS: Binary search for test registration failure
-# ============================================================================
-
-# Test with left half of files (0-3: cli, device, env_commands, mrbgems)
-Rake::TestTask.new("test:left_half") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/cli_test.rb",
-    "test/commands/device_test.rb",
-    "test/commands/env_test.rb",
-    "test/commands/mrbgems_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test with right half of files (4-8: rubocop, env, env_constants, picotorokko, rake_task_extractor)
-Rake::TestTask.new("test:right_half") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/rubocop_test.rb",
-    "test/env_test.rb",
-    "test/lib/env_constants_test.rb",
-    "test/picotorokko_test.rb",
-    "test/rake_task_extractor_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test first 2 files (cli, device)
-Rake::TestTask.new("test:left_quarter_1") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/cli_test.rb",
-    "test/commands/device_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test next 2 files (env_commands, mrbgems)
-Rake::TestTask.new("test:left_quarter_2") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/env_test.rb",
-    "test/commands/mrbgems_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test first 3 files of right half
-Rake::TestTask.new("test:right_quarter_1") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/rubocop_test.rb",
-    "test/env_test.rb",
-    "test/lib/env_constants_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test last 2 files of right half
-Rake::TestTask.new("test:right_quarter_2") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/picotorokko_test.rb",
-    "test/rake_task_extractor_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test each file individually for baseline
-Rake::TestTask.new("test:individual") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  # Just first file to start
-  t.test_files = ["test/commands/cli_test.rb"]
-  t.ruby_opts = ["-W1"]
-end
-
-# ============================================================================
-# DEEP DIAGNOSTIC TASKS: Identify which file combination breaks registration
-# ============================================================================
-
-# Test: cli_test + env_test
-Rake::TestTask.new("test:diag_cli_env") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/cli_test.rb",
-    "test/commands/env_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test: device_test + env_test
-Rake::TestTask.new("test:diag_device_env") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/device_test.rb",
-    "test/commands/env_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test: cli + device + env (no mrbgems)
-Rake::TestTask.new("test:diag_cde") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/cli_test.rb",
-    "test/commands/device_test.rb",
-    "test/commands/env_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test: mrbgems_test alone
-Rake::TestTask.new("test:diag_mrbgems") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = ["test/commands/mrbgems_test.rb"]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test: cli + device + mrbgems (no env_test)
-Rake::TestTask.new("test:diag_cdm") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/cli_test.rb",
-    "test/commands/device_test.rb",
-    "test/commands/mrbgems_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test: device_test alone
-Rake::TestTask.new("test:diag_device") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = ["test/commands/device_test.rb"]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test: cli + device (should work fine)
-Rake::TestTask.new("test:diag_cli_device") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/cli_test.rb",
-    "test/commands/device_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test: env_test + mrbgems (right side)
-Rake::TestTask.new("test:diag_env_mrbgems") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/env_test.rb",
-    "test/commands/mrbgems_test.rb"
-  ]
-  t.ruby_opts = ["-W1"]
-end
-
-# Test: device + mrbgems only (skipping env_test)
-Rake::TestTask.new("test:diag_device_mrbgems") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = [
-    "test/commands/device_test.rb",
-    "test/commands/mrbgems_test.rb"
-  ]
   t.ruby_opts = ["-W1"]
 end
 
@@ -255,21 +69,18 @@ end
 # INTEGRATED TEST TASKS
 # ============================================================================
 
-# Run all tests: main suite (151 tests) + device suite (14 tests)
-# NOTE: SimpleCov coverage is cumulative across both test:device runs
+# Run all tests: main suite (183 tests) + device suite (14 tests)
+# NOTE: SimpleCov coverage is cumulative across both test runs
 desc "Run all tests (main suite + device suite)"
 task "test:all" => :reset_coverage do
   sh "bundle exec rake test"
   sh "bundle exec rake test:device 2>&1 | grep -E '^(Started|Finished|[0-9]+ tests)' || true"
 end
 
-# CI専用タスク：全テスト + RuboCop（チェックのみ） + カバレッジ検証
-# NOTE: test:all runs reset_coverage → test → test:device (sequential, cumulative coverage)
-# Total: 151 + 14 = 165 tests with proper coverage from main suite
+# CI task: All tests + RuboCop check + coverage validation
 desc "Run all tests, RuboCop checks, and validate coverage (for CI)"
 task ci: %i[test rubocop coverage_validation] do
   puts "\n✓ CI checks passed! All tests + RuboCop + coverage validated."
-  # NOTE: device_test is separate; run 'rake test:all' or 'rake' for all 165 tests
 end
 
 # 品質チェック統合タスク
@@ -287,8 +98,7 @@ end
 # ============================================================================
 
 # Default: Run all tests (main suite + device suite)
-# NOTE: Run individual test files with: bundle exec ruby test/path/file_test.rb
-desc "Default task: Run all tests (main + device suites) [165 tests total]"
+desc "Default task: Run all tests (main + device suites) [197 tests total]"
 task default: %i[test:all] do
-  puts "\n✓ All 165 tests completed successfully (151 main + 14 device)"
+  puts "\n✓ All 197 tests completed successfully (183 main + 14 device)"
 end
