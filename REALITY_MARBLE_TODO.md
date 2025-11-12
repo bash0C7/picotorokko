@@ -1817,7 +1817,9 @@ end
 
 ### Context: After Merging origin/main (Session 7)
 
-After designing 案2, 案3.1, and 案3.2, we merged `origin/main` (commit b9a63b0) which contains the **actual implementation** of how the pra gem solved the Production Code Boundary Problem.
+After designing 案2, 案3.1, and 案3.2, we merged `origin/main` (commit b9a63b0) which contains the **actual implementation** of how the gem solved the Production Code Boundary Problem.
+
+**Note**: The gem was later renamed from `pra` to `picotorokko` (commit fab3e39), but this document uses the original name `pra` as it reflects the state during design exploration.
 
 **Key changes in origin/main**:
 - Commit 4815ae5: "Phase 0 (INFRASTRUCTURE-SYSTEM-MOCKING-REFACTOR) COMPLETED"
@@ -1825,7 +1827,7 @@ After designing 案2, 案3.1, and 案3.2, we merged `origin/main` (commit b9a63b
 - Refactored `lib/pra/env.rb` to use executor abstraction
 - Updated `test/commands/env_test.rb` to use MockExecutor
 - Removed SystemCommandMocking module (Refinements-based mocking)
-- Added `docs/PHASE_0_EXECUTOR_ABSTRACTION.md` documentation
+- Added `docs/architecture/executor-abstraction-design.md` documentation (later moved from `docs/PHASE_0_EXECUTOR_ABSTRACTION.md`)
 
 ### The Actual Solution: Dependency Injection Pattern
 
@@ -1950,7 +1952,7 @@ end
 
 ### Why This Approach Was Chosen
 
-**Decision rationale** (documented in `docs/PHASE_0_EXECUTOR_ABSTRACTION.md`):
+**Decision rationale** (documented in `docs/architecture/executor-abstraction-design.md`):
 
 1. ✅ **Testability**: 3 previously omitted tests (lines 1206, 1239, 1275) now passing
 2. ✅ **Branch coverage**: Error handling paths now testable
