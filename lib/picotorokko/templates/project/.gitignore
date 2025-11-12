@@ -1,0 +1,28 @@
+# ptrk project directories
+.cache/
+build/
+ptrk_env/*/
+
+# Version cache and build artifacts
+*.o
+*.a
+*.so
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Ruby
+.ruby-version
+.bundle/
+vendor/bundle/
+*.gem
+*.gemspec.lock
+
+# System
+*.tmp
+.env.local

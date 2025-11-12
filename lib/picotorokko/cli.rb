@@ -3,6 +3,7 @@ require_relative "version"
 require_relative "env"
 require_relative "commands/env"
 require_relative "commands/device"
+require_relative "commands/init"
 require_relative "commands/mrbgems"
 require_relative "commands/rubocop"
 
@@ -11,6 +12,16 @@ module Picotorokko
   class CLI < Thor
     def self.exit_on_failure?
       true
+    end
+
+    # プロジェクト初期化
+    desc "init [PROJECT_NAME]", "Initialize a new PicoRuby project"
+    option :path, type: :string, desc: "Create project in specified directory"
+    option :author, type: :string, desc: "Set author name"
+    option :"with-ci", type: :boolean, desc: "Copy GitHub Actions workflow"
+    option :"with-mrbgem", type: :array, desc: "Initialize with mrbgems"
+    def init(project_name = nil)
+      Picotorokko::Commands::Init.new(options).create(project_name)
     end
 
     # サブコマンド登録

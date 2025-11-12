@@ -1,0 +1,158 @@
+# <%= @project_name %>
+
+A PicoRuby application for ESP32 development using the `picotorokko` (ptrk) build system.
+
+**Created**: <%= @created_at %>
+<% if @author %>**Author**: <%= @author %>
+<% end %>
+
+## Quick Start
+
+### 1. Initialize Environment
+
+```bash
+ptrk env set main --commit <R2P2-ESP32-hash>
+```
+
+Optionally, specify different commits for picoruby-esp32 and picoruby:
+
+```bash
+ptrk env set main \
+  --commit <R2P2-hash> \
+  --esp32-commit <picoruby-esp32-hash> \
+  --picoruby-commit <picoruby-hash>
+```
+
+To fetch latest versions automatically:
+
+```bash
+ptrk env latest
+```
+
+### 2. Setup Build Environment
+
+```bash
+ptrk build setup main
+```
+
+This creates a complete working directory in `build/` with all repositories cloned and patches applied.
+
+### 3. Build Application
+
+```bash
+cd build/current/R2P2-ESP32
+rake build
+cd ../../..
+```
+
+### 4. Flash to Device
+
+```bash
+ptrk flash
+```
+
+### 5. Monitor Serial Output
+
+```bash
+ptrk monitor
+```
+
+## Project Structure
+
+- **`storage/home/`** — Your PicoRuby application code (git-managed)
+- **`patch/`** — Customizations to R2P2-ESP32 and dependencies (git-managed)
+- **`.cache/`** — Immutable repository snapshots (git-ignored)
+- **`build/`** — Active build working directory (git-ignored)
+- **`ptrk_env/`** — Environment metadata (git-ignored)
+
+## Documentation
+
+- **`SPEC.md`** — Complete specification of ptrk commands (in picotorokko gem)
+- **`CLAUDE.md`** — Development guidelines and conventions
+- **[picotorokko README](https://github.com/picoruby/picotorokko)** — Gem documentation and examples
+
+## Common Tasks
+
+### List Defined Environments
+
+```bash
+ptrk env list
+```
+
+### Show Current Environment Details
+
+```bash
+ptrk env show main
+```
+
+### Export Changes as Patches
+
+After editing files in `build/current/`, export changes:
+
+```bash
+ptrk patch export
+```
+
+Then commit:
+
+```bash
+git add patch/ storage/home/
+git commit -m "Update patches and application code"
+```
+
+### Switch Between Environments
+
+```bash
+ptrk env set development
+ptrk build setup
+```
+
+### Clean Up Cache
+
+Remove unused cached versions:
+
+```bash
+ptrk cache prune
+```
+
+## Troubleshooting
+
+For detailed troubleshooting and advanced usage, see SPEC.md in the `picotorokko` gem.
+
+### Environment Not Found
+
+Check available environments:
+
+```bash
+ptrk env list
+```
+
+Create a new one:
+
+```bash
+ptrk env set myenv --commit <hash>
+```
+
+### Build Fails
+
+Verify the build environment is properly set up:
+
+```bash
+ptrk build list
+```
+
+If missing, setup again:
+
+```bash
+ptrk build setup
+```
+
+## Support
+
+For issues with the picotorokko gem, see:
+- GitHub: https://github.com/picoruby/picotorokko/issues
+- Documentation: https://github.com/picoruby/picotorokko#readme
+
+For PicoRuby and R2P2-ESP32 issues, see:
+- PicoRuby: https://github.com/picoruby/picoruby
+- R2P2-ESP32: https://github.com/picoruby/R2P2-ESP32
