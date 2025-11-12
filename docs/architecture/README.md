@@ -41,6 +41,26 @@ This directory contains design documentation for key architectural patterns and 
 
 ---
 
+### [AST-Based Template Engine](AST_TEMPLATE_ENGINE_SPEC.md)
+
+**Problem**: ERB-based template generation breaks syntax validity and lacks semantic understanding, making templates fragile and hard to maintain.
+
+**Solution**: Syntax-aware template transformation using AST parsers (Prism for Ruby, Psych for YAML, regex for C) with placeholder-based substitution.
+
+**Key Concepts**:
+- Ruby templates: Prism AST visitor pattern with code generation
+- YAML templates: Recursive object traversal with Psych
+- C templates: String substitution with regex
+- Unified Engine interface for all template types
+
+**When to Reference**:
+- Understanding mrbgem template generation
+- Adding new template types
+- Debugging template transformation issues
+- Implementing custom template engines
+
+---
+
 ## Related Phases
 
 These architecture documents support ongoing feature development:

@@ -1,18 +1,6 @@
 # CI/CD Integration Guide
 
-This guide explains how to set up continuous integration and deployment for PicoRuby ESP32 applications using the `pra` gem.
-
-## Terminology
-
-Before proceeding, understand these key terms used throughout this guide:
-
-- **Environment Definition**: Metadata in `.picoruby-env.yml` that specifies commit hashes and timestamps for R2P2-ESP32, picoruby-esp32, and picoruby repositories.
-- **Build Environment**: A working directory (`build/`) containing actual repository files used for building firmware.
-- **Cache**: Immutable repository copies stored in `.cache/` directory.
-
-**Typical Workflow**: Define environment → Fetch to cache → Setup build environment → Build firmware
-
-For more details, see the [Terminology section in README.md](../README.md#terminology).
+This guide explains how to set up continuous integration and deployment for PicoRuby ESP32 applications using the `ptrk` gem.
 
 ## Table of Contents
 
@@ -34,20 +22,16 @@ For more details, see the [Terminology section in README.md](../README.md#termin
 
 If you're building a PicoRuby application for ESP32, you can automate the firmware build process using GitHub Actions.
 
-**Recommended**: If you have the `pra` gem installed, use the `ptrk ci setup` command to automatically copy the workflow template:
+#### Step 1: Copy the Example Workflow
 
-```bash
-ptrk ci setup
-```
-
-This will create `.github/workflows/esp32-build.yml` from the latest template.
-
-#### Step 1: Copy the Example Workflow (Manual Method)
+The `ptrk` gem provides a GitHub Actions workflow template for ESP32 builds. You can copy it manually:
 
 ```bash
 # In your PicoRuby application repository
 mkdir -p .github/workflows
-cp node_modules/pra/docs/github-actions/esp32-build.yml .github/workflows/
+
+# Copy from picotorokko gem installation
+cp $(bundle show picotorokko)/docs/github-actions/esp32-build.yml .github/workflows/
 
 # Or download directly from GitHub
 curl -o .github/workflows/esp32-build.yml \
@@ -56,21 +40,17 @@ curl -o .github/workflows/esp32-build.yml \
 
 #### Step 2: Define Your Environment
 
-Edit `.picoruby-env.yml` in your project root to define your R2P2-ESP32 environment definition:
+Use `ptrk env set` to create your build environment:
 
-```yaml
-environments:
-  stable-2024-11:
-    R2P2-ESP32:
-      commit: "f500652"
-      timestamp: "20241105_143022"
-    picoruby-esp32:
-      commit: "def456..."
-      timestamp: "20241105_143022"
-    picoruby:
-      commit: "ghi789..."
-      timestamp: "20241105_143022"
+```bash
+# Create environment with specific commit (if needed)
+ptrk env set production --commit f500652
+
+# Or use latest commits
+ptrk env set development
 ```
+
+This creates an entry in `ptrk_env/.picoruby-env.yml` that GitHub Actions will use.
 
 #### Step 3: Customize the Workflow (Optional)
 
@@ -84,16 +64,16 @@ Edit `.github/workflows/esp32-build.yml` to customize:
     esp_idf_version: v5.1  # Change to v5.2, v5.3, etc.
     target: esp32           # Or esp32s2, esp32s3, esp32c3
 
-# Change environment definition name
-- name: Fetch PicoRuby repositories to cache
+# Change environment name
+- name: Setup build environment
   run: |
-    ptrk cache fetch stable-2024-11  # Change to your environment definition name
+    ptrk env set production  # Change to your environment name
 ```
 
 #### Step 4: Commit and Push
 
 ```bash
-git add .github/workflows/esp32-build.yml .picoruby-env.yml
+git add .github/workflows/esp32-build.yml ptrk_env/.picoruby-env.yml
 git commit -m "Add CI/CD workflow for ESP32 firmware builds"
 git push origin main
 ```
@@ -103,32 +83,18 @@ The workflow will automatically run on:
 - Pull requests
 - Manual trigger via GitHub Actions UI
 
-#### Updating Workflow Template
-
-When `pra` gem is updated with workflow improvements:
-
-```bash
-gem update pra
-ptrk ci setup --force  # Overwrite with latest template
-git diff .github/workflows/esp32-build.yml  # Review changes
-# Salvage any custom changes you need
-```
-
-**Note**: The `--force` option will be available in a future version of `pra`. It allows you to refresh the workflow template while preserving your ability to review and restore custom changes via `git diff`.
-
 ### Understanding the Build Process
 
 The automated build workflow performs these steps:
 
 1. **Checkout**: Clones your repository with submodules
 2. **Ruby Setup**: Installs Ruby 3.4 and dependencies
-3. **Install pra**: Installs the ptrk gem globally
+3. **Install ptrk**: Installs the picotorokko gem
 4. **ESP-IDF Setup**: Configures ESP-IDF toolchain via espressif action
-5. **Cache Fetch**: Downloads R2P2-ESP32 repositories to cache using `ptrk cache fetch`
-6. **Build Environment Setup**: Runs `ptrk build setup` to create build environment from cache
-7. **Apply Patches**: Applies any custom patches from `patch/` directory
-8. **Firmware Build**: Builds ESP32 firmware using `idf.py build`
-9. **Upload Artifacts**: Saves firmware binaries as downloadable artifacts
+5. **Environment Setup**: Runs `ptrk env set` to create build environment in `ptrk_env/`
+6. **Apply Patches**: Applies any custom patches from `patch/` directory
+7. **Firmware Build**: Builds ESP32 firmware using R2P2-ESP32's Rakefile
+8. **Upload Artifacts**: Saves firmware binaries as downloadable artifacts
 
 ### Downloading and Flashing Artifacts
 
@@ -157,17 +123,16 @@ esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash \
 
 **Option 2: Using ptrk (Recommended)**
 
-If you have the `pra` gem installed locally:
+If you have the `ptrk` gem installed locally:
 
 ```bash
-# Ensure you're using the same environment definition
-bundle exec ptrk cache fetch stable-2024-11
-bundle exec ptrk build setup
+# Ensure you're using the same environment
+bundle exec ptrk env set production
 
-# Copy downloaded artifacts to build directory
-cp downloaded-artifacts/*.bin .cache/*/r2p2-esp32/build/
+# Build locally (or copy downloaded artifacts)
+bundle exec ptrk device build
 
-# Flash using pra
+# Flash using ptrk
 bundle exec ptrk device flash
 ```
 
@@ -180,16 +145,13 @@ Edit your workflow to add custom build commands:
 ```yaml
 - name: Build firmware
   run: |
-    cd .cache/*/r2p2-esp32
+    cd ptrk_env/production/R2P2-ESP32
 
     # Set custom build options
-    idf.py menuconfig  # Configure interactively (won't work in CI)
-
-    # Or set via sdkconfig
     echo "CONFIG_MY_OPTION=y" >> sdkconfig
 
-    # Build with custom target
-    idf.py build
+    # Build with R2P2-ESP32 Rakefile
+    bundle exec rake build
 ```
 
 #### Enable Ruby Unit Tests
@@ -222,9 +184,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            .cache/*/r2p2-esp32/build/bootloader/bootloader.bin
-            .cache/*/r2p2-esp32/build/partition_table/partition-table.bin
-            .cache/*/r2p2-esp32/build/*.bin
+            ptrk_env/*/R2P2-ESP32/build/bootloader/bootloader.bin
+            ptrk_env/*/R2P2-ESP32/build/partition_table/partition-table.bin
+            ptrk_env/*/R2P2-ESP32/build/*.bin
 ```
 
 ---
@@ -233,13 +195,13 @@ jobs:
 
 ### Testing Workflow
 
-The `pra` gem uses GitHub Actions for continuous testing across multiple Ruby versions.
+The `picotorokko` gem uses GitHub Actions for continuous testing across multiple Ruby versions.
 
 **Workflow**: `.github/workflows/main.yml`
 
 **Features**:
 - Matrix testing: Ruby 3.1, 3.2, 3.3, 3.4
-- SimpleCov coverage tracking (90% threshold)
+- SimpleCov coverage tracking (≥85% line, ≥60% branch)
 - Codecov integration for coverage reports
 - Fails if any Ruby version breaks or coverage drops
 
@@ -282,9 +244,9 @@ If everything looks good, run again without dry run.
 
 **What the workflow does**:
 1. Validates version format (X.Y.Z)
-2. Updates `lib/pra/version.rb`
+2. Updates `lib/picotorokko/version.rb`
 3. Runs full test suite
-4. Builds gem (`pra-X.Y.Z.gem`)
+4. Builds gem (`picotorokko-X.Y.Z.gem`)
 5. Commits version bump to `main`
 6. Creates Git tag `vX.Y.Z`
 7. Publishes to RubyGems.org
@@ -304,18 +266,19 @@ Follow [Semantic Versioning](https://semver.org/):
 
 ### Common Issues
 
-#### "Environment definition not found"
+#### "Environment not found"
 
-**Problem**: Workflow fails at `ptrk cache fetch` step with "Environment definition not found in .picoruby-env.yml"
+**Problem**: Workflow fails at `ptrk env set` step
 
 **Solution**:
-1. Verify `.picoruby-env.yml` exists and is valid
-2. Check environment definition name matches in workflow
-3. Ensure commit hashes are correct
+1. Verify `ptrk_env/.picoruby-env.yml` exists in your repository
+2. Check environment name matches in workflow
+3. Ensure you've committed the file:
 
 ```bash
-# Locally test cache fetch
-bundle exec ptrk cache fetch your-environment-definition-name
+git add ptrk_env/.picoruby-env.yml
+git commit -m "Add environment configuration"
+git push
 ```
 
 #### "ESP-IDF not found"
@@ -323,7 +286,7 @@ bundle exec ptrk cache fetch your-environment-definition-name
 **Problem**: `idf.py` command not found
 
 **Solution**:
-- Ensure `espressif/esp-idf-ci-action@v1` step is present
+- Ensure `espressif/esp-idf-ci-action@v1` step is present in workflow
 - Check ESP-IDF version is supported (v5.1+)
 
 #### "Artifacts not uploaded"
@@ -332,7 +295,8 @@ bundle exec ptrk cache fetch your-environment-definition-name
 
 **Solution**:
 - Check artifact paths in workflow match your build output
-- Use wildcard patterns: `.cache/*/r2p2-esp32/build/*.bin`
+- Use correct paths: `ptrk_env/*/R2P2-ESP32/build/*.bin`
+- Verify build actually succeeded
 
 #### "Flash fails with downloaded artifacts"
 
@@ -359,7 +323,7 @@ bundle exec ptrk cache fetch your-environment-definition-name
 
 - **Gem Issues**: https://github.com/bash0C7/picotorokko/issues
 - **PicoRuby**: https://github.com/picoruby/picoruby
-- **R2P2-ESP32**: https://github.com/picoruby/r2p2-esp32
+- **R2P2-ESP32**: https://github.com/picoruby/R2P2-ESP32
 
 ---
 
@@ -367,15 +331,15 @@ bundle exec ptrk cache fetch your-environment-definition-name
 
 ### For Application Developers
 
-1. **Pin Environment Definition Versions**: Use specific commit hashes in `.picoruby-env.yml`
-2. **Test Locally First**: Run `ptrk build setup && rake build` before pushing
+1. **Use Explicit Environment Names**: Always specify environment names in workflows
+2. **Test Locally First**: Run `ptrk env set && ptrk device build` before pushing
 3. **Use Artifacts Expiry**: Set reasonable retention days (30-90)
 4. **Enable Branch Protection**: Require status checks and prevent force pushes
 5. **Document Flash Process**: Add flash instructions to your README
 
 ### For Gem Developers
 
-1. **Keep Coverage High**: Maintain 90%+ coverage
+1. **Keep Coverage High**: Maintain ≥85% line coverage
 2. **Test All Ruby Versions**: Don't skip matrix testing
 3. **Use Dry Run**: Always test releases with dry run first
 4. **Write Changelog**: Update CHANGELOG.md before releasing
@@ -429,6 +393,6 @@ jobs:
       # ... build steps ...
       - uses: softprops/action-gh-release@v1
         with:
-          files: build/*.bin
+          files: ptrk_env/*/R2P2-ESP32/build/*.bin
           generate_release_notes: true
 ```

@@ -1,6 +1,6 @@
 # Application-Specific mrbgem Development Guide
 
-This guide explains how to develop application-specific PicoRuby mrbgems using the `pra` tool on ESP32.
+This guide explains how to develop application-specific PicoRuby mrbgems using the `ptrk` tool on ESP32.
 
 ## Overview
 
@@ -9,7 +9,7 @@ This guide explains how to develop application-specific PicoRuby mrbgems using t
 - Expose C functions as Ruby class methods
 - Integrate low-level hardware operations with high-level Ruby code
 
-The `pra` tool automates mrbgem scaffolding and integration with the ESP32 build system.
+The `ptrk` tool automates mrbgem scaffolding and integration with the ESP32 build system.
 
 ## Quick Start
 
@@ -54,10 +54,17 @@ mrbc_app_init(mrbc_vm *vm)
 ### 3. Build and Test
 
 ```bash
-ptrk build setup your-env
-ptrk device build    # Build firmware with your mrbgem
-ptrk device flash    # Flash to ESP32
-ptrk device monitor  # Check output
+# Create/update environment with your application
+ptrk env set development
+
+# Build firmware with your mrbgem
+ptrk device build
+
+# Flash to ESP32
+ptrk device flash
+
+# Check output
+ptrk device monitor
 ```
 
 The mrbgem is automatically registered in:
@@ -105,7 +112,7 @@ c_app_version(mrbc_vm *vm, mrbc_value *v, int argc)
   // v[0] is the receiver (self) - the App class
   // v[1], v[2], ... are arguments
   // argc is the argument count
-  
+
   // Return an integer
   SET_RETURN(mrbc_integer_value(100));
 }
@@ -114,7 +121,7 @@ void
 mrbc_app_init(mrbc_vm *vm)
 {
   mrbc_class *app_class = mrbc_define_class(vm, "App", mrbc_class_object);
-  
+
   // Register as class method (singleton method)
   mrbc_define_method(vm, app_class, "version", c_app_version);
 }
@@ -153,12 +160,12 @@ c_app_add(mrbc_vm *vm, mrbc_value *v, int argc)
     mrbc_raise(vm, MRBC_CLASS(ArgumentError), "wrong number of arguments");
     return;
   }
-  
+
   if (v[1].tt != MRBC_TT_INTEGER || v[2].tt != MRBC_TT_INTEGER) {
     mrbc_raise(vm, MRBC_CLASS(ArgumentError), "arguments must be integers");
     return;
   }
-  
+
   int result = v[1].i + v[2].i;
   SET_RETURN(mrbc_integer_value(result));
 }
@@ -176,7 +183,7 @@ mrbc_raise(vm, MRBC_CLASS(RuntimeError), "operation failed");
 
 ### Patch Files
 
-When you run `ptrk build setup`, the tool automatically creates:
+When you run `ptrk env set`, the tool automatically creates:
 
 **`patch/picoruby/build_config/xtensa-esp.rb`**
 ```ruby
@@ -190,8 +197,8 @@ ${COMPONENT_DIR}/../../mrbgems/App/src/app.c
 
 You can customize these patches in the `patch/` directory and manage them with:
 ```bash
-ptrk patch export your-env
-ptrk patch diff your-env
+ptrk env patch_export development
+ptrk env patch_diff development
 ```
 
 ### Relative Paths
@@ -221,18 +228,12 @@ ptrk mrbgems generate Sensor
 ptrk mrbgems generate Motor
 ```
 
-Each one will be automatically registered during `ptrk build setup`.
+Each one will be automatically registered during `ptrk env set`.
 
-### RP2040 Support (Future)
+### Customizing Author Name
 
-Currently, only ESP32 is supported. Future versions will support ports/:
-
-```
-mrbgems/App/
-├── mrblib/
-├── src/
-├── ports/
-│   └── esp32/  (or rp2040/, etc.)
+```bash
+ptrk mrbgems generate MyGem --author "Your Name"
 ```
 
 ### Version Numbers
@@ -251,11 +252,11 @@ Increment for each release and use `App.version` in Ruby to validate compatibili
 
 ### "mrbgem not found" Error
 
-Ensure you ran `ptrk build setup`. The mrbgem template must exist before setup:
+Ensure you ran `ptrk env set`. The mrbgem template must exist before environment setup:
 
 ```bash
 ptrk mrbgems generate App
-ptrk build setup your-env  # This auto-generates patches
+ptrk env set development  # This auto-generates patches
 ```
 
 ### Build Fails with Undefined Symbols
@@ -270,8 +271,8 @@ Check that:
 Export your patches after editing:
 
 ```bash
-ptrk patch export your-env  # Saves changes to patch/ directory
-ptrk build setup your-env   # Clean rebuild with patches
+ptrk env patch_export development  # Saves changes to patch/ directory
+ptrk env set development           # Clean rebuild with patches
 ```
 
 ## Reference
@@ -279,4 +280,3 @@ ptrk build setup your-env   # Clean rebuild with patches
 - [PicoRuby mrbgems](https://github.com/picoruby/picoruby/tree/master/mrbgems)
 - [mrubyc API](https://github.com/picoruby/picoruby/tree/master/mrbgems/picoruby-mrubyc/lib/mrubyc)
 - [picoruby-irq Example](https://github.com/picoruby/picoruby/tree/master/mrbgems/picoruby-irq)
-
