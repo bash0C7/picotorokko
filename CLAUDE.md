@@ -234,11 +234,20 @@ The `ptrk` gem does **NOT** know:
    - Verify `bundle exec rubocop` returns **0 violations** (exit 0)
    - Verify `bundle exec rake test` passes (exit 0)
    - If any violations remain after `-A`, refactor instead of adding `# rubocop:disable`
+   - 📝 **Documentation Check** (if implementation changed):
+     - Code implementation changed? → Review affected docs below
+     - Command behavior? → Update SPEC.md + README.md
+     - Template/workflow? → Update docs/CI_CD_GUIDE.md + MRBGEMS_GUIDE.md
+     - Public API? → Update rbs-inline annotations (Priority 1+)
+     - Reference: `.claude/docs/documentation-automation-design.md` for file mapping
 
 **Quality Gates (ALL must pass before commit)**:
 - ✅ Tests pass: `bundle exec rake test`
 - ✅ RuboCop: 0 violations: `bundle exec rubocop`
 - ✅ Coverage ≥ 80% line, ≥ 50% branch (in CI): `bundle exec rake ci`
+- 📝 **Documentation updated** (if implementation changed):
+  - Affected docs reviewed and updated in same commit
+  - Mapping: See `.claude/docs/documentation-automation-design.md`
 
 **Absolutely Forbidden**:
 - 🚫 Add `# rubocop:disable` comments (refactor instead)

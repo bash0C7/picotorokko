@@ -168,6 +168,33 @@ bundle exec rubocop
 # 3. Coverage meets thresholds (in CI)
 bundle exec rake ci
 ✅ Expected: Line: ≥ 80%, Branch: ≥ 50%
+
+# 4. Documentation updated (if implementation changed)
+
+📝 Review which documents need updating based on code changes:
+
+**Trigger → Target Docs** (See `.claude/docs/documentation-automation-design.md` for full mapping):
+
+- **Command changed** (lib/picotorokko/commands/*.rb):
+  → SPEC.md (command reference)
+  → README.md (Commands section)
+
+- **Environment management changed** (lib/picotorokko/env.rb):
+  → SPEC.md (Environment Management)
+  → README.md
+
+- **Template engines changed** (lib/picotorokko/template/*.rb):
+  → docs/MRBGEMS_GUIDE.md
+
+- **Workflow templates changed** (docs/github-actions/*.yml):
+  → docs/CI_CD_GUIDE.md
+
+- **Public API changed** (any lib/picotorokko/*.rb public method):
+  → rbs-inline annotations (Priority 1+)
+  → `bundle exec rbs-inline --output sig lib`
+  → `bundle exec steep check`
+
+**Action**: Include doc updates in same commit as code changes.
 ```
 
 **Only commit when**:

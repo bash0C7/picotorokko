@@ -51,6 +51,14 @@ bundle exec rubocop
 # 3. Coverage thresholds (CI only)
 bundle exec rake ci
 ✅ Expected: Line: ≥ 80%, Branch: ≥ 50%
+
+# 4. Documentation updated (if implementation changed)
+
+📝 Review which documents need updating:
+- **Command/behavior changed?** → Update SPEC.md + README.md
+- **Templates changed?** → Update docs/MRBGEMS_GUIDE.md + docs/CI_CD_GUIDE.md
+- **Public API changed?** → Update rbs-inline annotations + `steep check`
+- Reference: `.claude/docs/documentation-automation-design.md` for full mapping
 ```
 
 ### When RuboCop Reports Violations
