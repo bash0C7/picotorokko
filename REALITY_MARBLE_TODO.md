@@ -1,7 +1,7 @@
 # Reality Marble Implementation TODO
 
 **Status**: Design Complete (REVISED with Critical Fixes), Ready for Implementation
-**Target**: New standalone gem (separate from pra gem)
+**Target**: New standalone gem (separate from picotorokko gem)
 **Timeline**: To be determined (independent project)
 **Last Updated**: 2025-11-11 (Post Peer Review - Critical architectural improvements)
 
@@ -366,7 +366,7 @@ end
 
 **Discovery**: During specification exploration, we identified a fundamental limitation that affects Reality Marble's applicability to real-world test scenarios.
 
-#### Concrete Example (from pra gem)
+#### Concrete Example (from picotorokko gem)
 
 **Test file** (`test/commands/env_test.rb`, lines 1272-1332):
 ```ruby
@@ -374,17 +374,17 @@ using SystemCommandMocking::SystemRefinement  # ← Refinement declared here
 
 class EnvCommandTest < Test::Unit::TestCase
   def test_init_clones_repository
-    # This test calls Env.init which internally calls lib/pra/env.rb code
-    Pra::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
+    # This test calls Env.init which internally calls lib/picotorokko/env.rb code
+    Picotorokko::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
     # ...
   end
 end
 ```
 
-**Production code** (`lib/pra/env.rb`, line 111-117):
+**Production code** (`lib/picotorokko/env.rb`, line 111-117):
 ```ruby
 # This file has NO `using` declaration
-module Pra
+module Picotorokko
   class Env
     def clone_repo(repo_url, dest_path, commit)
       return if Dir.exist?(dest_path)
@@ -402,7 +402,7 @@ end
 
 **What happens**:
 1. Test file declares `using SystemCommandMocking::SystemRefinement`
-2. Test calls `Pra::Env.init` (production code in separate file)
+2. Test calls `Picotorokko::Env.init` (production code in separate file)
 3. Production code calls `system()` internally
 4. **Refinement does NOT apply** → Real `system()` executes → Real git command runs!
 
@@ -418,14 +418,14 @@ remote: Enumerating objects: 15234, done.
 
 **Refinements lexical scope constraint**:
 - `using` only affects **code defined in the same file** where `using` appears
-- Code in `lib/pra/env.rb` has no `using` declaration
-- Therefore, `system()` call inside `lib/pra/env.rb` is NOT refined
+- Code in `lib/picotorokko/env.rb` has no `using` declaration
+- Therefore, `system()` call inside `lib/picotorokko/env.rb` is NOT refined
 
 **Call chain visualization**:
 ```
 [test/commands/env_test.rb]  ← using declared here
   ↓ calls
-[lib/pra/env.rb]             ← NO using here
+[lib/picotorokko/env.rb]             ← NO using here
   ↓ calls
 system('git clone ...')      ← Original Kernel#system, NOT refined version
 ```
@@ -437,7 +437,7 @@ This limitation affects Reality Marble's **value proposition** and **target use 
 #### ❌ Invalid Use Cases (Cannot Work)
 
 1. **Testing production code that makes system calls internally**
-   - Example: Testing `Pra::Env.init` which calls `system()` in separate file
+   - Example: Testing `Picotorokko::Env.init` which calls `system()` in separate file
    - Refinement cannot reach the actual call site
 
 2. **Deep call chains crossing file boundaries**
@@ -457,7 +457,7 @@ This limitation affects Reality Marble's **value proposition** and **target use 
 
 2. **Boundary mocking**
    - Mock the entry point to production code, not internal calls
-   - Example: Mock `Pra::Env.init` itself, not the internal `system()` calls
+   - Example: Mock `Picotorokko::Env.init` itself, not the internal `system()` calls
 
 3. **Test helper methods**
    - Helper methods defined in test files with `using`
@@ -502,12 +502,12 @@ For these cases, use integration tests or dependency injection.
 
 **Example refactor**:
 ```ruby
-# lib/pra/env.rb (BEFORE)
+# lib/picotorokko/env.rb (BEFORE)
 def clone_repo(repo_url, dest_path, commit)
   system("git clone #{Shellwords.escape(repo_url)} ...")
 end
 
-# lib/pra/env.rb (AFTER)
+# lib/picotorokko/env.rb (AFTER)
 def clone_repo(repo_url, dest_path, commit, system_executor: method(:system))
   system_executor.call("git clone #{Shellwords.escape(repo_url)} ...")
 end
@@ -657,7 +657,7 @@ class GitTest < Test::Unit::TestCase
   def test_git_commands
     git_marble.activate do |trace|
       # This will trigger production code
-      Pra::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
+      Picotorokko::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
 
       # Production code calls system() internally → TracePoint intercepts!
 
@@ -757,11 +757,11 @@ end
 ```ruby
 # Test code (test/commands/env_test.rb)
 git_marble.activate do
-  Pra::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
+  Picotorokko::Env.init(env_name: 'test', repo_url: 'https://example.com/repo.git')
   # ↓
 end
 
-# Production code (lib/pra/env.rb) - NO using declaration
+# Production code (lib/picotorokko/env.rb) - NO using declaration
 def clone_repo(repo_url, dest_path, commit)
   system("git clone #{Shellwords.escape(repo_url)} ...")
   # ↓ When system() is called...
@@ -792,7 +792,7 @@ end
 
 #### Advantage 1: File Boundary Traversal ✅
 
-**Problem in 案2**: Refinements cannot reach `lib/pra/env.rb` because it has no `using` declaration.
+**Problem in 案2**: Refinements cannot reach `lib/picotorokko/env.rb` because it has no `using` declaration.
 
 **Solution in 案3**: TracePoint is **globally active** when enabled.
 
@@ -801,12 +801,12 @@ end
 git_marble.activate do
   # TracePoint is now monitoring ALL method calls in ALL files
 
-  Pra::Env.init(...)
+  Picotorokko::Env.init(...)
   # ↓ calls
-  # lib/pra/env.rb: clone_repo(...)
+  # lib/picotorokko/env.rb: clone_repo(...)
   # ↓ calls
-  # lib/pra/env.rb: system("git clone ...")
-  # ↑ TracePoint catches this call even though lib/pra/env.rb has no `using`!
+  # lib/picotorokko/env.rb: system("git clone ...")
+  # ↑ TracePoint catches this call even though lib/picotorokko/env.rb has no `using`!
 end
 ```
 
@@ -974,7 +974,7 @@ end
    ```ruby
    def test_full_env_initialization
      git_marble.activate do
-       Pra::Env.init(...)  # Crosses into lib/pra/env.rb
+       Picotorokko::Env.init(...)  # Crosses into lib/picotorokko/env.rb
      end
    end
    ```
@@ -1813,18 +1813,16 @@ end
 
 ---
 
-## 🎓 Reality Check: How pra Gem Actually Solved the Problem
+## 🎓 Reality Check: How Picotorokko Gem Actually Solved the Problem
 
 ### Context: After Merging origin/main (Session 7)
 
-After designing 案2, 案3.1, and 案3.2, we merged `origin/main` (commit b9a63b0) which contains the **actual implementation** of how the gem solved the Production Code Boundary Problem.
-
-**Note**: The gem was later renamed from `pra` to `picotorokko` (commit fab3e39), but this document uses the original name `pra` as it reflects the state during design exploration.
+After designing 案2, 案3.1, and 案3.2, we merged `origin/main` (commit b9a63b0) which contains the **actual implementation** of how the Picotorokko gem solved the Production Code Boundary Problem.
 
 **Key changes in origin/main**:
 - Commit 4815ae5: "Phase 0 (INFRASTRUCTURE-SYSTEM-MOCKING-REFACTOR) COMPLETED"
-- Added `lib/pra/executor.rb` (75 lines)
-- Refactored `lib/pra/env.rb` to use executor abstraction
+- Added `lib/picotorokko/executor.rb` (75 lines)
+- Refactored `lib/picotorokko/env.rb` to use executor abstraction
 - Updated `test/commands/env_test.rb` to use MockExecutor
 - Removed SystemCommandMocking module (Refinements-based mocking)
 - Added `docs/architecture/executor-abstraction-design.md` documentation (later moved from `docs/PHASE_0_EXECUTOR_ABSTRACTION.md`)
@@ -1838,8 +1836,8 @@ This is the exact approach documented in REALITY_MARBLE_TODO.md at line 499-530 
 #### Architecture
 
 ```ruby
-# lib/pra/executor.rb (NEW)
-module Pra
+# lib/picotorokko/executor.rb (NEW)
+module Picotorokko
   module Executor
     def execute(command, working_dir = nil)
       raise NotImplementedError
@@ -1884,8 +1882,8 @@ end
 #### Refactored Production Code
 
 ```ruby
-# lib/pra/env.rb (REFACTORED)
-module Pra
+# lib/picotorokko/env.rb (REFACTORED)
+module Picotorokko
   class Env
     class << self
       # Executor management (NEW)
@@ -1920,7 +1918,7 @@ end
 # test/commands/env_test.rb (UPDATED)
 test "clone_repo raises error when git clone fails" do
   # 1. Create mock executor
-  mock_executor = Pra::MockExecutor.new
+  mock_executor = Picotorokko::MockExecutor.new
 
   # 2. Configure failure
   mock_executor.set_result(
@@ -1930,13 +1928,13 @@ test "clone_repo raises error when git clone fails" do
   )
 
   # 3. Inject mock (save original for restoration)
-  original_executor = Pra::Env.executor
-  Pra::Env.set_executor(mock_executor)
+  original_executor = Picotorokko::Env.executor
+  Picotorokko::Env.set_executor(mock_executor)
 
   begin
     # 4. Test failure path
     error = assert_raise(RuntimeError) do
-      Pra::Env.clone_repo("https://github.com/test/repo.git", "dest", "abc1234")
+      Picotorokko::Env.clone_repo("https://github.com/test/repo.git", "dest", "abc1234")
     end
 
     # 5. Verify
@@ -1945,7 +1943,7 @@ test "clone_repo raises error when git clone fails" do
     assert_include mock_executor.calls[0][:command], "git clone"
   ensure
     # 6. Restore original executor
-    Pra::Env.set_executor(original_executor)
+    Picotorokko::Env.set_executor(original_executor)
   end
 end
 ```
@@ -1984,14 +1982,14 @@ end
 #### 1. Context Matters
 
 **Reality Marble focus**: Generic mocking library for any Ruby project
-**pra gem context**: Internal testing of 10-20 system commands in a single codebase
+**picotorokko gem context**: Internal testing of 10-20 system commands in a single codebase
 
-**Verdict**: For pra gem's specific use case, **DI is simpler and sufficient**.
+**Verdict**: For picotorokko gem's specific use case, **DI is simpler and sufficient**.
 
 #### 2. "Perfect is the Enemy of Good"
 
 **Reality Marble ambition**: Zero-intrusion, no production code changes
-**pra gem reality**: Small, focused refactor (75-line abstraction) solved the problem completely
+**picotorokko gem reality**: Small, focused refactor (75-line abstraction) solved the problem completely
 
 **Verdict**: **Pragmatic DI beats ambitious but complex solutions** for this scope.
 
@@ -2074,9 +2072,9 @@ end
 
 3. **案3.2 is the right architecture** — If Reality Marble is built, 案3.2 (Upfront Bulk Redefinition) is the only viable approach.
 
-4. **Don't build it unless needed** — pra gem chose wisely: solve the specific problem (3 failing tests) with the simplest solution (DI).
+4. **Don't build it unless needed** — picotorokko gem chose wisely: solve the specific problem (3 failing tests) with the simplest solution (DI).
 
-**Final verdict**: Reality Marble remains **a valid design exercise** and **potential future gem**, but for pra gem specifically, **DI was the correct choice**.
+**Final verdict**: Reality Marble remains **a valid design exercise** and **potential future gem**, but for picotorokko gem specifically, **DI was the correct choice**.
 
 ---
 
@@ -2665,7 +2663,7 @@ end
 
 ---
 
-### Phase 6: Integration with pra gem (This Project)
+### Phase 6: Integration with picotorokko gem (This Project)
 
 **Goal**: Replace SystemCommandMocking with Reality Marble
 
@@ -3239,7 +3237,7 @@ Each thread has independent context, no shared state.
 
 ---
 
-## Migration Guide (for pra gem)
+## Migration Guide (for picotorokko gem)
 
 ### Before (SystemCommandMocking)
 
@@ -3335,7 +3333,7 @@ end
 
 ### Post-Release
 
-- [ ] pra gem migration complete (Phase 6)
+- [ ] picotorokko gem migration complete (Phase 6)
 - [ ] Blog post written (Japanese + English)
 - [ ] Community feedback collected
 - [ ] GitHub issues addressed
@@ -3345,7 +3343,7 @@ end
 
 ## Contact & Contribution
 
-**Maintainer**: bash0C7 (from pra gem project)
+**Maintainer**: bash0C7 (from picotorokko gem project)
 **Repository**: (TBD - to be created)
 **License**: MIT
 
@@ -3368,7 +3366,7 @@ end
 ### Why Test::Unit Only?
 
 - Focus on one framework = better quality
-- Most pra gem tests use Test::Unit
+- Most picotorokko gem tests use Test::Unit
 - Simpler implementation and documentation
 
 ### Why No TracePoint?
