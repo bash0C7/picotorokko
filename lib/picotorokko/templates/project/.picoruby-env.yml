@@ -1,0 +1,7 @@
+# PicoRuby development environment configuration file
+# Use 'ptrk env set <env-name> --commit <hash>' to create environments
+# See SPEC.md and https://github.com/picoruby/picotorokko for details
+
+current: null
+
+environments: {}

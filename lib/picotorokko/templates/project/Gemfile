@@ -1,0 +1,7 @@
+source "https://rubygems.org"
+
+gem "picotorokko"
+
+group :development do
+  gem "rubocop", "~> 1.81", require: false
+end

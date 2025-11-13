@@ -174,6 +174,109 @@ environments:
 
 ## CLI Commands Reference
 
+### 🚀 Project Initialization Command
+
+#### `ptrk init [PROJECT_NAME]`
+
+**Description**: Initialize a new PicoRuby project structure with all necessary directories and configuration files
+
+**Arguments**:
+- `PROJECT_NAME` - Name of the project (optional, default: current directory name or `picotorokko-app`)
+
+**Options**:
+- `--path PATH` - Create project in specified directory (optional, default: current directory)
+- `--author "Name"` - Set author name (optional, auto-detected from git config if available)
+- `--with-ci` - Copy GitHub Actions workflow template (optional)
+- `--with-mrbgem GEM_NAME` - Initialize with pre-configured mrbgem (optional, can be used multiple times)
+
+**Creates Directory Structure**:
+```
+<project-root>/
+├── storage/home/           # Application code directory (git-managed)
+│   ├── main.rb             # Example application (optional template)
+│   └── .gitkeep
+│
+├── patch/                  # Patch files directory (git-managed)
+│   ├── README.md           # Patch management guide
+│   ├── R2P2-ESP32/
+│   ├── picoruby-esp32/
+│   └── picoruby/
+│
+├── .cache/                 # Version cache (git-ignored)
+├── build/                  # Build working directory (git-ignored)
+├── ptrk_env/               # Environment metadata (git-ignored)
+│
+├── .picoruby-env.yml       # Environment configuration file
+├── .gitignore              # Standard gitignore for ptrk projects
+├── Gemfile                 # Ruby dependencies with picotorokko gem
+├── README.md               # Project README (customizable template)
+└── CLAUDE.md               # ptrk user development guide (auto-generated)
+```
+
+**Generated Files**:
+
+1. **`.gitignore`** - Excludes `.cache/`, `build/`, `ptrk_env/*/` from version control
+2. **`.picoruby-env.yml`** - Initial environment configuration (empty, ready for `ptrk env set`)
+3. **`ptrk_env/.gitkeep`** - Preserves directory in git
+4. **`Gemfile`** - Contains `picotorokko` gem dependency (when available in gems)
+5. **`README.md`** - Template-generated with project name and author
+6. **`CLAUDE.md`** - Auto-generated development guide for ptrk users
+7. **`storage/home/main.rb`** - Example Ruby application (optional, can be customized)
+8. **`patch/README.md`** - Guide for patch management workflow
+
+**Operation**:
+1. Validate project name (alphanumeric + dashes/underscores)
+2. Create all directories under `--path` (default: current directory)
+3. Generate template files with ERB engine, passing variables:
+   - `project_name` - From argument or directory name
+   - `author` - From `--author` option or git config
+   - `timestamp` - Current creation time
+   - `created_at` - Human-readable creation timestamp
+4. If `--with-ci` is specified, copy `docs/github-actions/esp32-build.yml` to `.github/workflows/esp32-build.yml`
+5. If `--with-mrbgem` is specified, run `ptrk mrbgems generate GEM_NAME` for each gem
+6. Display success message with next steps
+
+**Example Usage**:
+
+```bash
+# Basic initialization
+ptrk init my-project
+# => Creating new PicoRuby project: my-project
+#    Creating directories...
+#    Generating configuration files...
+#    Done! Next steps:
+#    1. cd my-project
+#    2. ptrk env set main --commit <hash>
+#    3. ptrk build setup
+#    4. cd build/current/R2P2-ESP32 && rake build
+
+# With custom author and CI setup
+ptrk init my-project --author "John Doe" --with-ci
+# => Creating new PicoRuby project: my-project
+#    Copying GitHub Actions workflow...
+#    Done!
+
+# In custom directory with mrbgem
+ptrk init my-iot-app --path /projects --with-mrbgem servo --with-mrbgem pwm
+# => Creating new PicoRuby project: my-iot-app
+#    Initializing mrbgems: servo, pwm
+#    Done!
+
+# Inline project creation
+mkdir my-app && cd my-app && ptrk init
+# => Creating new PicoRuby project: my-app (from current directory)
+#    Done!
+```
+
+**Success Criteria**:
+- All directories created with `.gitkeep` files where needed
+- All template files rendered without errors
+- `.gitignore` correctly excludes `.cache/`, `build/`, `ptrk_env/*/`
+- `.picoruby-env.yml` contains empty environments map ready for `ptrk env set`
+- Project is immediately usable with `ptrk env set` and `ptrk build setup`
+
+---
+
 ### 🔍 Environment Inspection Commands
 
 #### `ptrk env show`

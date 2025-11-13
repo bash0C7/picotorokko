@@ -5,6 +5,7 @@ require_relative "version"
 require_relative "env"
 require_relative "commands/env"
 require_relative "commands/device"
+require_relative "commands/init"
 require_relative "commands/mrbgems"
 require_relative "commands/rubocop"
 
@@ -17,6 +18,11 @@ module Picotorokko
     def self.exit_on_failure?
       true
     end
+
+    # Project initialization commands
+    # Creates new PicoRuby projects with directory structure and configuration
+    desc "init SUBCOMMAND ...ARGS", "Project initialization commands"
+    subcommand "init", Picotorokko::Commands::Init
 
     # Environment management commands
     # Provides commands for managing PicoRuby build environments (latest, stable, etc.)
