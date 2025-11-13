@@ -1,0 +1,32 @@
+# Generated from lib/picotorokko/commands/mrbgems.rb with RBS::Inline
+
+module Picotorokko
+  module Commands
+    # Application-specific mrbgem management commands
+    # Provides utilities for creating and managing custom mrbgems for PicoRuby projects
+    # Generates C/Ruby template files for new mrbgems
+    # @rbs < Thor
+    class Mrbgems < Thor
+      # @rbs () -> bool
+      def self.exit_on_failure?: () -> bool
+
+      def generate: (?untyped name) -> untyped
+
+      private
+
+      def prepare_and_validate_directory: (untyped name) -> untyped
+
+      def prepare_template_context: (untyped name) -> untyped
+
+      def render_template_files: (untyped mrbgem_dir, untyped context) -> untyped
+
+      def render_single_template: (untyped template_path, untyped output_path, untyped variables) -> untyped
+
+      def build_template_file_map: (untyped mrbgem_dir, untyped c_prefix) -> untyped
+
+      def templates_directory: () -> untyped
+
+      def print_success_message: (untyped name, untyped c_prefix) -> untyped
+    end
+  end
+end

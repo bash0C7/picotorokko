@@ -4,14 +4,19 @@ require "picotorokko/patch_applier"
 
 module Picotorokko
   module Commands
-    # 環境定義管理コマンド群（.picoruby-env.yml）
-    # 注: このコマンドは環境定義（メタデータ）を管理する
-    # 実際のビルド環境（ファイルシステム）は pra build コマンドで管理
+    # Environment definition management commands
+    # Manages environment metadata stored in .picoruby-env.yml
+    # Note: This command manages environment definitions (metadata only).
+    # Actual build environment (filesystem) is managed by 'ptrk build' commands
+    # @rbs < Thor
     class Env < Thor
+      # @rbs () -> bool
       def self.exit_on_failure?
         true
       end
 
+      # List all defined environments from .picoruby-env.yml
+      # @rbs () -> void
       desc "list", "List all defined environments"
       def list
         env_file = Picotorokko::Env.load_env_file
@@ -32,6 +37,8 @@ module Picotorokko
         end
       end
 
+      # Display environment definition from .picoruby-env.yml
+      # @rbs (String) -> void
       desc "show ENV_NAME", "Display environment definition from .picoruby-env.yml"
       def show(env_name)
         env_config = Picotorokko::Env.get_environment(env_name)
@@ -40,6 +47,8 @@ module Picotorokko
         show_env_details(env_name, env_config)
       end
 
+      # Create new environment with specified R2P2-ESP32 commit and options
+      # @rbs (String) -> void
       desc "set ENV_NAME", "Create new environment with options"
       option :commit, type: :string, desc: "R2P2-ESP32 commit hash for new environment", required: true
       option :branch, type: :string, desc: "Git branch reference"
@@ -59,6 +68,8 @@ module Picotorokko
         puts "✓ Environment definition '#{env_name}' created with commit #{options[:commit]}"
       end
 
+      # Remove and recreate environment definition with new timestamps
+      # @rbs (String) -> void
       desc "reset ENV_NAME", "Remove and recreate environment definition"
       def reset(env_name)
         Picotorokko::Env.validate_env_name!(env_name)
@@ -81,6 +92,8 @@ module Picotorokko
         puts "✓ Environment definition '#{env_name}' has been reset"
       end
 
+      # Export working changes from build environment to patch directory
+      # @rbs (String) -> void
       desc "patch_export ENV_NAME", "Export changes from build environment to patch directory"
       def patch_export(env_name)
         env_config = Picotorokko::Env.get_environment(env_name)
@@ -102,6 +115,8 @@ module Picotorokko
         puts "\u2713 Patches exported"
       end
 
+      # Apply stored patches to build environment
+      # @rbs (String) -> void
       desc "patch_apply ENV_NAME", "Apply patches to build environment"
       def patch_apply(env_name)
         env_config = Picotorokko::Env.get_environment(env_name)
@@ -136,6 +151,8 @@ module Picotorokko
         puts "  \u2713 Patches applied"
       end
 
+      # Display differences between working changes and stored patches
+      # @rbs (String) -> void
       desc "patch_diff ENV_NAME", "Display differences between working changes and stored patches"
       def patch_diff(env_name)
         env_config = Picotorokko::Env.get_environment(env_name)
@@ -155,6 +172,8 @@ module Picotorokko
         end
       end
 
+      # Fetch latest commit versions from GitHub and create environment definition
+      # @rbs () -> void
       desc "latest", "Fetch latest commit versions and create environment definition"
       def latest
         require "tmpdir"

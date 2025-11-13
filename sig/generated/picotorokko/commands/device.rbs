@@ -1,0 +1,95 @@
+# Generated from lib/picotorokko/commands/device.rb with RBS::Inline
+
+module Picotorokko
+  module Commands
+    # ESP32 device operation commands
+    # Delegates device operations (flash, monitor, build) to R2P2-ESP32 Rakefile
+    # Provides abstraction for device-specific tasks
+    # @rbs < Thor
+    class Device < Thor
+      # @rbs () -> bool
+      def self.exit_on_failure?: () -> bool
+
+      def flash: () -> untyped
+
+      def monitor: () -> untyped
+
+      def build: () -> untyped
+
+      def setup_esp32: () -> untyped
+
+      def tasks: () -> untyped
+
+      def help: () -> untyped
+
+      # Transparently delegate undefined commands to R2P2-ESP32 Rakefile
+      # @rbs (*untyped) -> void
+      def method_missing: (*untyped) -> void
+
+      def respond_to_missing?: (untyped method_name, ?untyped include_private) -> untyped
+
+      private
+
+      # --env option を args から抽出
+      def parse_env_from_args: (untyped args) -> untyped
+
+      # 利用可能なR2P2-ESP32タスクを表示
+      def show_available_tasks: (untyped env_name) -> untyped
+
+      # R2P2-ESP32のRakefileにタスクを委譲
+      def delegate_to_r2p2: (untyped command, untyped env_name) -> untyped
+
+      # 環境名を解決（currentの場合は実環境名に変換）
+      def resolve_env_name: (untyped env_name) -> untyped
+
+      # 環境を検証してR2P2パスを取得
+      def validate_and_get_r2p2_path: (untyped env_name) -> untyped
+
+      # Rakefileから利用可能なタスクを取得
+      def available_rake_tasks: (untyped r2p2_path) -> untyped
+    end
+
+    # AST-based Rake task extractor for secure, static analysis
+    class RakeTaskExtractor < Prism::Visitor
+      attr_reader tasks: untyped
+
+      def initialize: () -> untyped
+
+      def visit_call_node: (untyped node) -> untyped
+
+      private
+
+      # Standard task definition: task :name or task "name"
+      def handle_task_definition: (untyped node) -> untyped
+
+      # Dynamic task generation: %w[...].each do |var| task "name_#{var}" end
+      def handle_each_block_with_task_generation: (untyped node) -> untyped
+
+      # Extract string values from array literal
+      def extract_array_elements: (untyped array_node) -> untyped
+
+      # Get block parameter name from |var| syntax
+      def extract_block_parameter: (untyped block_node) -> untyped
+
+      # Find all task definitions within a block and extract their patterns
+      def extract_task_patterns_from_block: (untyped block_node, untyped param_name) -> untyped
+
+      # Check if statement is a task() call with arguments
+      def task_call?: (untyped stmt) -> untyped
+
+      # Extract pattern from interpolated string like "setup_#{name}"
+      # Returns array of { type: :string/:variable, value: ... } hashes
+      def extract_task_pattern: (untyped arg_node, untyped param_name) -> untyped
+
+      # Extract variable from embedded statement if it matches the block parameter
+      def extract_embedded_variable: (untyped stmt_node, untyped param_name) -> untyped
+
+      # Expand pattern by replacing :variable placeholders with actual values
+      # Example: [{ type: :string, value: "setup_" }, { type: :variable }] + "esp32" → "setup_esp32"
+      def expand_pattern: (untyped pattern, untyped value) -> untyped
+
+      # Extract simple task name from string or symbol node
+      def extract_task_name: (untyped arg_node) -> untyped
+    end
+  end
+end

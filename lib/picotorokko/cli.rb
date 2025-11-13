@@ -1,3 +1,5 @@
+# rbs_inline: enabled
+
 require "thor"
 require_relative "version"
 require_relative "env"
@@ -8,36 +10,42 @@ require_relative "commands/mrbgems"
 require_relative "commands/rubocop"
 
 module Picotorokko
-  # ptrkコマンドのCLIエントリーポイント
+  # PicoRuby/mRuby ESP32 development tool CLI entry point
+  # Handles subcommand routing for environment, device, mrbgems, and RuboCop operations
+  # @rbs < Thor
   class CLI < Thor
+    # @rbs () -> bool
     def self.exit_on_failure?
       true
     end
 
-    # プロジェクト初期化
-    desc "init [PROJECT_NAME]", "Initialize a new PicoRuby project"
-    option :path, type: :string, desc: "Create project in specified directory"
-    option :author, type: :string, desc: "Set author name"
-    option :"with-ci", type: :boolean, desc: "Copy GitHub Actions workflow"
-    option :"with-mrbgem", type: :array, desc: "Initialize with mrbgems"
-    def init(project_name = nil)
-      Picotorokko::Commands::Init.new(options).create(project_name)
-    end
+    # Project initialization commands
+    # Creates new PicoRuby projects with directory structure and configuration
+    desc "init SUBCOMMAND ...ARGS", "Project initialization commands"
+    subcommand "init", Picotorokko::Commands::Init
 
-    # サブコマンド登録
+    # Environment management commands
+    # Provides commands for managing PicoRuby build environments (latest, stable, etc.)
     desc "env SUBCOMMAND ...ARGS", "Environment management commands"
     subcommand "env", Picotorokko::Commands::Env
 
+    # Application-specific mrbgem management
+    # Allows users to configure and manage custom mrbgems for their projects
     desc "mrbgems SUBCOMMAND ...ARGS", "Application-specific mrbgem management"
     subcommand "mrbgems", Picotorokko::Commands::Mrbgems
 
+    # ESP32 device operation commands
+    # Handles device flashing, monitoring, building, and other device-specific operations
     desc "device SUBCOMMAND ...ARGS", "ESP32 device operation commands"
     subcommand "device", Picotorokko::Commands::Device
 
+    # RuboCop configuration for PicoRuby development
+    # Provides setup and validation for RuboCop configurations in PicoRuby projects
     desc "rubocop SUBCOMMAND ...ARGS", "RuboCop configuration for PicoRuby development"
     subcommand "rubocop", Picotorokko::Commands::Rubocop
 
-    # バージョン表示
+    # Display picotorokko version
+    # @rbs () -> void
     desc "version", "Show picotorokko version"
     def version
       puts "picotorokko version #{Picotorokko::VERSION}"

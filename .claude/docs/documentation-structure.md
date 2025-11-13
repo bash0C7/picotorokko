@@ -198,6 +198,65 @@ These are **user-facing templates** with gem developer annotations:
 
 ---
 
+## File Change → Documentation Mapping (Priority 3 Phase 1)
+
+When code changes, use this table to identify which documents must be updated:
+
+### Quick Reference Table
+
+| Trigger File(s) | Priority | Target Documents | Condition |
+|-----------------|----------|------------------|-----------|
+| `lib/picotorokko/commands/*.rb` | **MUST** | `SPEC.md`, `README.md` | Command behavior changed |
+| `lib/picotorokko/env.rb` | **MUST** | `SPEC.md`, `README.md` | Environment management changed |
+| `lib/picotorokko/template/*.rb` | SHOULD | `docs/MRBGEMS_GUIDE.md` | Template generation logic changed |
+| `docs/github-actions/*.yml` | **MUST** | `docs/CI_CD_GUIDE.md` | Workflow template structure changed |
+| Any public method in `lib/picotorokko/` | **MUST** (Priority 1+) | rbs-inline annotations | Public API signature changed |
+| `test/**/*_test.rb` | OPTIONAL | None | Test-only changes (no docs needed) |
+
+### Priority Levels Explained
+
+- **MUST** (必須): User-facing changes that require documentation updates in the same commit
+- **SHOULD** (推奨): Important internal changes that should update documentation when possible
+- **OPTIONAL** (任意): Changes that don't require documentation updates
+
+### Implementation Examples
+
+**Example 1: Command Behavior Changed**
+```ruby
+# File: lib/picotorokko/commands/env.rb
+# Changed: Added new --validate flag to show command
+
+# Action Required:
+# 1. Update SPEC.md: Add --validate to env show documentation
+# 2. Update README.md: Add example of ptrk env show --validate
+# 3. Update annotation (Priority 1+): Add #@rbs comment for new parameter
+```
+
+**Example 2: Public API Method Added**
+```ruby
+# File: lib/picotorokko/env.rb
+# Added: New method Env.fetch_remote_repo(url)
+
+# Action Required (Priority 1+):
+# 1. Add rbs-inline annotation:
+#    # @rbs (String) -> Hash[String, untyped]
+#    def self.fetch_remote_repo(url)
+# 2. Run: bundle exec rbs-inline --output sig lib
+# 3. Run: bundle exec steep check
+```
+
+**Example 3: Internal Implementation Changed**
+```ruby
+# File: lib/picotorokko/template/ruby_engine.rb
+# Changed: Refactored template rendering logic
+
+# Action: Optional
+# - If behavior changed for users: Update docs/MRBGEMS_GUIDE.md
+# - If behavior unchanged: No documentation update required
+```
+
+---
+
 ## Maintenance Checklist
 
 When making changes that affect documentation:
@@ -208,6 +267,7 @@ When making changes that affect documentation:
 - [ ] **Fixed implementation bug?** → Add to `TODO.md` if doc-related, update CHANGELOG.md
 - [ ] **Updated docs?** → Verify section headers match audience (see "Role-Aware Section Headers" above)
 - [ ] **Added to .claude/docs/?** → Reference it in `CLAUDE.md` "Your Role" section if relevant
+- [ ] **Public API changed?** (Priority 1+) → Add rbs-inline annotations + run `bundle exec rbs-inline --output sig lib` + `bundle exec steep check`
 
 ---
 

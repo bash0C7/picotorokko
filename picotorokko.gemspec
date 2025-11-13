@@ -43,6 +43,11 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "simplecov", "~> 0.22"
   spec.add_development_dependency "simplecov-cobertura", "~> 3.1"
 
+  # Type system integration (Priority 1: rbs-inline + Steep)
+  spec.add_development_dependency "rbs", "~> 3.4"
+  spec.add_development_dependency "steep", "~> 1.8"
+  spec.add_development_dependency "rbs-inline", "~> 0.11"
+
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
 end

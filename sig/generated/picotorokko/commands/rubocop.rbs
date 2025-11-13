@@ -1,0 +1,19 @@
+# Generated from lib/picotorokko/commands/rubocop.rb with RBS::Inline
+
+module Picotorokko
+  module Commands
+    # RuboCop configuration and method database management for PicoRuby development
+    # Provides setup and maintenance of RuboCop configurations with PicoRuby-specific cops
+    # Manages custom method unsupported method database
+    # @rbs < Thor
+    class Rubocop < Thor
+      def setup: () -> untyped
+
+      def update: () -> untyped
+
+      private
+
+      def copy_template_files: (untyped source, untyped target) -> untyped
+    end
+  end
+end

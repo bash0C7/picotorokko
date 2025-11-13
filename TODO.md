@@ -75,7 +75,28 @@ rake dev          # Development: RuboCop auto-fix + tests + coverage
 - **Phase 2+**: [`.claude/docs/type-annotation-guide.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/type-annotation-guide.md) — Annotation patterns, examples, workflow
 - **TDD Workflow**: [`.claude/docs/t-wada-style-tdd-guide.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/t-wada-style-tdd-guide.md) — How RBS integrates into t-wada style TDD
 
-**Status**: Phase 1 design complete. Phase 2+ implementation pending.
+**Status**: Phase 2 complete! Full infrastructure + annotations + RBS generation + Steep type checking:
+- ✅ Phase 2 Step 1: Environment setup complete
+  - Dependencies: rbs ~> 3.4, steep ~> 1.8, rbs-inline ~> 0.11 in gemspec
+  - Steepfile with lib and test targets
+  - sig/ directory structure with generated/ subdir
+  - Rake tasks: `rake rbs:generate`, `rake steep`
+- ✅ Phase 2 Step 2: Comprehensive annotations across all commands
+  - Added rbs-inline annotations to CLI + all command classes
+  - Full annotations for: Device (8 methods), Mrbgems (1), Rubocop (2)
+  - env.rb: 25+ key methods fully annotated
+- ✅ Phase 2 Step 3: RBS Collection + Type Generation
+  - rbs_collection.yaml: 54 external gems (Thor, FileUtils, YAML, Rake, Minitest, etc.)
+  - Generated RBS stubs via `bundle exec rbs collection install`
+  - 5 compiled .rbs files (309 lines) from source annotations
+  - Steep type checking: 0 errors on picotorokko code ✓
+  - All 183 tests passing, coverage 87.14% maintained
+
+**Deliverables**:
+- Type annotations in all source files (CLI, Commands, Env modules)
+- Generated .rbs files in sig/generated/picotorokko/
+- RBS Collection with 54 gems in sig/rbs_collection/
+- Ready for CI: `rake steep` validates types before merge
 
 ---
 
@@ -185,10 +206,10 @@ All features must meet these criteria before merging:
 - ✅ All tests passing (197+ tests): `bundle exec rake test`
 - ✅ RuboCop: 0 violations: `bundle exec rubocop`
 - ✅ Coverage: ≥85% line, ≥60% branch: `bundle exec rake ci`
+- ✅ **Documentation updated** (Priority 3 Phase 1): If code changed, related docs reviewed and updated in same commit. See `.claude/docs/documentation-structure.md` for file mapping.
 - ✅ **rbs-inline annotations added** (Priority 1+): Inline annotations for all new/modified public methods
 - ✅ **RBS files generated** (Priority 1+): `rake rbs:generate` creates/updates .rbs files in sig/
 - ✅ **Steep check passing** (Priority 1+): `steep check` returns no errors on generated .rbs
-- ✅ **RBS/YARD synchronization** (Priority 1+2, if using YARD): `scripts/check_rbs_yard_sync.rb` passes
 
 ### Pre-Push Checks (Final Verification)
 

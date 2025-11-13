@@ -50,6 +50,26 @@ task "rubocop:fix" do
   exit $CHILD_STATUS.exitstatus unless $CHILD_STATUS.success?
 end
 
+# ============================================================================
+# TYPE SYSTEM TASKS (Priority 1: rbs-inline + Steep)
+# ============================================================================
+
+namespace :rbs do
+  desc "Generate RBS files from rbs-inline annotations"
+  task :generate do
+    puts "📝 Generating .rbs files from rbs-inline annotations..."
+    sh "bundle exec rbs-inline --output sig lib"
+    puts "✓ .rbs files generated in sig/"
+  end
+end
+
+desc "Run type check with Steep"
+task :steep do
+  puts "🔍 Running Steep type checker..."
+  sh "bundle exec steep check"
+  puts "✓ Type check passed!"
+end
+
 # 開発時のデフォルトタスク：全テスト（main suite + device suite）実行
 # この設定は下の DEFAULT & CONVENIENCE TASKS セクションで上書きされます
 

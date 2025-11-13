@@ -1,0 +1,13 @@
+# Generated from lib/picotorokko/cli.rb with RBS::Inline
+
+module Picotorokko
+  # PicoRuby/mRuby ESP32 development tool CLI entry point
+  # Handles subcommand routing for environment, device, mrbgems, and RuboCop operations
+  # @rbs < Thor
+  class CLI < Thor
+    # @rbs () -> bool
+    def self.exit_on_failure?: () -> bool
+
+    def version: () -> untyped
+  end
+end
