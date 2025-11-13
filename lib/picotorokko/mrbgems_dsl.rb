@@ -14,12 +14,6 @@ module Picotorokko
       @gems
     end
 
-    private
-
-    def evaluate_dsl
-      instance_eval(@dsl_code, __FILE__)
-    end
-
     def mrbgems
       yield self
     end
@@ -42,6 +36,17 @@ module Picotorokko
       @gems << gem_spec
     end
 
+    # build_config_files メソッド：条件分岐用
+    def build_config_files
+      [@config_name]
+    end
+
+    private
+
+    def evaluate_dsl
+      instance_eval(@dsl_code, __FILE__)
+    end
+
     def detect_source_type(params)
       if params[:github]
         [:github, params[:github]]
@@ -54,11 +59,6 @@ module Picotorokko
       else
         raise ArgumentError, "Unknown source type in gem specification: #{params.keys.inspect}"
       end
-    end
-
-    # build_config_files メソッド：条件分岐用
-    def build_config_files
-      [@config_name]
     end
   end
 end
