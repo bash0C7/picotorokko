@@ -52,6 +52,9 @@ module Picotorokko
         actual_env = resolve_env_name(env_name)
         validate_and_get_r2p2_path(actual_env)
 
+        # Apply Mrbgemfile if it exists
+        apply_mrbgemfile(actual_env)
+
         puts "Building: #{actual_env}"
         delegate_to_r2p2("build", env_name)
         puts "\u2713 Build completed"
@@ -146,6 +149,49 @@ module Picotorokko
         end
 
         nil
+      end
+
+      # Apply Mrbgemfile if it exists
+      # Reads Mrbgemfile and applies mrbgems to build_config files and CMakeLists.txt
+      def apply_mrbgemfile(_env_name)
+        mrbgemfile_path = File.join(Env.project_root, "Mrbgemfile")
+        return unless File.exist?(mrbgemfile_path)
+
+        mrbgemfile_content = File.read(mrbgemfile_path)
+        apply_to_build_configs(mrbgemfile_content)
+        apply_to_cmake(mrbgemfile_content)
+      end
+
+      # Apply mrbgems to all build_config/*.rb files
+      def apply_to_build_configs(mrbgemfile_content)
+        build_config_dir = File.join(Env.project_root, "build_config")
+        return unless Dir.exist?(build_config_dir)
+
+        Dir.glob(File.join(build_config_dir, "*.rb")).each do |config_file|
+          config_name = File.basename(config_file, ".rb")
+          dsl = MrbgemsDSL.new(mrbgemfile_content, config_name)
+          gems = dsl.gems
+
+          next if gems.empty?
+
+          content = File.read(config_file)
+          modified = BuildConfigApplier.apply(content, gems)
+          File.write(config_file, modified)
+        end
+      end
+
+      # Apply cmake directives to CMakeLists.txt
+      def apply_to_cmake(mrbgemfile_content)
+        dsl = MrbgemsDSL.new(mrbgemfile_content, "default")
+        gems = dsl.gems
+
+        cmake_directives = gems.select { |g| g[:cmake] }.map { |g| g[:cmake] }
+        return if cmake_directives.empty?
+
+        cmake_path = File.join(Env.project_root, "CMakeLists.txt")
+        content = File.exist?(cmake_path) ? File.read(cmake_path) : ""
+        modified = CMakeApplier.apply(content, cmake_directives)
+        File.write(cmake_path, modified)
       end
 
       # 利用可能なR2P2-ESP32タスクを表示
