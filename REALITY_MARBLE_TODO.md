@@ -2386,11 +2386,274 @@ end
 ```
 
 **Mitigation options**:
-1. Preserve line numbers with `eval(code, binding, filename, original_line)`
-2. Generate source map (like JavaScript transpilers)
-3. Use `set_trace_func` to correct stack traces on-the-fly
 
-**Verdict**: 🟡 Solvable but complex
+##### Option 1: Line-Preserving Transformation (One-Liner Injection) ✅ PRACTICAL
+
+**Idea**: Keep user code on original lines by collapsing wrapper to single lines.
+
+```ruby
+# Original (user writes):
+def test_foo
+  system('git')  # Line 5
+  assert true    # Line 6
+end
+
+# Transformed (line-preserving):
+def test_foo
+  __rm_context = RealityMarble.test_context(self, :test_foo); __rm_context.activate do
+    system('git')  # Still line 5! ✅
+    assert true    # Still line 6! ✅
+  end; ensure; __rm_context.teardown; end
+```
+
+**Pros**:
+- User code stays on original lines
+- Stack traces point to correct locations
+- Simple to implement (string manipulation)
+
+**Cons**:
+- Generated code is ugly (but user never sees it)
+- Wrapper lines (3, 7, 8) are unreadable in debugger
+
+**Verdict**: 🟢 **Best practical solution**
+
+##### Option 2: Source Map (JavaScript-Style) 🟡 COMPLEX
+
+**Idea**: Maintain mapping between original and transformed line numbers.
+
+```ruby
+module RealityMarble
+  @source_maps = {}
+
+  def self.register_source_map(filename, map)
+    @source_maps[filename] = map
+  end
+
+  def self.correct_backtrace(exception)
+    exception.backtrace.map! do |line|
+      if line =~ /^(.+):(\d+):in `(.+)'$/
+        file, lineno, method = $1, $2.to_i, $3
+        if map = @source_maps[file]
+          original_line = map[lineno] || lineno
+          "#{file}:#{original_line}:in `#{method}'"
+        else
+          line
+        end
+      else
+        line
+      end
+    end
+  end
+end
+
+# In TestContext:
+def activate(&block)
+  begin
+    yield
+  rescue => e
+    RealityMarble.correct_backtrace(e)
+    raise
+  end
+end
+```
+
+**Pros**:
+- Accurate line numbers in all cases
+- Works even with complex transformations
+
+**Cons**:
+- Requires maintaining source map registry
+- Only corrects exceptions caught by Reality Marble
+- Doesn't help with debugger stepping
+
+**Verdict**: 🟡 **Good supplement to Option 1**
+
+##### Option 3: eval() with Original Filename/Line 🟡 PARTIAL
+
+**Idea**: Use eval's filename/line parameters to hint at original location.
+
+```ruby
+def self.transform(source, filename)
+  transformed = generate_wrapped_code(source)
+
+  # Eval with original filename and line offset
+  eval(transformed, TOPLEVEL_BINDING, filename, 1)
+end
+```
+
+**Pros**:
+- Ruby's error messages show correct filename
+- Some line numbers preserved
+
+**Cons**:
+- Line offset only shifts start, not individual lines
+- Doesn't solve line number misalignment within method
+
+**Verdict**: 🟡 **Partial help, combine with Option 1**
+
+##### Option 4: TracePoint Exception Handler 🟡 ADVANCED
+
+**Idea**: Hook exceptions with TracePoint and rewrite backtraces on-the-fly.
+
+```ruby
+module RealityMarble
+  def self.install_exception_handler
+    TracePoint.new(:raise) do |tp|
+      exception = tp.raised_exception
+      correct_backtrace(exception) if reality_marble_test?(tp)
+    end.enable
+  end
+
+  def self.correct_backtrace(exception)
+    # Rewrite backtrace to original line numbers
+    exception.set_backtrace(
+      exception.backtrace.map { |line| remap_line(line) }
+    )
+  end
+
+  private
+
+  def self.reality_marble_test?(tp)
+    tp.path.end_with?('_test.rb')
+  end
+
+  def self.remap_line(line)
+    # Use source map to find original line
+    # ...
+  end
+end
+
+# Install globally when Reality Marble is required
+RealityMarble.install_exception_handler
+```
+
+**Pros**:
+- Catches ALL exceptions (not just in activate blocks)
+- Works with Ruby's native exception handling
+- Transparent to users
+
+**Cons**:
+- TracePoint :raise overhead on every exception
+- Complex source map lookup logic
+- May interfere with other exception handlers
+
+**Verdict**: 🟡 **Most thorough but highest complexity**
+
+##### Option 5: Padding Injection (Blank Lines) ⚠️ FRAGILE
+
+**Idea**: Inject blank lines to keep user code at original line numbers.
+
+```ruby
+# Original (5 lines total):
+def test_foo
+  system('git')  # Line 5
+  assert true    # Line 6
+end
+
+# Transformed (padded):
+def test_foo
+
+  __rm_context = RealityMarble.test_context(self, :test_foo); __rm_context.activate do
+    system('git')  # Line 5 ✅
+    assert true    # Line 6 ✅
+  end; ensure; __rm_context.teardown; end
+```
+
+**Pros**:
+- User code exactly on original lines
+- No source map needed
+
+**Cons**:
+- Fragile (breaks if wrapper spans multiple lines)
+- Harder to calculate padding dynamically
+- Wrapper itself has no meaningful line info
+
+**Verdict**: ⚠️ **Too fragile, use Option 1 instead**
+
+##### Recommended Hybrid Approach ✅
+
+**Combine Option 1 + Option 2 + Option 4**:
+
+1. **Line-preserving transformation** (Option 1): Default, solves 95% of cases
+2. **Source map** (Option 2): Fallback for complex transformations
+3. **Global exception handler** (Option 4): Ensure ALL exceptions are corrected
+
+**Implementation priority**:
+- Phase 0: Option 1 only (one-liner injection)
+- Phase 1: Add Option 2 (source map)
+- Phase 2: Add Option 4 (TracePoint exception handler)
+
+**Code example** (Option 1 + 2 + 4 combined):
+```ruby
+module RealityMarble
+  class ASTTransformer
+    def self.transform(source, filename)
+      parsed = Prism.parse(source)
+      rewriter = LinePreservingRewriter.new(filename)
+      rewriter.visit(parsed.value)
+
+      transformed_code = rewriter.result
+      source_map = rewriter.source_map
+
+      # Register source map for exception correction
+      RealityMarble.register_source_map(filename, source_map)
+
+      transformed_code
+    end
+  end
+
+  class LinePreservingRewriter < Prism::Visitor
+    def generate_wrapped_method(node)
+      body_lines = extract_body_lines(node)
+      start_line = node.location.start_line
+
+      # One-liner wrapper (preserves body line numbers)
+      wrapper_prefix = "__rm_context = RealityMarble.test_context(self, :#{node.name}); __rm_context.activate do"
+      wrapper_suffix = "end; ensure; __rm_context.teardown; end"
+
+      # Record source map
+      @source_map[start_line + 1] = start_line + 1  # Wrapper line (no mapping needed)
+      body_lines.each_with_index do |line, idx|
+        original_line = start_line + 2 + idx
+        @source_map[original_line] = original_line  # Identity mapping
+      end
+
+      <<~RUBY
+        def #{node.name}
+          #{wrapper_prefix}
+        #{body_lines.join("\n")}
+          #{wrapper_suffix}
+        end
+      RUBY
+    end
+  end
+
+  # Global exception handler
+  TracePoint.new(:raise) do |tp|
+    if tp.path.end_with?('_test.rb')
+      exception = tp.raised_exception
+      correct_backtrace(exception)
+    end
+  end.enable
+end
+```
+
+**User experience**:
+```ruby
+# User writes (no changes):
+def test_git_failure
+  system('git invalid')  # Line 10
+  # Exception raised here
+end
+
+# Stack trace (corrected by Reality Marble):
+# test_file.rb:10:in `system': Command failed (RuntimeError)
+#   from test_file.rb:10:in `test_git_failure'
+#   from test/unit/...
+# ✅ Points to line 10 (correct!)
+```
+
+**Verdict**: 🟢 **Line-preserving transformation + source map + exception handler = Debuggable**
 
 #### Challenge 2: Editor Support ❌ IMPOSSIBLE
 
