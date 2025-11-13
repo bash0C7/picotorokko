@@ -76,53 +76,53 @@ module Picotorokko
         puts "✓ Environment '#{env_name}' created"
       end
 
-      private
-
-      def process_source(source_spec, timestamp)
-        if source_spec.start_with?("path:")
-          process_path_source(source_spec, timestamp)
-        else
-          process_github_source(source_spec, timestamp)
+      no_commands do # rubocop:disable Metrics/BlockLength
+        def process_source(source_spec, timestamp)
+          if source_spec.start_with?("path:")
+            process_path_source(source_spec, timestamp)
+          else
+            process_github_source(source_spec, timestamp)
+          end
         end
-      end
 
-      def process_github_source(org_repo, timestamp)
-        source_url = "https://github.com/#{org_repo}.git"
-        commit = Picotorokko::Env.fetch_remote_commit(source_url) || "abc1234"
-        { "source" => source_url, "commit" => commit, "timestamp" => timestamp }
-      end
-
-      def process_path_source(path_spec, timestamp)
-        if path_spec =~ /^path:(.+):([a-f0-9]{7,})$/
-          path = Regexp.last_match(1)
-          commit = Regexp.last_match(2)
-          source_key = "path:#{path}"
-        else
-          path = path_spec.sub(/^path:/, "")
-          commit = fetch_local_commit(path)
-          source_key = path_spec
+        def process_github_source(org_repo, timestamp)
+          source_url = "https://github.com/#{org_repo}.git"
+          commit = Picotorokko::Env.fetch_remote_commit(source_url) || "abc1234"
+          { "source" => source_url, "commit" => commit, "timestamp" => timestamp }
         end
-        { "source" => source_key, "commit" => commit, "timestamp" => timestamp }
-      end
 
-      def fetch_local_commit(path)
-        raise "Error: Path does not exist" unless Dir.exist?(path)
-
-        Dir.chdir(path) do
-          `git rev-parse --short=7 HEAD 2>/dev/null`.strip
+        def process_path_source(path_spec, timestamp)
+          if path_spec =~ /^path:(.+):([a-f0-9]{7,})$/
+            path = Regexp.last_match(1)
+            commit = Regexp.last_match(2)
+            source_key = "path:#{path}"
+          else
+            path = path_spec.sub(/^path:/, "")
+            commit = fetch_local_commit(path)
+            source_key = path_spec
+          end
+          { "source" => source_key, "commit" => commit, "timestamp" => timestamp }
         end
-      end
 
-      def auto_fetch_environment(env_name)
-        timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
-        repos_info = {}
-        Picotorokko::Env::REPOS.each do |repo_name, repo_url|
-          commit = Picotorokko::Env.fetch_remote_commit(repo_url, "HEAD") || "abc1234"
-          repos_info[repo_name] = { "source" => repo_url, "commit" => commit, "timestamp" => timestamp }
+        def fetch_local_commit(path)
+          raise "Error: Path does not exist" unless Dir.exist?(path)
+
+          Dir.chdir(path) do
+            `git rev-parse --short=7 HEAD 2>/dev/null`.strip
+          end
         end
-        Picotorokko::Env.set_environment(env_name, repos_info["R2P2-ESP32"],
-                                         repos_info["picoruby-esp32"], repos_info["picoruby"])
-        puts "✓ Environment '#{env_name}' created"
+
+        def auto_fetch_environment(env_name)
+          timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
+          repos_info = {}
+          Picotorokko::Env::REPOS.each do |repo_name, repo_url|
+            commit = Picotorokko::Env.fetch_remote_commit(repo_url, "HEAD") || "abc1234"
+            repos_info[repo_name] = { "source" => repo_url, "commit" => commit, "timestamp" => timestamp }
+          end
+          Picotorokko::Env.set_environment(env_name, repos_info["R2P2-ESP32"],
+                                           repos_info["picoruby-esp32"], repos_info["picoruby"])
+          puts "✓ Environment '#{env_name}' created"
+        end
       end
 
       # Remove and recreate environment definition with new timestamps
@@ -291,6 +291,8 @@ module Picotorokko
         puts "  1. ptrk cache fetch #{env_name}  # Fetch repositories to cache"
         puts "  2. ptrk build setup #{env_name}  # Setup build environment"
       end
+
+      private
 
       def show_env_not_found(env_name)
         puts "Error: Environment '#{env_name}' not found in .picoruby-env.yml"
