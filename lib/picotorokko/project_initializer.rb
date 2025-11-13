@@ -36,11 +36,15 @@ module Picotorokko
       # Copy non-template files
       copy_template_files
 
+      # Generate mrbgems if requested
+      generate_mrbgems
+
       print_success_message
     end
 
     private
 
+    # @rbs (String | nil) -> String
     def determine_project_root(name)
       base_path = options[:path] || Dir.pwd
 
@@ -51,12 +55,14 @@ module Picotorokko
       end
     end
 
+    # @rbs (String) -> void
     def validate_project_name!(name)
       return if /\A[a-zA-Z0-9_-]+\z/.match?(name)
 
       raise "Invalid project name: #{name}. Use alphanumeric characters, dashes, and underscores."
     end
 
+    # @rbs () -> void
     def create_directories
       directories = [
         "storage/home",
@@ -131,6 +137,7 @@ module Picotorokko
       File.write(output_path, content)
     end
 
+    # @rbs () -> void
     def copy_template_files
       # Copy template files (static files that don't need rendering)
       files_to_copy = [
@@ -141,6 +148,9 @@ module Picotorokko
         "patch/picoruby/.gitkeep",
         "ptrk_env/.gitkeep"
       ]
+
+      # Add GitHub Actions workflow if --with-ci is enabled
+      files_to_copy << ".github/workflows/esp32-build.yml" if options[:with_ci] || options["with_ci"]
 
       files_to_copy.each do |file|
         source = File.join(TEMPLATES_DIR, file)
@@ -153,6 +163,59 @@ module Picotorokko
       end
     end
 
+    # @rbs () -> void
+    def generate_mrbgems
+      mrbgem_names = options[:with_mrbgem] || options["with_mrbgem"] || []
+      return if mrbgem_names.empty?
+
+      mrbgem_names.each do |name|
+        generate_single_mrbgem(name)
+      end
+    end
+
+    # @rbs (String) -> void
+    def generate_single_mrbgem(name)
+      mrbgem_dir = File.join(project_root, "mrbgems", name)
+      FileUtils.mkdir_p(File.join(mrbgem_dir, "mrblib"))
+      FileUtils.mkdir_p(File.join(mrbgem_dir, "src"))
+
+      # Prepare template context
+      c_prefix = name.downcase
+      template_context = {
+        mrbgem_name: name,
+        class_name: name,
+        c_prefix: c_prefix,
+        author_name: options[:author] || detect_git_author || ""
+      }
+
+      # Render and write template files
+      render_mrbgem_templates(mrbgem_dir, name, c_prefix, template_context)
+    end
+
+    # @rbs (String, String, String, Hash[Symbol, untyped]) -> void
+    def render_mrbgem_templates(mrbgem_dir, _name, c_prefix, context)
+      templates_dir = File.expand_path("templates/mrbgem_app", __dir__)
+
+      templates = [
+        { source: "mrbgem.rake.erb", dest: "mrbgem.rake" },
+        { source: "README.md.erb", dest: "README.md" },
+        { source: "mrblib/app.rb", dest: "mrblib/#{c_prefix}.rb" },
+        { source: "src/app.c.erb", dest: "src/#{c_prefix}.c" }
+      ]
+
+      templates.each do |template|
+        template_path = File.join(templates_dir, template[:source])
+        output_path = File.join(mrbgem_dir, template[:dest])
+
+        next unless File.exist?(template_path)
+
+        content = Picotorokko::Template::Engine.render(template_path, context)
+        FileUtils.mkdir_p(File.dirname(output_path))
+        File.write(output_path, content)
+      end
+    end
+
+    # @rbs () -> void
     def print_success_message
       puts "* Created new PicoRuby project: #{project_name}"
       puts "  Location: #{project_root}"

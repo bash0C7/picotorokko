@@ -24,13 +24,14 @@ The name "picotorokko" draws inspiration from **torokko** (トロッコ), a simp
 **Core Components**:
 - Executor abstraction (ProductionExecutor for production, MockExecutor for testing)
 - AST-based template engines supporting Ruby, YAML, and C templates
-- Device test framework fully integrated with 197 total tests passing
-- Clean code quality: RuboCop validated, 87.14% line coverage, 65.37% branch coverage
+- Project initialization with `ptrk init` command (Phase 1-3 complete)
+- Device test framework fully integrated with 199 total tests passing
+- Clean code quality: RuboCop validated, 88.69% line coverage, 66.67% branch coverage
 
 **Test Suite**:
-- Main suite: 183 tests
+- Main suite: 185 tests
 - Device suite: 14 tests
-- Total: 197 tests, all passing ✓
+- Total: 199 tests, all passing ✓
 
 **Development Workflow**:
 - Simplified Rake tasks for CI and development use
@@ -61,33 +62,59 @@ gem install picotorokko
 
 ### Quick Start
 
-#### 1. Create a new environment
+#### 1. Initialize a new project
 
 ```bash
-bundle exec ptrk env set development --commit abc1234
+ptrk init my-project
+cd my-project
 ```
 
-#### 2. List all environments
+Optional flags:
+- `--author "Your Name"` — Set project author (default: auto-detected from git config)
+- `--path /path/to/dir` — Create project in specified directory
+- `--with-ci` — Include GitHub Actions workflow for CI/CD
+- `--with-mrbgem NAME` — Generate mrbgem template(s)
 
+**Example with options**:
 ```bash
-bundle exec ptrk env list
+ptrk init my-project --with-ci --with-mrbgem MyGem --author "Alice"
 ```
 
-#### 3. View environment details
+#### 2. Create a new environment
 
 ```bash
-bundle exec ptrk env show development
+ptrk env set development --commit abc1234
 ```
 
-#### 4. Build, flash, and monitor
+#### 3. List all environments
 
 ```bash
-bundle exec ptrk device flash --env development
-bundle exec ptrk device monitor --env development
-bundle exec ptrk device build --env development
+ptrk env list
+```
+
+#### 4. View environment details
+
+```bash
+ptrk env show development
+```
+
+#### 5. Build, flash, and monitor
+
+```bash
+ptrk device flash --env development
+ptrk device monitor --env development
+ptrk device build --env development
 ```
 
 ### Commands Reference
+
+#### Project Initialization
+
+- `ptrk init [PROJECT_NAME]` - Initialize a new PicoRuby project
+  - `--author "Name"` — Set author name (default: auto-detected from git config)
+  - `--path /dir` — Create project in specified directory
+  - `--with-ci` — Include GitHub Actions workflow template
+  - `--with-mrbgem NAME` — Generate mrbgem template(s) (can be used multiple times)
 
 #### Environment Management
 

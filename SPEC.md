@@ -277,6 +277,108 @@ mkdir my-app && cd my-app && ptrk init
 
 ---
 
+## Project Initialization
+
+### `ptrk init [PROJECT_NAME]`
+
+**Description**: Initialize a new PicoRuby project with complete directory structure, templates, and configuration files
+
+**Arguments**:
+- `PROJECT_NAME` (optional) - Name of the project. If omitted, uses current directory name
+
+**Options**:
+- `--author "Name"` - Set project author (default: auto-detected from `git config user.name`)
+- `--path /dir` - Create project in specified directory instead of current directory
+- `--with-ci` - Include GitHub Actions ESP32 build workflow template in `.github/workflows/`
+- `--with-mrbgem NAME` - Generate mrbgem template(s). Can be specified multiple times for multiple gems
+
+**Output Directory Structure**:
+```
+PROJECT_NAME/
+├── storage/home/           # Application code location
+│   ├── app.rb             # Sample entry point
+│   └── .gitkeep
+├── patch/                  # Git-managed patch files
+│   ├── README.md          # Patch documentation
+│   ├── R2P2-ESP32/        # R2P2-ESP32 patches
+│   ├── picoruby-esp32/    # picoruby-esp32 patches
+│   └── picoruby/          # picoruby patches
+├── ptrk_env/              # Environment metadata (git-ignored)
+│   └── .gitkeep
+├── mrbgems/               # Custom mrbgems (if --with-mrbgem specified)
+│   └── NAME/
+│       ├── mrbgem.rake
+│       ├── mrblib/
+│       │   └── name.rb
+│       ├── src/
+│       │   └── name.c
+│       └── README.md
+├── .github/workflows/     # CI/CD workflows (if --with-ci specified)
+│   └── esp32-build.yml
+├── .picoruby-env.yml      # Environment configuration (initially empty)
+├── .gitignore             # Git ignore patterns
+├── Gemfile                # Ruby dependencies with picotorokko gem
+├── README.md              # Project overview
+└── CLAUDE.md              # Development guide for ptrk users
+```
+
+**Examples**:
+
+Basic initialization:
+```bash
+ptrk init my-project
+cd my-project
+```
+
+With GitHub Actions CI/CD:
+```bash
+ptrk init my-project --with-ci
+```
+
+With multiple mrbgems and author:
+```bash
+ptrk init my-project --with-mrbgem Sensor --with-mrbgem Motor --author "Alice"
+```
+
+Create in specific directory:
+```bash
+ptrk init --path ~/projects/ my-project
+```
+
+Create in current directory (uses current dir name):
+```bash
+mkdir my-project && cd my-project
+ptrk init
+```
+
+**Operation**:
+1. Validate project name (alphanumeric, dashes, underscores only)
+2. Create directory structure with `.gitkeep` files
+3. Render template files with project variables:
+   - `.picoruby-env.yml` - Empty YAML structure ready for environments
+   - `.gitignore` - Excludes `.cache/`, `build/`, `ptrk_env/*/`
+   - `Gemfile` - References picotorokko gem from rubygems.org
+   - `README.md` - Project overview and quick start instructions
+   - `CLAUDE.md` - PicoRuby development guidelines
+   - `storage/home/app.rb` - Sample application entry point
+   - `patch/README.md` - Patch management documentation
+4. If `--with-ci`: Copy `docs/github-actions/esp32-build.yml` to `.github/workflows/`
+5. If `--with-mrbgem NAME`: For each NAME, generate mrbgem directory with templates:
+   - `mrbgem.rake` - Build configuration
+   - `mrblib/{name}.rb` - Ruby code template
+   - `src/{name}.c` - C extension template
+   - `README.md` - Mrbgem documentation
+
+**Next Steps** (printed to console):
+```
+1. cd my-project
+2. ptrk env set main --commit <hash>
+3. ptrk build setup
+4. cd build/current/R2P2-ESP32 && rake build
+```
+
+---
+
 ### 🔍 Environment Inspection Commands
 
 #### `ptrk env show`
