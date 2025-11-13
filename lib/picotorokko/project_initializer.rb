@@ -146,6 +146,9 @@ module Picotorokko
         "ptrk_env/.gitkeep"
       ]
 
+      # Add GitHub Actions workflow if --with-ci is enabled
+      files_to_copy << ".github/workflows/esp32-build.yml" if options[:with_ci] || options["with_ci"]
+
       files_to_copy.each do |file|
         source = File.join(TEMPLATES_DIR, file)
         destination = File.join(project_root, file)
