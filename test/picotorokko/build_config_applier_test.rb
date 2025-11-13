@@ -75,4 +75,54 @@ class PicotororkoBuildConfigApplierTest < PraTestCase
 
     assert_includes result, 'conf.gem github: "test/gem", ref: "abc1234"'
   end
+
+  test "replace existing marker section" do
+    content = <<~RUBY
+      MRuby::Build.new do |conf|
+        # === BEGIN Mrbgemfile generated ===
+        conf.gem github: "old/gem", branch: "old"
+        # === END Mrbgemfile generated ===
+      end
+    RUBY
+
+    gems = [
+      { source_type: :github, source: "new/gem", branch: "new", ref: nil, cmake: nil }
+    ]
+
+    result = Picotorokko::BuildConfigApplier.apply(content, gems)
+
+    # Old section should be removed
+    assert_not_includes result, "old/gem"
+    # New section should be added
+    assert_includes result, 'conf.gem github: "new/gem", branch: "new"'
+    # Markers should be present
+    assert_includes result, "# === BEGIN Mrbgemfile generated ==="
+    assert_includes result, "# === END Mrbgemfile generated ==="
+  end
+
+  test "handle marker section in middle of existing config" do
+    content = <<~RUBY
+      MRuby::Build.new do |conf|
+        conf.target_name = 'picoruby'
+        # === BEGIN Mrbgemfile generated ===
+        conf.gem github: "old/gem"
+        # === END Mrbgemfile generated ===
+        conf.cc.flags = ['-O3']
+      end
+    RUBY
+
+    gems = [
+      { source_type: :core, source: "sprintf", branch: nil, ref: nil, cmake: nil }
+    ]
+
+    result = Picotorokko::BuildConfigApplier.apply(content, gems)
+
+    # Existing config should be preserved
+    assert_includes result, "conf.target_name = 'picoruby'"
+    assert_includes result, "conf.cc.flags = ['-O3']"
+    # Old gem should be replaced
+    assert_not_includes result, "old/gem"
+    # New gem should be present
+    assert_includes result, 'conf.gem core: "sprintf"'
+  end
 end

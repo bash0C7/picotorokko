@@ -19,17 +19,18 @@ module Picotorokko
     private
 
     def insert_gems_into_build_block(content)
-      # Find the closing "end" of MRuby::Build.new block
-      # Simple approach: find "MRuby::Build.new do |conf|" and matching end
       lines = content.split("\n")
       build_start = find_build_start(lines)
 
       return content unless build_start
 
+      # Remove existing marker section if present
+      lines = remove_existing_marker(lines, build_start)
+
       build_end = find_build_end(lines, build_start)
       return content unless build_end
 
-      # Insert marker section before the final "end"
+      # Insert new marker section
       gem_lines = generate_gem_lines
       marker_lines = [
         "  # === BEGIN Mrbgemfile generated ===",
@@ -40,6 +41,18 @@ module Picotorokko
       # Insert before the closing "end"
       lines.insert(build_end, *marker_lines)
       lines.join("\n")
+    end
+
+    def remove_existing_marker(lines, _build_start)
+      begin_marker = lines.find_index { |line| line.include?("# === BEGIN Mrbgemfile generated ===") }
+      return lines unless begin_marker
+
+      end_marker = lines.find_index { |line| line.include?("# === END Mrbgemfile generated ===") }
+      return lines unless end_marker && end_marker > begin_marker
+
+      # Remove from begin to end inclusive
+      lines[begin_marker..end_marker] = []
+      lines
     end
 
     def find_build_start(lines)
