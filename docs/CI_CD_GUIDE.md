@@ -22,12 +22,23 @@ This guide explains how to set up continuous integration and deployment for Pico
 
 If you're building a PicoRuby application for ESP32, you can automate the firmware build process using GitHub Actions.
 
-#### Step 1: Copy the Example Workflow
+#### Option A: Use `ptrk init --with-ci` (Recommended)
 
-The `ptrk` gem provides a GitHub Actions workflow template for ESP32 builds. You can copy it manually:
+The easiest way to set up CI/CD is to include the GitHub Actions workflow when initializing your project:
 
 ```bash
-# In your PicoRuby application repository
+ptrk init my-project --with-ci
+cd my-project
+```
+
+This automatically creates `.github/workflows/esp32-build.yml` in your project with the pre-configured workflow template.
+
+#### Option B: Copy the Workflow Manually
+
+If you already have a project, you can copy the workflow template manually:
+
+```bash
+# In your existing PicoRuby application repository
 mkdir -p .github/workflows
 
 # Copy from picotorokko gem installation
@@ -38,7 +49,9 @@ curl -o .github/workflows/esp32-build.yml \
   https://raw.githubusercontent.com/bash0C7/picotorokko/main/docs/github-actions/esp32-build.yml
 ```
 
-#### Step 2: Define Your Environment
+**Note**: For new projects, **Option A** (`ptrk init --with-ci`) is simpler and handles all setup automatically.
+
+#### Step 1: Define Your Environment
 
 Use `ptrk env set` to create your build environment:
 
@@ -52,7 +65,7 @@ ptrk env set development
 
 This creates an entry in `ptrk_env/.picoruby-env.yml` that GitHub Actions will use.
 
-#### Step 3: Customize the Workflow (Optional)
+#### Step 2: Customize the Workflow (Optional)
 
 Edit `.github/workflows/esp32-build.yml` to customize:
 
@@ -70,7 +83,7 @@ Edit `.github/workflows/esp32-build.yml` to customize:
     ptrk env set production  # Change to your environment name
 ```
 
-#### Step 4: Commit and Push
+#### Step 3: Commit and Push
 
 ```bash
 git add .github/workflows/esp32-build.yml ptrk_env/.picoruby-env.yml
