@@ -70,7 +70,7 @@ There are two distinct audiences in this project:
 
 **🚨 ABSOLUTE RULE: NEVER touch `playground/` during gem development**
 
-The `playground/` directory is a separate experimental space for testing ptrk commands. When you are working as a gem developer (root: `/Users/bash/src/picotorokko/`):
+The `playground/` directory is a separate experimental space for testing ptrk commands as a user would. When you are working as a gem developer (root: `/home/user/picotorokko/`):
 
 **Prohibited Actions**:
 - 🚫 DO NOT read files in `playground/`
@@ -91,10 +91,24 @@ The user will explicitly indicate their current context via prompt prefix:
 - **`[ptrkユーザー実験]`** → ptrk user experiment context (work in playground/)
 - **`[playground報告]`** → User reporting findings from playground/
 
+**playground/ Directory Structure Constraints**:
+- ✅ **ALLOWED**: `playground/README.md` (user testing guide only)
+- ✅ **ALLOWED**: `playground/Gemfile` (references `../` for development gem)
+- ✅ **ALLOWED**: Subdirectories created by `ptrk init` test scenarios (temporary)
+- 🚫 **PROHIBITED**: Any other files (docs, scripts, configuration, etc.)
+- 🚫 **PROHIBITED**: Persistent files beyond README.md and Gemfile
+- 📝 **Note**: All generated test projects are cleaned up after testing
+
+**playground/README.md Purpose**:
+- Contains complete user testing guide with all scenarios
+- Describes how ptrk users test the gem's features
+- Includes setup, testing scenarios, validation checks, and cleanup
+- Is the ONLY permanent documentation file in playground/
+
 **Security Principle: Complete Isolation**:
 - `playground/` must be independently portable (no parent directory awareness)
 - Exception: `playground/Gemfile` references `../` to use development gem only
-- `playground/README.md` describes ptrk experiments only (not gem development context)
+- `playground/README.md` describes ptrk user experiments only (not gem development context)
 
 ## Core Principles
 
