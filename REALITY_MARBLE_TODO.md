@@ -2078,6 +2078,449 @@ end
 
 ---
 
+## 🌑 案4: Prism AST Transformation + Black Magic Hybrid (Ruby 3.4+ Era)
+
+### Motivation: The Next Generation Approach
+
+After exploring Refinements (案2), TracePoint interception (案3/案3.1), and method redefinition (案3.2), and seeing how picotorokko solved it pragmatically with DI, **let's push the boundaries** with Ruby 3.4+'s cutting-edge features.
+
+**User's vision**:
+> 「TracePoint、Refinements、メタプログラミング、Prismでのparse/構文木レベルの加工を駆使して、特殊なmockメソッドを用いず、特定のテストファイル・テストケースだけに閉じたmock/stubを実現する、Ruby3.4以降専用の新時代のライブラリ」
+
+**Translation**: "A next-generation library using TracePoint, Refinements, metaprogramming, and Prism AST manipulation—requiring NO special mock methods, scoped only to specific test files/cases, Ruby 3.4+ exclusive."
+
+### The Black Magic Stack
+
+**案4 combines ALL the dark arts**:
+1. **Prism** (Ruby 3.3+): AST parsing and transformation at load-time
+2. **Refinements** (Ruby 2.0+): Lexical scoping for safe method overrides
+3. **TracePoint** (Ruby 1.9+): Runtime call interception and monitoring
+4. **Metaprogramming**: `define_method`, `class_eval`, `instance_exec`
+5. **Ruby 3.4+**: Frozen string literals, pattern matching, improved AST APIs
+
+### Core Idea: Transparent Test-Time Source Rewriting
+
+**The magic**: User writes normal test code, but Reality Marble *transforms* it at load-time to inject mocking infrastructure—**invisibly**.
+
+```ruby
+# USER WRITES (no changes needed, no mock API):
+class GitTest < Test::Unit::TestCase
+  def test_git_clone_success
+    system('git clone https://example.com/repo.git dest')
+    assert File.exist?('dest/.git')
+  end
+end
+
+# REALITY MARBLE TRANSFORMS (transparent to user):
+class GitTest < Test::Unit::TestCase
+  def test_git_clone_success
+    __rm_context = RealityMarble.test_context(self)
+    __rm_context.activate do
+      system('git clone https://example.com/repo.git dest')  # ← Mocked via Refinements
+      assert File.exist?('dest/.git')                         # ← Also mocked
+    end
+  ensure
+    __rm_context.teardown
+  end
+end
+```
+
+**Key insight**: Test code looks unchanged, but Reality Marble injects context management via Prism AST rewriting.
+
+### Architecture
+
+#### Phase 1: Load-Time Interception (Prism Hook)
+
+When `require 'reality_marble'` is executed:
+
+```ruby
+# lib/reality_marble.rb
+require 'prism'
+
+module RealityMarble
+  # Hook into Ruby's require mechanism
+  module RequireHook
+    def require(path)
+      if test_file?(path)
+        # Intercept test file loading
+        source = File.read(resolve_path(path))
+        transformed = RealityMarble::ASTTransformer.transform(source, path)
+
+        # Evaluate transformed code instead of original
+        eval(transformed, TOPLEVEL_BINDING, path, 1)
+        true
+      else
+        super
+      end
+    end
+
+    private
+
+    def test_file?(path)
+      path.end_with?('_test.rb') || path.include?('/test/')
+    end
+  end
+
+  # Install hook globally
+  Object.prepend(RequireHook)
+end
+```
+
+#### Phase 2: AST Transformation (Prism Parser)
+
+Parse test file and inject Reality Marble infrastructure:
+
+```ruby
+module RealityMarble
+  class ASTTransformer
+    def self.transform(source, filename)
+      parsed = Prism.parse(source)
+      rewriter = TestMethodRewriter.new(filename)
+
+      # Visit AST and rewrite test methods
+      rewriter.visit(parsed.value)
+
+      # Generate transformed source
+      rewriter.result
+    end
+  end
+
+  class TestMethodRewriter < Prism::Visitor
+    def initialize(filename)
+      @filename = filename
+      @transformed_source = []
+    end
+
+    def visit_def_node(node)
+      method_name = node.name
+
+      if test_method?(method_name)
+        # Wrap test method body with Reality Marble context
+        @transformed_source << generate_wrapped_method(node)
+      else
+        # Keep original method as-is
+        @transformed_source << node.source
+      end
+
+      super
+    end
+
+    private
+
+    def test_method?(name)
+      name.to_s.start_with?('test_')
+    end
+
+    def generate_wrapped_method(node)
+      # Extract method body
+      body_source = extract_body_source(node)
+
+      # Wrap with Reality Marble context
+      <<~RUBY
+        def #{node.name}
+          __rm_context = RealityMarble.test_context(self, :#{node.name})
+          __rm_context.activate do
+            #{body_source}
+          end
+        ensure
+          __rm_context.teardown
+        end
+      RUBY
+    end
+
+    def extract_body_source(node)
+      # Extract original method body source
+      node.body&.location&.slice || ""
+    end
+  end
+end
+```
+
+#### Phase 3: Runtime Context (Refinements + TracePoint)
+
+Reality Marble context manages mocking infrastructure:
+
+```ruby
+module RealityMarble
+  class TestContext
+    def initialize(test_case, test_method)
+      @test_case = test_case
+      @test_method = test_method
+      @refinement = build_refinement
+      @trace = Trace.new
+    end
+
+    def activate(&block)
+      # Enable Refinements for this test
+      @test_case.singleton_class.class_eval do
+        using @refinement
+      end
+
+      # Enable TracePoint for monitoring
+      trace_point = TracePoint.new(:call) do |tp|
+        @trace.record(tp) if mockable_method?(tp)
+      end
+
+      trace_point.enable
+
+      begin
+        yield
+      ensure
+        trace_point.disable
+      end
+    end
+
+    def teardown
+      @trace.clear
+    end
+
+    private
+
+    def build_refinement
+      trace = @trace
+
+      Module.new do
+        refine Kernel do
+          def system(cmd)
+            # Auto-mock system() calls
+            trace.record_call(Kernel, :system, cmd)
+
+            # Return mocked result based on test expectations
+            RealityMarble.mock_result_for(Kernel, :system, cmd) || super
+          end
+        end
+
+        refine File.singleton_class do
+          def read(path)
+            # Auto-mock File.read calls
+            trace.record_call(File, :read, path)
+
+            RealityMarble.mock_result_for(File, :read, path) || super
+          end
+
+          def exist?(path)
+            # Auto-mock File.exist? calls
+            trace.record_call(File, :exist?, path)
+
+            RealityMarble.mock_result_for(File, :exist?, path) || super
+          end
+        end
+      end
+    end
+
+    def mockable_method?(tp)
+      MOCKABLE_METHODS.include?([tp.defined_class, tp.method_id])
+    end
+
+    MOCKABLE_METHODS = [
+      [Kernel, :system],
+      [Kernel, :`],
+      [File, :read],
+      [File, :write],
+      [File, :exist?],
+      [Dir, :glob],
+      # ... etc
+    ]
+  end
+end
+```
+
+#### Phase 4: Expectation DSL (Optional, for advanced users)
+
+While default behavior is transparent, power users can set expectations:
+
+```ruby
+# In test setup or before_all
+RealityMarble.expect(Kernel, :system) do |cmd|
+  case cmd
+  when /git clone/ then true
+  when /git checkout/ then false
+  else nil  # Fall through to original
+  end
+end
+
+RealityMarble.expect(File, :exist?) do |path|
+  path == 'dest/.git'  # Mock this specific path
+end
+```
+
+### Key Advantages of 案4
+
+| Aspect | 案2 (Refinements) | 案3.2 (Upfront) | DI (Actual) | **案4 (Prism Hybrid)** |
+|--------|-------------------|-----------------|-------------|------------------------|
+| **User code changes** | ⚠️ `using` per file | ✅ None | ❌ Refactor needed | ✅ **None (transparent)** |
+| **File boundary** | ❌ Cannot cross | ✅ Can cross | ✅ Not applicable | ✅ **Can cross (Refinements)** |
+| **Scope** | 🟢 Lexical | ⚠️ Global (guarded) | 🟢 Test-local | 🟢 **Test-method-local** |
+| **Mock API** | ⚠️ `refine`/`def` | ⚠️ `activate` | ⚠️ Inject executor | ✅ **None (auto)** |
+| **Ruby 3.4+ features** | ❌ Not leveraged | ❌ Not leveraged | ❌ Not leveraged | ✅ **Prism, frozen strings** |
+| **Black magic level** | 🟡 Medium | 🟡 Medium | 🟢 None | 🔴 **MAXIMUM** |
+| **Debugging** | 🟢 Easy | 🟡 Moderate | 🟢 Easy | 🔴 **Nightmare** |
+| **Cool factor** | 🟡 Moderate | 🟡 Moderate | 😴 Boring | 🌟 **LEGENDARY** |
+
+### Critical Challenges
+
+#### Challenge 1: Source Location Mismatch 🔴 CRITICAL
+
+**Problem**: Transformed code has different line numbers than original.
+
+**Impact**: Stack traces point to wrong lines, debugging is nearly impossible.
+
+**Example**:
+```ruby
+# Original (user writes):
+def test_foo
+  system('git')  # Line 5
+  assert true
+end
+
+# Transformed (Reality Marble generates):
+def test_foo
+  __rm_context = RealityMarble.test_context(self, :test_foo)  # Line 5
+  __rm_context.activate do                                     # Line 6
+    system('git')  # Line 7 (was line 5!)
+    assert true    # Line 8 (was line 6!)
+  end
+ensure
+  __rm_context.teardown
+end
+```
+
+**Mitigation options**:
+1. Preserve line numbers with `eval(code, binding, filename, original_line)`
+2. Generate source map (like JavaScript transpilers)
+3. Use `set_trace_func` to correct stack traces on-the-fly
+
+**Verdict**: 🟡 Solvable but complex
+
+#### Challenge 2: Editor Support ❌ IMPOSSIBLE
+
+**Problem**: IDEs/editors see original code, but Ruby executes transformed code.
+
+**Impact**:
+- Autocomplete broken (doesn't know about `__rm_context`)
+- Go-to-definition jumps to wrong location
+- Linters complain about undefined variables
+
+**Mitigation**: Document as "use plain text editor" or "disable linting in tests"
+
+**Verdict**: 🔴 Fundamental limitation
+
+#### Challenge 3: Prism API Stability ⚠️ RISKY
+
+**Problem**: Prism is relatively new (Ruby 3.3+), APIs may change.
+
+**Impact**: Reality Marble breaks on Ruby version updates.
+
+**Mitigation**: Pin to specific Prism versions, provide migration guides.
+
+**Verdict**: 🟡 Manageable with version pinning
+
+#### Challenge 4: Performance Overhead 🟡 MODERATE
+
+**Costs**:
+- Load-time: Prism parsing + AST rewriting (~10-50ms per test file)
+- Runtime: Refinements + TracePoint (~50-5000ns per call)
+
+**Impact**: Test suite 10-20% slower.
+
+**Verdict**: 🟡 Acceptable for test context
+
+#### Challenge 5: Metaprogramming Complexity 🔴 EXTREME
+
+**Problem**: Multiple layers of indirection (Prism → Refinements → TracePoint → Metaprogramming).
+
+**Impact**:
+- Extremely difficult to maintain
+- Bug fixes require deep Ruby internals knowledge
+- Contributors must understand 4+ advanced Ruby features
+
+**Verdict**: 🔴 Only for Ruby wizards
+
+### When to Use 案4
+
+**Use 案4 when**:
+- ✅ You want **zero test code changes** (transparent mocking)
+- ✅ You need to mock **third-party gems** (Refinements reach them)
+- ✅ You're comfortable with **bleeding-edge Ruby** (3.4+)
+- ✅ You value **coolness** over **simplicity**
+- ✅ Your team has **Ruby black magic expertise**
+
+**DO NOT use 案4 when**:
+- ❌ You need **debuggable tests** (stack traces will lie)
+- ❌ Your team values **maintainability** (this is a nightmare)
+- ❌ You want **editor support** (won't work)
+- ❌ You're on Ruby <3.4 (Prism not available)
+- ❌ You prefer **pragmatic solutions** (use DI or 案3.2)
+
+### Proof of Concept: Minimal 案4
+
+Here's a minimal PoC to validate the approach:
+
+```ruby
+# lib/reality_marble.rb
+require 'prism'
+
+module RealityMarble
+  @mock_expectations = {}
+
+  class << self
+    attr_reader :mock_expectations
+
+    def expect(klass, method, &block)
+      @mock_expectations[[klass, method]] = block
+    end
+
+    def mock_result_for(klass, method, *args)
+      expectation = @mock_expectations[[klass, method]]
+      expectation&.call(*args)
+    end
+  end
+
+  # Prism transformer
+  class TestTransformer
+    def self.transform(source)
+      parsed = Prism.parse(source)
+      # ... (AST transformation logic)
+    end
+  end
+
+  # Require hook
+  module RequireHook
+    def require(path)
+      if path.end_with?('_test.rb')
+        source = File.read(path + '.rb')
+        transformed = TestTransformer.transform(source)
+        eval(transformed, TOPLEVEL_BINDING, path, 1)
+        true
+      else
+        super
+      end
+    end
+  end
+
+  Object.prepend(RequireHook)
+end
+```
+
+### Recommendation: 案4 is a Research Project
+
+**Verdict**: 🧪 **案4 is fascinating but impractical for production use.**
+
+**Rationale**:
+1. Debugging is prohibitively difficult (source location mismatch)
+2. Editor support is impossible (transformed code invisible)
+3. Maintenance burden is extreme (4+ advanced Ruby features)
+4. Prism API stability is uncertain (Ruby 3.3+ only)
+
+**Better path**:
+- **For picotorokko**: Stick with DI (proven, simple, works)
+- **For general library**: Use 案3.2 (practical, fast, safe)
+- **For research**: Implement 案4 as academic exercise/proof-of-concept
+
+**However**: If you're building a **Ruby metaprogramming showcase** or **want to push Ruby's limits**, 案4 is the ultimate challenge. Just don't use it in production. 😈
+
+---
+
 ## Implementation Plan
 
 ### Phase 0: Project Setup
