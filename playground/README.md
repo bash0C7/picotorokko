@@ -65,35 +65,47 @@ ls -la .github/workflows/
 - ✅ GitHub Actions workflow files are present
 - ✅ Workflow YAML is valid
 
-### Scenario 3: Project with Single mrbgem
+### Scenario 3: Project with Default mrbgem
 
-Create project with custom mrbgem:
+Create project with auto-generated default mrbgem:
 
 ```bash
-ptrk init my-app-with-gem --with-mrbgem MyGem
+ptrk init my-app-with-gem
 cd my-app-with-gem
-find . -name "*MyGem*" -o -path "*/mrbgems/*" | head -20
+ls mrbgems/
+cat mrbgems/app/mrbgem.rake | head -10
 ```
 
 **Expected Results**:
 - ✅ `mrbgems/` directory is created
-- ✅ `MyGem` template exists with proper structure
-- ✅ Ruby code template is included
+- ✅ Default `app` mrbgem template exists
+- ✅ `mrbgem.rake` configuration file is included
+- ✅ Device-specific C code tuning directory is ready
 
-### Scenario 4: Project with Multiple mrbgems
+**Note**: All projects now automatically generate a default `app` mrbgem for device-specific C code optimization. To create additional mrbgems, use: `ptrk mrbgems generate NAME`
 
-Initialize with multiple gems:
+### Scenario 4: Creating Additional mrbgems
+
+Initialize project with default mrbgem, then create additional ones:
 
 ```bash
-ptrk init multi-gem-app --with-mrbgem Sensor --with-mrbgem Display --with-mrbgem Controller
+ptrk init multi-gem-app
 cd multi-gem-app
+
+# Create additional mrbgems separately
+ptrk mrbgems generate Sensor
+ptrk mrbgems generate Display
+ptrk mrbgems generate Controller
+
 ls mrbgems/
 ```
 
 **Expected Results**:
-- ✅ All three mrbgems (Sensor, Display, Controller) are created
+- ✅ Default `app` mrbgem created in initial project
+- ✅ Three additional mrbgems (Sensor, Display, Controller) are created via `ptrk mrbgems generate`
 - ✅ Each has independent template structure
-- ✅ No naming conflicts
+- ✅ No naming conflicts between gems
+- ✅ Total of 4 mrbgems in `mrbgems/` directory (app + Sensor + Display + Controller)
 
 ### Scenario 5: Project in Custom Directory
 
@@ -127,28 +139,33 @@ grep -i "alice\|author" README.md CLAUDE.md | head -5
 
 ### Scenario 7: Complete Feature Set
 
-Use all options together:
+Use all init options together, then create additional mrbgems:
 
 ```bash
 ptrk init full-featured-app \
   --with-ci \
-  --with-mrbgem MySensor \
-  --with-mrbgem MyDisplay \
   --author "Bob Developer" \
   --path /tmp/picoruby-projects
 
 cd /tmp/picoruby-projects/full-featured-app
+
+# Create additional mrbgems after init
+ptrk mrbgems generate MySensor
+ptrk mrbgems generate MyDisplay
+
 echo "=== Project Structure ===" && ls -la
 echo "=== mrbgems ===" && ls mrbgems/
-echo "=== GitHub Workflows ===" && ls .github/workflows/ || echo "No workflows"
+echo "=== GitHub Workflows ===" && ls .github/workflows/
 echo "=== Author ===" && grep -i "bob" CLAUDE.md | head -3
 ```
 
 **Expected Results**:
 - ✅ Project at `/tmp/picoruby-projects/full-featured-app/`
-- ✅ Both MySensor and MyDisplay mrbgems exist
-- ✅ `.github/workflows/` directory present
-- ✅ "Bob Developer" appears in documentation
+- ✅ Default `app` mrbgem created during init
+- ✅ Additional mrbgems (MySensor, MyDisplay) created via `ptrk mrbgems generate`
+- ✅ `.github/workflows/esp32-build.yml` present (from `--with-ci`)
+- ✅ "Bob Developer" appears in documentation (from `--author`)
+- ✅ Total of 3 mrbgems (app + MySensor + MyDisplay)
 
 ## Environment Configuration Testing
 
@@ -213,9 +230,12 @@ cat .picoruby-env.yml
    - Default: Auto-detected from git config
    - Override: Use `--author "Your Name"` flag
 
-4. **mrbgem naming**
-   - Follow CamelCase convention: `MyGem` not `my_gem` or `my-gem`
-   - Each mrbgem must have unique name
+4. **mrbgem creation workflow**
+   - **During init**: Default `app` mrbgem is always created automatically
+   - **No `--with-mrbgem` option**: This option has been removed from `ptrk init`
+   - **Creating additional mrbgems**: Use `ptrk mrbgems generate NAME` after project initialization
+   - **CamelCase convention**: `MyGem` not `my_gem` or `my-gem`
+   - **Unique names**: Each mrbgem must have a unique name
 
 5. **Path option behavior**
    - If `--path` is not specified, uses current directory as base
@@ -228,8 +248,8 @@ Track your testing progress:
 
 - [ ] Scenario 1: Basic initialization
 - [ ] Scenario 2: CI/CD workflows
-- [ ] Scenario 3: Single mrbgem
-- [ ] Scenario 4: Multiple mrbgems
+- [ ] Scenario 3: Default mrbgem (auto-generated)
+- [ ] Scenario 4: Additional mrbgems (via `ptrk mrbgems generate`)
 - [ ] Scenario 5: Custom path
 - [ ] Scenario 6: Custom author
 - [ ] Scenario 7: All options combined
