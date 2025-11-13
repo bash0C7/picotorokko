@@ -3,13 +3,15 @@ require "yaml"
 require_relative "template/engine"
 
 module Picotorokko
-  # プロジェクト初期化ロジック（Thor依存なし）
+  # Project initialization logic independent of Thor
+  # Handles directory structure creation, template rendering, and project setup
   class ProjectInitializer
-    # テンプレートファイルの場所
+    # Template files directory path
     TEMPLATES_DIR = File.expand_path("templates/project", __dir__)
 
     attr_reader :project_root, :project_name, :options
 
+    # @rbs (String | nil, Hash[Symbol, untyped]) -> void
     def initialize(project_name = nil, options = {})
       @project_name = project_name
       @options = options
@@ -17,6 +19,7 @@ module Picotorokko
       @project_name ||= File.basename(project_root)
     end
 
+    # @rbs () -> void
     def initialize_project
       # Validate project name
       validate_project_name!(project_name)
@@ -69,6 +72,7 @@ module Picotorokko
       end
     end
 
+    # @rbs () -> Hash[Symbol, (String | nil)]
     def prepare_variables
       author = options[:author] || detect_git_author || ""
       now = Time.now
@@ -82,6 +86,7 @@ module Picotorokko
       }
     end
 
+    # @rbs () -> (String | nil)
     def detect_git_author
       author = `git config user.name`.strip
       # Ensure encoding is UTF-8 to avoid ASCII issues
@@ -91,6 +96,7 @@ module Picotorokko
       nil
     end
 
+    # @rbs (Hash[Symbol, (String | nil)]) -> void
     def render_templates(variables)
       # Template files to render with Prism engine
       template_files = [
@@ -107,6 +113,7 @@ module Picotorokko
       end
     end
 
+    # @rbs (String, Hash[Symbol, (String | nil)]) -> void
     def render_template(template_file, variables)
       template_path = File.join(TEMPLATES_DIR, template_file)
       output_path = File.join(project_root, template_file)
