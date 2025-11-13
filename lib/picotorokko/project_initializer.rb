@@ -150,7 +150,11 @@ module Picotorokko
       ]
 
       # Add GitHub Actions workflow if --with-ci is enabled
-      files_to_copy << ".github/workflows/esp32-build.yml" if options[:with_ci] || options["with_ci"]
+      # Thor converts "with-ci" option to both :with_ci and :"with-ci" keys
+      with_ci = options[:with_ci] || options["with_ci"] || options[:"with-ci"] || options["with-ci"]
+      if with_ci
+        files_to_copy << ".github/workflows/esp32-build.yml"
+      end
 
       files_to_copy.each do |file|
         source = File.join(TEMPLATES_DIR, file)
@@ -165,7 +169,9 @@ module Picotorokko
 
     # @rbs () -> void
     def generate_mrbgems
-      mrbgem_names = options[:with_mrbgem] || options["with_mrbgem"] || []
+      # Thor converts "with-mrbgem" option to both :with_mrbgem and :"with-mrbgem" keys
+      mrbgem_names = options[:with_mrbgem] || options["with_mrbgem"] ||
+                     options[:"with-mrbgem"] || options["with-mrbgem"] || []
       return if mrbgem_names.empty?
 
       mrbgem_names.each do |name|

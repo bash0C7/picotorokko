@@ -1,6 +1,7 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
+require_relative "../../lib/picotorokko/commands/init"
 
 class PraCommandsInitTest < PraTestCase
   # ptrk init コマンドのテスト
@@ -258,6 +259,44 @@ class PraCommandsInitTest < PraTestCase
 
           # Check that workflow is NOT copied
           assert !File.exist?("test-project/.github/workflows/esp32-build.yml")
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  sub_test_case "init command with hyphenated option keys (Thor format)" do
+    test "handles with_ci when key is symbol with hyphen" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          # Test with hyphenated symbol key (:"with-ci") like Thor might use
+          initializer = Picotorokko::ProjectInitializer.new("test-project", { :"with-ci" => true })
+          initializer.initialize_project
+
+          # Verify workflow file is created
+          assert File.exist?("test-project/.github/workflows/esp32-build.yml"),
+                 "Workflow file should be created with :'with-ci' key format"
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "handles with_mrbgem when key is symbol with hyphen" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          # Test with hyphenated symbol key (:"with-mrbgem") like Thor might use
+          initializer = Picotorokko::ProjectInitializer.new("test-project", { :"with-mrbgem" => ["TestGem"] })
+          initializer.initialize_project
+
+          # Verify mrbgem directory is created
+          assert Dir.exist?("test-project/mrbgems/TestGem"),
+                 "Mrbgem directory should be created with :'with-mrbgem' key format"
         ensure
           Dir.chdir(original_dir)
         end
