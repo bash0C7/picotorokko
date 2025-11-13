@@ -99,7 +99,7 @@ module Picotorokko
         "Gemfile.erb",
         "README.md.erb",
         "CLAUDE.md.erb",
-        "storage/home/main.rb"
+        "storage/home/app.rb"
       ]
 
       erb_templates.each do |template_file|

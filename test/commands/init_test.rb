@@ -210,7 +210,7 @@ class PraCommandsInitTest < PraTestCase
       end
     end
 
-    test "creates storage/home/main.rb with example code" do
+    test "creates storage/home/app.rb with example code" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -219,9 +219,9 @@ class PraCommandsInitTest < PraTestCase
           initializer = Picotorokko::ProjectInitializer.new("test-project", {})
           initializer.initialize_project
 
-          # Check main.rb exists
-          main_rb = File.read("test-project/storage/home/main.rb")
-          assert_match(/PicoRuby|application/i, main_rb)
+          # Check app.rb exists
+          app_rb = File.read("test-project/storage/home/app.rb")
+          assert_match(/PicoRuby|application/i, app_rb)
         ensure
           Dir.chdir(original_dir)
         end
