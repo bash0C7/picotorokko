@@ -152,9 +152,7 @@ module Picotorokko
       # Add GitHub Actions workflow if --with-ci is enabled
       # Thor converts "with-ci" option to both :with_ci and :"with-ci" keys
       with_ci = options[:with_ci] || options["with_ci"] || options[:"with-ci"] || options["with-ci"]
-      if with_ci
-        files_to_copy << ".github/workflows/esp32-build.yml"
-      end
+      files_to_copy << ".github/workflows/esp32-build.yml" if with_ci
 
       files_to_copy.each do |file|
         source = File.join(TEMPLATES_DIR, file)
@@ -169,23 +167,9 @@ module Picotorokko
 
     # @rbs () -> void
     def generate_mrbgems
-      # Always generate default 'app' mrbgem for device-specific tuning
+      # Generate default 'app' mrbgem for device-specific performance tuning
+      # Additional mrbgems are created separately using: ptrk mrbgems generate NAME
       generate_single_mrbgem("app")
-
-      # Generate additional mrbgems if specified
-      # Thor converts "with-mrbgem" option to both :with_mrbgem and :"with-mrbgem" keys
-      mrbgem_names = options[:with_mrbgem] || options["with_mrbgem"] ||
-                     options[:"with-mrbgem"] || options["with-mrbgem"] || []
-
-      # Ensure mrbgem_names is always an array (Thor may return a single value)
-      mrbgem_names = Array(mrbgem_names).compact.uniq
-
-      mrbgem_names.each do |name|
-        # Skip if this is the default 'app' mrbgem (already created above)
-        next if name.to_s.downcase == "app"
-
-        generate_single_mrbgem(name)
-      end
     end
 
     # @rbs (String) -> void
@@ -197,7 +181,7 @@ module Picotorokko
       # Prepare template context
       c_prefix = name.downcase
       # Convert name to CamelCase for valid Ruby class name
-      class_name = name.split(/[-_]/).map { |word| word.capitalize }.join
+      class_name = name.split(/[-_]/).map(&:capitalize).join
       template_context = {
         mrbgem_name: name,
         class_name: class_name,

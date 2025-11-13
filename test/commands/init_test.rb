@@ -273,7 +273,7 @@ class PraCommandsInitTest < PraTestCase
         Dir.chdir(tmpdir)
         begin
           # Test with hyphenated symbol key (:"with-ci") like Thor might use
-          initializer = Picotorokko::ProjectInitializer.new("test-project", { :"with-ci" => true })
+          initializer = Picotorokko::ProjectInitializer.new("test-project", { "with-ci": true })
           initializer.initialize_project
 
           # Verify workflow file is created
@@ -285,82 +285,20 @@ class PraCommandsInitTest < PraTestCase
       end
     end
 
-    test "handles with_mrbgem when key is symbol with hyphen" do
+    test "generates default app mrbgem automatically" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          # Test with hyphenated symbol key (:"with-mrbgem") like Thor might use
-          initializer = Picotorokko::ProjectInitializer.new("test-project", { :"with-mrbgem" => ["TestGem"] })
-          initializer.initialize_project
-
-          # Verify mrbgem directory is created
-          assert Dir.exist?("test-project/mrbgems/TestGem"),
-                 "Mrbgem directory should be created with :'with-mrbgem' key format"
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-  end
-
-  sub_test_case "init command with --with-mrbgem option" do
-    test "generates mrbgem when --with-mrbgem is enabled" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Initialize with --with-mrbgem option
-          initializer = Picotorokko::ProjectInitializer.new("test-project", { "with_mrbgem" => ["MyGem"] })
-          initializer.initialize_project
-
-          # Check that mrbgem directories are created
-          assert Dir.exist?("test-project/mrbgems/MyGem")
-          assert Dir.exist?("test-project/mrbgems/MyGem/mrblib")
-          assert Dir.exist?("test-project/mrbgems/MyGem/src")
-
-          # Check that template files are generated
-          assert File.exist?("test-project/mrbgems/MyGem/mrbgem.rake")
-          assert File.exist?("test-project/mrbgems/MyGem/mrblib/mygem.rb")
-          assert File.exist?("test-project/mrbgems/MyGem/src/mygem.c")
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "generates multiple mrbgems when --with-mrbgem has multiple names" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Initialize with multiple --with-mrbgem options
-          initializer = Picotorokko::ProjectInitializer.new("test-project", { "with_mrbgem" => ["First", "Second"] })
-          initializer.initialize_project
-
-          # Check that both mrbgem directories are created
-          assert Dir.exist?("test-project/mrbgems/First")
-          assert Dir.exist?("test-project/mrbgems/Second")
-          assert File.exist?("test-project/mrbgems/First/mrbgem.rake")
-          assert File.exist?("test-project/mrbgems/Second/mrbgem.rake")
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "does not generate mrbgem when --with-mrbgem is not specified" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Initialize without --with-mrbgem option
+          # Initialize without any mrbgem options
           initializer = Picotorokko::ProjectInitializer.new("test-project", {})
           initializer.initialize_project
 
-          # Check that default 'app' mrbgem is created even without --with-mrbgem
+          # Check that default 'app' mrbgem is created
           assert Dir.exist?("test-project/mrbgems/app"), "Default 'app' mrbgem should be created"
           assert File.exist?("test-project/mrbgems/app/mrbgem.rake"), "mrbgem.rake should exist"
+          assert File.exist?("test-project/mrbgems/app/mrblib/app.rb"), "Ruby template should exist"
+          assert File.exist?("test-project/mrbgems/app/src/app.c"), "C template should exist"
         ensure
           Dir.chdir(original_dir)
         end

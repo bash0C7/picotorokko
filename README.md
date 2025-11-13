@@ -75,7 +75,6 @@ cd my-project
 - `--author "Your Name"` — Set project author (default: auto-detected from git config)
 - `--path /path/to/dir` — Create project in specified directory (if omitted, uses current directory as base)
 - `--with-ci` — Include GitHub Actions workflow for CI/CD
-- `--with-mrbgem NAME` — Generate mrbgem template(s)
 
 **Common usage patterns**:
 
@@ -91,13 +90,19 @@ ptrk init my-project --path /home/user/projects
 cd /home/user/projects/my-project
 ```
 
-Create with CI/CD and custom mrbgem:
+Create with CI/CD and custom author:
 ```bash
-ptrk init my-project --with-ci --with-mrbgem MyGem --author "Alice"
+ptrk init my-project --with-ci --author "Alice"
 cd my-project
 ```
 
-⚠️ **Important**: Never run `ptrk init` without a project name in a directory where you want to keep other files. It will populate the current directory with project structure instead of creating a subdirectory.
+**Creating additional mrbgems** (after project initialization):
+```bash
+ptrk mrbgems generate MySensor
+ptrk mrbgems generate MyDisplay --author "Alice"
+```
+
+⚠️ **Important**: Always specify PROJECT_NAME. Running `ptrk init` without a name will initialize the current directory, not create a subdirectory.
 
 #### 2. Create a new environment
 
@@ -134,16 +139,21 @@ ptrk device build --env development
   - `--author "Name"` — Set author name (default: auto-detected from git config)
   - `--path /dir` — Create project in specified directory (default: current directory)
   - `--with-ci` — Include GitHub Actions workflow template for CI/CD
-  - `--with-mrbgem NAME` — Generate additional application mrbgems (can be used multiple times)
 
-  **Default mrbgem "app"**: Every project automatically includes a default `app` mrbgem for device-specific C functions. Use this to optimize performance-critical Ruby code by implementing hot paths in C.
+  **Default mrbgem "app"**: Every project automatically includes a default `app` mrbgem for device-specific C functions. Use this for performance tuning — implement hot paths in C while keeping most code in Ruby.
+
+  **Creating additional mrbgems**: Use the dedicated command for more gems:
+  ```bash
+  ptrk mrbgems generate MySensor
+  ptrk mrbgems generate MyDisplay --author "Your Name"
+  ```
 
   **Local Development**: If developing ptrk locally, edit the generated `Gemfile` to use path reference:
   ```ruby
   gem "picotorokko", path: "../path/to/picotorokko"
   ```
 
-  **Note**: Always provide PROJECT_NAME to create a project in a subdirectory. The command will display usage guide if PROJECT_NAME is omitted.
+  **Note**: Always provide PROJECT_NAME to create a project in a subdirectory.
 
 #### Environment Management
 
