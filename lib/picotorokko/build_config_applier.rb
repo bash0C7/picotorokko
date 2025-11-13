@@ -81,24 +81,33 @@ module Picotorokko
     end
 
     def format_gem_line(gem)
-      source_line = case gem[:source_type]
-                    when :github
-                      "conf.gem github: \"#{gem[:source]}\""
-                    when :core
-                      "conf.gem core: \"#{gem[:source]}\""
-                    when :path
-                      "conf.gem path: \"#{gem[:source]}\""
-                    when :git
-                      "conf.gem git: \"#{gem[:source]}\""
-                    end
+      source_line = format_source_line(gem)
+      params = format_optional_params(gem)
+      params.empty? ? source_line : "#{source_line}, #{params.join(", ")}"
+    end
 
-      # Add optional parameters
+    def format_source_line(gem)
+      type = gem[:source_type]
+      source = gem[:source]
+
+      case type
+      when :github
+        "conf.gem github: \"#{source}\""
+      when :core
+        "conf.gem core: \"#{source}\""
+      when :path
+        "conf.gem path: \"#{source}\""
+      when :git
+        "conf.gem git: \"#{source}\""
+      end
+    end
+
+    def format_optional_params(gem)
       params = []
       params << "branch: \"#{gem[:branch]}\"" if gem[:branch]
       params << "ref: \"#{gem[:ref]}\"" if gem[:ref]
       params << "cmake: \"#{gem[:cmake]}\"" if gem[:cmake]
-
-      params.empty? ? source_line : "#{source_line}, #{params.join(", ")}"
+      params
     end
   end
 end
