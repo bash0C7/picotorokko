@@ -3,12 +3,18 @@ require "fileutils"
 
 module Picotorokko
   module Commands
-    # Application-specific mrbgem管理コマンド群
+    # Application-specific mrbgem management commands
+    # Provides utilities for creating and managing custom mrbgems for PicoRuby projects
+    # Generates C/Ruby template files for new mrbgems
+    # @rbs < Thor
     class Mrbgems < Thor
+      # @rbs () -> bool
       def self.exit_on_failure?
         true
       end
 
+      # Generate application-specific mrbgem template with scaffold files
+      # @rbs (String) -> void
       desc "generate [NAME]", "Generate application-specific mrbgem template (default: App)"
       option :author, type: :string, desc: "Author name for the mrbgem"
       def generate(name = "App")

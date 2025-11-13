@@ -47,87 +47,98 @@ module Picotorokko
       # ====== Executor（外部コマンド実行） ======
       # NOTE: Configurable for testing (MockExecutor) and production (ProductionExecutor)
 
-      # executor を設定（テスト用）
+      # Set custom executor for testing (MockExecutor) or production
+      # @rbs (Executor) -> void
       def set_executor(executor)
         @executor = executor
       end
 
-      # 現在の executor を取得（デフォルトは ProductionExecutor）
+      # Get current executor instance (defaults to ProductionExecutor)
+      # @rbs () -> Executor
       def executor
         @executor ||= ProductionExecutor.new
       end
 
-      # ====== ダイナミックディレクトリパス（キャッシュベース） ======
+      # ====== Dynamic Directory Paths (Cache-based) ======
       # NOTE: Caches initial project_root to prevent Dir.chdir interference
       # This ensures patch_dir, cache_dir always point to the original project root
       # not the current working directory
 
-      # ルートディレクトリ（初期化時のDirパスをキャッシュ）
+      # Get project root directory (caches initial Dir.pwd)
+      # @rbs () -> String
       def project_root
         @project_root ||= Dir.pwd
       end
 
-      # テスト用：キャッシュされた project_root をリセット
+      # Reset cached project_root for testing
+      # @rbs () -> void
       def reset_cached_root!
         return unless @reset_cached_root_enabled
 
         @project_root = Dir.pwd
       end
 
-      # キャッシュディレクトリ
+      # Get cache directory path for immutable repository copies
+      # @rbs () -> String
       def cache_dir
         File.join(project_root, ENV_DIR, ".cache")
       end
 
-      # パッチディレクトリ
+      # Get patch directory path for storing repository changes
+      # @rbs () -> String
       def patch_dir
         File.join(project_root, ENV_DIR, "patch")
       end
 
-      # ストレージホームディレクトリ
+      # Get storage home directory path
+      # @rbs () -> String
       def storage_home
         File.join(project_root, "storage", "home")
       end
 
-      # 環境定義ファイルパス
+      # Get environment definition file path (.picoruby-env.yml)
+      # @rbs () -> String
       def env_file
         File.join(project_root, ENV_DIR, ".picoruby-env.yml")
       end
 
-      # ====== 環境名検証 ======
+      # ====== Environment Name Validation ======
 
-      # 環境名が有効なパターンか検証
-      # @param name [String] 検証する環境名
-      # @raise [RuntimeError] 無効な環境名の場合
+      # Validate environment name matches expected pattern
+      # @rbs (String) -> void
       def validate_env_name!(name)
         return if name.match?(ENV_NAME_PATTERN)
 
         raise "Error: Invalid environment name '#{name}'. Must match pattern: #{ENV_NAME_PATTERN}"
       end
 
-      # ====== 環境定義（YAML）操作 ======
+      # ====== Environment Definition (YAML) Operations ======
 
-      # .picoruby-env.yml を読み込み（環境定義のメタデータ）
+      # Load environment definitions from .picoruby-env.yml
+      # @rbs () -> Hash[String, untyped]
       def load_env_file
         return {} unless File.exist?(env_file)
 
         YAML.load_file(env_file) || {}
       end
 
-      # .picoruby-env.yml に保存
+      # Save environment definitions to .picoruby-env.yml
+      # @rbs (Hash[String, untyped]) -> void
       def save_env_file(data)
         FileUtils.mkdir_p(File.dirname(env_file))
         File.write(env_file, YAML.dump(data))
       end
 
-      # 指定された名前の環境定義を読み込み（.picoruby-env.yml から）
+      # Get specific environment definition by name
+      # @rbs (String) -> Hash[String, untyped] | nil
       def get_environment(env_name)
         data = load_env_file
         environments = data["environments"] || {}
         environments[env_name]
       end
 
-      # 環境定義を追加/更新
+      # Create or update environment definition
+      # @rbs (String, Hash[String, untyped], Hash[String, untyped], Hash[String, untyped], notes: String) -> void
       def set_environment(env_name, r2p2_info, esp32_info, picoruby_info, notes: "")
         data = load_env_file
         data["environments"] ||= {}
@@ -143,29 +154,31 @@ module Picotorokko
         save_env_file(data)
       end
 
-      # Phase 4.1: Current環境ロジック廃止
-      # get_current_env は常にnilを返す（暗黙のカレント環境は存在しない）
+      # Get current environment (deprecated - always returns nil)
+      # @rbs () -> nil
       def get_current_env
         nil
       end
 
-      # Phase 4.1: Current環境ロジック廃止
-      # set_current_env は何もしない（後方互換性のためメソッドのみ残す）
+      # Set current environment (deprecated - no-op for backward compatibility)
+      # @rbs (String) -> void
       def set_current_env(_env_name)
         # No-op: current environment logic removed in Phase 4.1
       end
 
-      # ====== Git操作 ======
+      # ====== Git Operations ======
 
-      # リモートからコミット情報を取得（git ls-remote使用）
+      # Fetch remote commit hash from git repository URL
+      # @rbs (String, String) -> String | nil
       def fetch_remote_commit(repo_url, ref = "HEAD")
         output = `git ls-remote #{Shellwords.escape(repo_url)} #{Shellwords.escape(ref)} 2>/dev/null`
         return nil if output.empty?
 
-        output.split.first[0..6] # 7桁のコミットハッシュ
+        output.split.first[0..6] # 7-digit commit hash
       end
 
-      # リポジトリをクローン
+      # Clone repository to specified path and checkout commit
+      # @rbs (String, String, String) -> void
       def clone_repo(repo_url, dest_path, commit)
         return if Dir.exist?(dest_path)
 
@@ -178,16 +191,18 @@ module Picotorokko
         executor.execute(cmd, dest_path)
       end
 
-      # リポジトリをクローン＆submodule初期化
+      # Clone repository and initialize all submodules recursively
+      # @rbs (String, String, String) -> void
       def clone_with_submodules(repo_url, dest_path, commit)
         clone_repo(repo_url, dest_path, commit)
 
-        # Submodule初期化
+        # Initialize submodules
         cmd = "git submodule update --init --recursive"
         executor.execute(cmd, dest_path)
       end
 
-      # コミット情報からcommit-hash形式を生成
+      # Generate commit-hash string from commit reference (short hash + timestamp)
+      # @rbs (String, String) -> String
       def get_commit_hash(repo_path, commit)
         Dir.chdir(repo_path) do
           short_hash = `git rev-parse --short=7 #{Shellwords.escape(commit)}`.strip
@@ -201,12 +216,14 @@ module Picotorokko
         end
       end
 
-      # Submodule 3段階トラバース
+      # Traverse nested submodules (3 levels deep) and collect commit info
+      # Returns [info_hash, warnings_array]
+      # @rbs (String) -> [Hash[String, String], Array[String]]
       def traverse_submodules_and_validate(repo_path)
         info = {}
         warnings = []
 
-        # R2P2-ESP32の情報取得
+        # Collect R2P2-ESP32 info
         r2p2_short = `git -C #{Shellwords.escape(repo_path)} rev-parse --short=7 HEAD`.strip
         raise "Failed to get commit hash from git repository: #{repo_path}" if r2p2_short.empty?
 
@@ -231,7 +248,7 @@ module Picotorokko
             picoruby_timestamp = get_timestamp(picoruby_path)
             info["picoruby"] = "#{picoruby_short}-#{picoruby_timestamp}"
 
-            # Level 3以降: warning
+            # Warn about Level 3+ submodules
             if has_submodules?(picoruby_path)
               warnings << "WARNING: Found submodule(s) in picoruby (4th level and beyond) - not handled by this tool"
             end
@@ -241,9 +258,10 @@ module Picotorokko
         [info, warnings]
       end
 
-      # ====== ユーティリティ ======
+      # ====== Utilities ======
 
-      # Timestamp取得（ローカルタイムゾーン）
+      # Get commit timestamp from repository (local timezone)
+      # @rbs (String) -> String
       def get_timestamp(repo_path)
         timestamp_str = `git -C #{Shellwords.escape(repo_path)} show -s --format=%ci HEAD`.strip
         raise "Failed to get timestamp from git repository: #{repo_path}" if timestamp_str.empty?
@@ -251,19 +269,22 @@ module Picotorokko
         Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
       end
 
-      # Submoduleの存在確認
+      # Check if repository has .gitmodules file
+      # @rbs (String) -> bool
       def has_submodules?(repo_path)
         gitmodules_path = File.join(repo_path, ".gitmodules")
         File.exist?(gitmodules_path)
       end
 
-      # env-hash形式を生成
+      # Generate environment hash string from three repo info strings
+      # @rbs (String, String, String) -> String
       def generate_env_hash(r2p2_info, esp32_info, picoruby_info)
         "#{r2p2_info}_#{esp32_info}_#{picoruby_info}"
       end
 
-      # 環境名から3つのハッシュとenv_hashを計算
-      # 戻り値: [r2p2_hash, esp32_hash, picoruby_hash, env_hash]
+      # Compute environment hash values from environment name
+      # Returns [r2p2_hash, esp32_hash, picoruby_hash, env_hash] or nil
+      # @rbs (String) -> Array[String] | nil
       def compute_env_hash(env_name)
         env_config = get_environment(env_name)
         return nil unless env_config
@@ -276,35 +297,39 @@ module Picotorokko
         [r2p2_hash, esp32_hash, picoruby_hash, env_hash]
       end
 
-      # キャッシュディレクトリパスを取得（不変リポジトリコピーの場所）
+      # Get cache path for immutable repository copy
+      # @rbs (String, String) -> String
       def get_cache_path(repo_name, commit_hash)
         File.join(cache_dir, repo_name, commit_hash)
       end
 
-      # ビルド環境ディレクトリパスを取得（ワーキングディレクトリの場所）
+      # Get build environment path (working directory for environment)
+      # @rbs (String) -> String
       def get_build_path(env_name)
         # Phase 4: Build path uses env_name instead of env_hash
         # Pattern: ptrk_env/{env_name} instead of build/{env_hash}
         File.join(project_root, ENV_DIR, env_name)
       end
 
-      # Symlink操作
+      # Create symbolic link (replace if exists)
+      # @rbs (String, String) -> void
       def create_symlink(target, link)
         FileUtils.rm_f(link) if File.exist?(link) || File.symlink?(link)
         FileUtils.ln_s(target, link)
       end
 
-      # Symlink先を取得
+      # Read symlink target path
+      # @rbs (String) -> String | nil
       def read_symlink(link)
         return nil unless File.symlink?(link)
 
         File.readlink(link)
       end
 
-      # R2P2-ESP32 Rakefile でコマンド実行
-      # NOTE: ESP-IDF 環境のセットアップは R2P2-ESP32 Rakefile が責任を持つ
-      # pra gem は R2P2-ESP32 ディレクトリで Rake コマンドを実行するのみ
-      # （直接 ESP-IDF に依存しない - CI 環境で ESP-IDF がない場合も対応可能）
+      # Execute command via R2P2-ESP32 Rakefile with ESP-IDF environment
+      # NOTE: ESP-IDF setup is R2P2-ESP32 Rakefile responsibility
+      # ptrk gem only invokes Rake in R2P2-ESP32 directory
+      # @rbs (String, String | nil) -> void
       def execute_with_esp_env(command, working_dir = nil)
         executor.execute(command, working_dir)
       end

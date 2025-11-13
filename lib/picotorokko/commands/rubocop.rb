@@ -5,7 +5,13 @@ require "thor"
 module Picotorokko
   module Commands
     # RuboCop configuration and method database management for PicoRuby development
+    # Provides setup and maintenance of RuboCop configurations with PicoRuby-specific cops
+    # Manages custom method unsupported method database
+    # @rbs < Thor
     class Rubocop < Thor
+      # Setup RuboCop configuration for PicoRuby development environment
+      # Copies template files (.rubocop.yml, custom cops, helper scripts)
+      # @rbs () -> void
       desc "setup", "Setup RuboCop configuration for PicoRuby development"
       long_desc <<~LONGDESC
         Sets up RuboCop configuration with PicoRuby custom cop.
@@ -37,6 +43,9 @@ module Picotorokko
         puts "See README.md for more details."
       end
 
+      # Update PicoRuby method database from latest picoruby.github.io definitions
+      # Compares PicoRuby vs CRuby methods and generates database files
+      # @rbs () -> void
       desc "update", "Update PicoRuby method database"
       long_desc <<~LONGDESC
         Updates the PicoRuby method database using the latest definitions from

@@ -3,12 +3,18 @@ require "prism"
 
 module Picotorokko
   module Commands
-    # ESP32デバイス操作コマンド群（R2P2-ESP32タスク委譲）
+    # ESP32 device operation commands
+    # Delegates device operations (flash, monitor, build) to R2P2-ESP32 Rakefile
+    # Provides abstraction for device-specific tasks
+    # @rbs < Thor
     class Device < Thor
+      # @rbs () -> bool
       def self.exit_on_failure?
         true
       end
 
+      # Flash firmware to ESP32 device
+      # @rbs () -> void
       desc "flash", "Flash firmware to ESP32"
       option :env, default: "current", desc: "Environment name"
       def flash
@@ -21,6 +27,8 @@ module Picotorokko
         puts "\u2713 Flash completed"
       end
 
+      # Monitor ESP32 serial output stream
+      # @rbs () -> void
       desc "monitor", "Monitor ESP32 serial output"
       option :env, default: "current", desc: "Environment name"
       def monitor
@@ -33,6 +41,8 @@ module Picotorokko
         delegate_to_r2p2("monitor", env_name)
       end
 
+      # Build firmware for ESP32
+      # @rbs () -> void
       desc "build", "Build firmware for ESP32"
       option :env, default: "current", desc: "Environment name"
       def build
@@ -45,6 +55,8 @@ module Picotorokko
         puts "\u2713 Build completed"
       end
 
+      # Setup ESP32 build environment (idf setup)
+      # @rbs () -> void
       desc "setup_esp32", "Setup ESP32 build environment"
       option :env, default: "current", desc: "Environment name"
       def setup_esp32
@@ -57,6 +69,8 @@ module Picotorokko
         puts "\u2713 ESP32 setup completed"
       end
 
+      # Show available R2P2-ESP32 Rake tasks
+      # @rbs () -> void
       desc "tasks", "Show available R2P2-ESP32 tasks"
       option :env, default: "current", desc: "Environment name"
       def tasks
@@ -67,15 +81,18 @@ module Picotorokko
         show_available_tasks(env_name)
       end
 
+      # Show available tasks (alias for tasks command)
+      # @rbs () -> void
       desc "help", "Show available R2P2-ESP32 tasks (alias for tasks)"
       option :env, default: "current", desc: "Environment name"
       def help
         tasks
       end
 
-      # 明示的に定義されていないコマンドをRakeタスクに透過的に委譲
+      # Transparently delegate undefined commands to R2P2-ESP32 Rakefile
+      # @rbs (*untyped) -> void
       def method_missing(method_name, *args)
-        # Thorの内部メソッド呼び出しは無視
+        # Ignore Thor internal method calls
         return super if method_name.to_s.start_with?("_")
 
         # Parse --env option from args
