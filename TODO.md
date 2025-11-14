@@ -1,10 +1,14 @@
 # Project Status
 
-## Current Status
+## Current Status (Session 3 - 2025-11-14)
 
-- ✅ **All Tests**: 197 tests passing (183 main + 14 device)
-- ✅ **Quality**: RuboCop clean, coverage 87.14% line / 65.37% branch
+- ✅ **All Tests**: 221 tests passing (100% success rate)
+- ✅ **Quality**: RuboCop clean (0 violations), coverage 86.32% line / 65.12% branch
 - ✅ **ptrk init Command**: Complete (Phase 1-5)
+- ✅ **Mrbgemfile DSL**: Complete (Phase 1-4)
+- ✅ **Type System Integration**: Complete (rbs-inline + Steep)
+- ✅ **Priority 2 Phase 2**: Documentation generation support added
+- ✅ **gem publish prep**: CHANGELOG.md updated, release.yml ready
 - ✅ **Infrastructure**: Executor abstraction, Template engines, Device test framework complete
 
 ---
@@ -25,7 +29,7 @@ rake dev          # Development: RuboCop auto-fix + tests + coverage
 
 ### [TODO-FEATURE-MRBGEMFILE] Implement Mrbgemfile gem installation feature
 
-**Status**: ✅ DESIGN COMPLETE (2025-01-14), READY FOR IMPLEMENTATION
+**Status**: ✅ COMPLETE (Phase 1-4 implementation done, Session 3 verification complete)
 
 **Design Document**: `TODO-mrbgems-install-feature.md` (updated 2025-01-14)
 
@@ -117,7 +121,13 @@ All tests passing (197 total). Covered 88.69% line coverage.
 
 **Strategy**: Rely on RubyDoc.info for Phase 2 (zero config). Evaluate rbs-doc/Steep docs for Phase 3.
 
-**Status**: Phase 1 design complete. RBS files ready for documentation generation on gem publish.
+**Status**: ✅ Phase 2 COMPLETE (Session 3)
+- README.md updated with RubyDoc.info links and documentation section
+- rake doc:generate task added (Phase 2 & 3 support)
+- .rbs files ready in sig/generated/ for gem publication
+- Release workflow (release.yml) ready for publication
+
+**Next Step (Phase 3)**: Evaluate rbs-doc or Steep RBS docs maturity for local generation support
 
 **Reference**: [`.claude/docs/documentation-generation.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/documentation-generation.md)
 
@@ -141,9 +151,9 @@ All features must meet these criteria before merging:
 
 ### Pre-Commit Checks (Local Development)
 
-- ✅ All tests passing (197+ tests): `bundle exec rake test`
+- ✅ All tests passing (221 tests, 100% success rate): `bundle exec rake test`
 - ✅ RuboCop: 0 violations: `bundle exec rubocop`
-- ✅ Coverage: ≥85% line, ≥60% branch: `bundle exec rake ci`
+- ✅ Coverage: ≥85% line, ≥60% branch: `bundle exec rake ci` (current: 86.32% / 65.12%)
 - ✅ **Documentation updated**: If code changed, related docs reviewed and updated in same commit
 - ✅ **rbs-inline annotations added**: Inline annotations for all new/modified public methods
 - ✅ **RBS files generated**: `rake rbs:generate` creates/updates .rbs files in sig/
