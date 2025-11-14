@@ -70,6 +70,25 @@ task :steep do
   puts "✓ Type check passed!"
 end
 
+# ============================================================================
+# DOCUMENTATION TASKS (Priority 2: RBS Documentation Generation)
+# ============================================================================
+
+namespace :doc do
+  desc "Generate RBS documentation (local preview)"
+  task :generate do
+    puts "📚 Generating RBS documentation..."
+    puts "  Phase 2: Automatic generation via RubyDoc.info"
+    puts "  Documentation URL: https://rubydoc.info/gems/picotorokko/"
+    puts "  (Auto-generated from .rbs files in sig/ when gem is published)"
+    puts ""
+    puts "  Phase 3: Local generation (experimental)"
+    puts "  - Waiting for rbs-doc or Steep RBS docs maturity"
+    puts "  - See: .claude/docs/documentation-generation.md"
+    puts "✓ RBS files are ready in sig/generated/ for publication"
+  end
+end
+
 # 開発時のデフォルトタスク：全テスト（main suite + device suite）実行
 # この設定は下の DEFAULT & CONVENIENCE TASKS セクションで上書きされます
 
