@@ -4586,4 +4586,107 @@ end
 
 ---
 
+## Phase 4+ Roadmap: Next Development Priorities
+
+### Current Status (Session 3 - 2025-11-14)
+
+✅ **Phases 0-3 Complete**:
+- Phase 0: Project setup with full test infrastructure
+- Phase 1: Core chant/activate framework with Context management
+- Phase 2: Advanced features (nested marbles, sequences, exceptions, blocks)
+- Phase 3: Context ownership tracking (stack overflow prevention)
+
+**Metrics**: 221 tests passing, 86.32% line coverage, 65.12% branch coverage
+
+### Phase 4: Special Methods & Warnings (TDD-First Implementation)
+
+**Goal**: Ensure robustness for edge cases and provide clear developer feedback
+
+#### 4.1 Special Method Name Support
+
+**Current State**: Ruby's `define_method` already supports special names, but explicit tests missing.
+
+**Tasks** (1-2 min TDD cycles):
+```
+- [TODO-REALITY-MARBLE-SPECIAL-BACKTICK]
+  RED: Write test for backtick (`) mocking
+  GREEN: Implement if needed, or document as working
+  COMMIT: test_backtick_method_mocking
+
+- [TODO-REALITY-MARBLE-SPECIAL-BRACKET]
+  RED: Write test for [] mocking
+  GREEN: Verify define_method support
+  COMMIT: test_bracket_access_method_mocking
+
+- [TODO-REALITY-MARBLE-SPECIAL-BRACKET-ASSIGN]
+  RED: Write test for []= mocking
+  GREEN: Implement support
+  COMMIT: test_bracket_assign_method_mocking
+```
+
+#### 4.2 Warning System for Missing Originals
+
+**Current State**: Silently handles non-existent methods (lines 66-70 in context.rb).
+
+**Tasks**:
+```
+- [TODO-REALITY-MARBLE-WARNING-MISSING-ORIGINAL]
+  RED: Write test that method_existed check triggers warning
+  GREEN: Add $stderr.puts warning message
+  COMMIT: feat: warn when mocking non-existent method
+
+- [TODO-REALITY-MARBLE-WARNING-CAPTURE]
+  RED: Write test that warnings are suppressible
+  GREEN: Implement warning suppression flag
+  COMMIT: feat: add warning suppression for test setup
+```
+
+#### 4.3 Thread Safety Stress Tests
+
+**Current State**: Basic thread-local test exists, but no concurrent marble scenarios.
+
+**Tasks**:
+```
+- [TODO-REALITY-MARBLE-THREAD-NESTED-CONCURRENT]
+  RED: Write test with Thread.map over 10 threads, each with nested marbles
+  GREEN: Verify no cross-thread mock pollution
+  COMMIT: test: concurrent nested marbles thread safety
+
+- [TODO-REALITY-MARBLE-THREAD-RACE-CONDITIONS]
+  RED: Write test with simultaneous push/pop on shared class
+  GREEN: Verify no race conditions (Mutex if needed)
+  COMMIT: test: thread race condition coverage
+```
+
+### Phase 5: Test::Unit Integration Helpers
+
+**Goal**: Reduce boilerplate in typical test scenarios
+
+**Tasks** (planning):
+- Helper method for common patterns (e.g., `mock_system { |cmd| ... }`)
+- DSL for expectations (e.g., `expect(File, :exist?).with('/path').returns(true)`)
+- Integration with Test::Unit lifecycle (setup/teardown)
+
+### Phase 6: Documentation & Examples
+
+**Goal**: Ship with comprehensive docs and runnable examples
+
+**Structure**:
+- `docs/CONCEPT.md` - TYPE-MOON metaphor explained
+- `docs/API.md` - Complete API reference
+- `docs/RECIPES.md` - Common patterns (git, files, HTTP)
+- `examples/` - 6+ working examples with commentary
+
+### Phase 7: Performance & Release
+
+**Goal**: Production-ready gem
+
+**Checklist**:
+- Benchmark suite (compare with RSpec::Mocks, Minitest::Mock)
+- Performance optimization if needed
+- Release workflow and versioning
+- Publish to RubyGems.org as `reality_marble` gem
+
+---
+
 **END OF REALITY_MARBLE_TODO.md**

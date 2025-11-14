@@ -1,12 +1,12 @@
 module RealityMarble
-  # Context: Thread-local management of active marbles with reference counting
+  # Context: Thread-local management of active marbles with reference counting and ownership verification
+  #
+  # Phase 3 Implementation (Context Ownership Tracking):
+  # - Mock methods capture defining_context in closure
+  # - Mock method verifies current_context == defining_context to prevent stack overflow
+  # - Enables safe nested context activation without recursive mock calls
   class Context
     attr_reader :stack
-
-    # 定義時のContext を記録: { Klass => { method_name => Context } }
-    # rubocop:disable Style/ClassVars
-    @@method_owners = {}
-    # rubocop:enable Style/ClassVars
 
     def initialize
       @stack = []
@@ -46,6 +46,16 @@ module RealityMarble
       restore_all_methods if @stack.empty?
     end
 
+    # Execute dispatch with call information (called from mock method closure)
+    def execute_dispatch(call_info)
+      matching_exp, matching_marble = find_matching_expectation(
+        call_info[:stack], call_info[:klass], call_info[:method], call_info[:args]
+      )
+      record_call_in_stack(call_info[:stack], call_info[:klass], call_info[:method],
+                           call_info[:args], call_info[:kwargs])
+      execute_with_expectation(matching_exp, matching_marble, call_info)
+    end
+
     private
 
     # Backup originals and define mocks for all expectations
@@ -69,6 +79,8 @@ module RealityMarble
                           klass.instance_methods.include?(method)
                         end
 
+        warn "⚠️  Warning: Mocking non-existent method #{klass}##{method} (no original to restore)" unless method_exists
+
         target.alias_method(backup_name, method) if method_exists
 
         @backed_up_methods[key] = {
@@ -78,10 +90,6 @@ module RealityMarble
           original_method: method
         }
 
-        # 定義時の Context を記録
-        @@method_owners[klass] ||= {}
-        @@method_owners[klass][method] = self
-
         # Define mock that uses Context stack
         define_mock_method(target, method, klass)
       end
@@ -89,29 +97,17 @@ module RealityMarble
 
     # Define the mock method that dispatches to active marbles
     def define_mock_method(target, method, klass)
-      # Capture stack and context closure
+      # Capture context to verify ownership (prevents stack overflow in nested contexts)
       stack = @stack
       defining_context = self
 
       target.define_method(method) do |*args, **kwargs, &blk|
-        # 現在の Context と定義時の Context を比較
         current_context = Context.current
         return if current_context != defining_context
 
-        # Dispatch using captured context
         call_info = { stack: stack, klass: klass, method: method, args: args, kwargs: kwargs, blk: blk }
         defining_context.execute_dispatch(call_info)
       end
-    end
-
-    # Execute dispatch with call information
-    def execute_dispatch(call_info)
-      matching_exp, matching_marble = find_matching_expectation(
-        call_info[:stack], call_info[:klass], call_info[:method], call_info[:args]
-      )
-      record_call_in_stack(call_info[:stack], call_info[:klass], call_info[:method],
-                           call_info[:args], call_info[:kwargs])
-      execute_with_expectation(matching_exp, matching_marble, call_info)
     end
 
     # Record method call in all active marbles
