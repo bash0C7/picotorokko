@@ -15,6 +15,7 @@ module Picotorokko
       # @param template_path [String] テンプレートファイルのパス
       # @param variables [Hash] テンプレートに展開する変数（キー: シンボル）
       # @return [String] レンダリング後の文字列
+      # @rbs (String, Hash[Symbol, untyped]) -> String
       def self.render(template_path, variables)
         engine_class = select_engine(template_path)
         engine_class.new(template_path, variables).render
@@ -24,6 +25,7 @@ module Picotorokko
       #
       # @param template_path [String] テンプレートファイルのパス
       # @return [Class] エンジンクラス
+      # @rbs (String) -> Class
       def self.select_engine(template_path)
         extension = File.extname(template_path)
         case extension

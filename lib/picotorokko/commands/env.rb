@@ -47,7 +47,74 @@ module Picotorokko
         show_env_details(env_name, env_config)
       end
 
-      # Create new environment with org/repo or path:// sources
+      # Create new environment definition with custom repository sources
+      #
+      # This command creates a new environment definition in .picoruby-env.yml with
+      # explicit repository source specifications. It supports three source formats:
+      #
+      # **Auto-fetch mode** (no options):
+      #   When called without any options, automatically fetches the latest commit
+      #   from default upstream repositories (picoruby/R2P2-ESP32, etc.)
+      #
+      # **Explicit mode** (all three options required):
+      #   When any option is specified, all three repository options must be provided.
+      #   Supports three source format types:
+      #
+      #   1. **GitHub org/repo format**: `"owner/repository"`
+      #      - Example: `--R2P2-ESP32 "picoruby/R2P2-ESP32"`
+      #      - Fetches latest commit from GitHub (requires network access)
+      #      - Stored as: `source: "https://github.com/owner/repository.git"`
+      #
+      #   2. **Local path format**: `"path:/absolute/or/relative/path"`
+      #      - Example: `--picoruby "path:../picoruby-local"`
+      #      - Uses current commit from local Git repository
+      #      - Stored as: `source: "path:/absolute/or/relative/path"`
+      #
+      #   3. **Pinned commit format**: `"path:/path:COMMIT_SHA"`
+      #      - Example: `--picoruby-esp32 "path:../picoruby-esp32:abc1234"`
+      #      - Uses specified commit SHA from local repository (7+ characters)
+      #      - Stored as: `source: "path:/path", commit: "abc1234"`
+      #      - Useful for reproducible builds with specific commits
+      #
+      # **Format string parsing**:
+      #   The command delegates format detection to `process_source`, which:
+      #   - Checks for "path:" prefix → routes to `process_path_source`
+      #   - Otherwise → routes to `process_github_source` (assumes org/repo)
+      #   - Path format uses regex: `/^path:(.+):([a-f0-9]{7,})$/` for pinned commits
+      #
+      # **Relationship to other commands**:
+      #   - Delegates to `auto_fetch_environment` when no options provided
+      #   - Calls `process_source` for each repository option
+      #   - Stores result via `Picotorokko::Env.set_environment`
+      #
+      # @param env_name [String] Name for the new environment definition
+      #
+      # @example Auto-fetch latest versions
+      #   $ ptrk env set production
+      #   # Creates environment with latest commits from default repos
+      #
+      # @example GitHub sources with explicit repos
+      #   $ ptrk env set custom \
+      #       --R2P2-ESP32 "myorg/R2P2-ESP32-fork" \
+      #       --picoruby-esp32 "picoruby/picoruby-esp32" \
+      #       --picoruby "picoruby/picoruby"
+      #
+      # @example Local development setup
+      #   $ ptrk env set dev \
+      #       --R2P2-ESP32 "path:../R2P2-ESP32" \
+      #       --picoruby-esp32 "path:../picoruby-esp32" \
+      #       --picoruby "path:../picoruby"
+      #
+      # @example Mixed sources with pinned commit
+      #   $ ptrk env set stable \
+      #       --R2P2-ESP32 "picoruby/R2P2-ESP32" \
+      #       --picoruby-esp32 "path:../picoruby-esp32:a1b2c3d" \
+      #       --picoruby "path:../picoruby:e4f5g6h"
+      #
+      # @return [void] Outputs success message and creates environment definition
+      # @raise [RuntimeError] If only some options specified (all three required)
+      # @raise [RuntimeError] If environment name is invalid (via validate_env_name!)
+      #
       # @rbs (String) -> void
       desc "set ENV_NAME", "Create new environment with repository sources"
       option :"R2P2-ESP32", type: :string, desc: "org/repo or path:// for R2P2-ESP32"
@@ -77,6 +144,20 @@ module Picotorokko
       end
 
       no_commands do # rubocop:disable Metrics/BlockLength
+        # Route source specification to appropriate handler (GitHub or local path)
+        #
+        # Detects source format type and delegates to specialized processors:
+        # - Starts with "path:" → `process_path_source` (local repository)
+        # - Otherwise → `process_github_source` (GitHub org/repo format)
+        #
+        # @param source_spec [String] Source specification (org/repo or path:...)
+        # @param timestamp [String] Formatted timestamp (YYYYMMDD_HHMMSS)
+        # @return [Hash{String => String}] Repository metadata with keys:
+        #   - "source": Repository URL or path identifier
+        #   - "commit": 7-character commit SHA
+        #   - "timestamp": Formatted timestamp string
+        #
+        # @rbs (String, String) -> Hash[String, String]
         def process_source(source_spec, timestamp)
           if source_spec.start_with?("path:")
             process_path_source(source_spec, timestamp)
@@ -85,12 +166,43 @@ module Picotorokko
           end
         end
 
+        # Process GitHub org/repo format and fetch latest commit
+        #
+        # Converts "org/repo" to full GitHub URL and fetches remote HEAD commit.
+        # Falls back to placeholder "abc1234" if fetch fails (graceful degradation).
+        #
+        # @param org_repo [String] GitHub organization/repository (e.g., "picoruby/picoruby")
+        # @param timestamp [String] Formatted timestamp (YYYYMMDD_HHMMSS)
+        # @return [Hash{String => String}] Repository metadata
+        #   - "source": Full GitHub URL (https://github.com/org/repo.git)
+        #   - "commit": 7-character commit SHA or "abc1234" if fetch failed
+        #   - "timestamp": Provided timestamp string
+        #
+        # @rbs (String, String) -> Hash[String, String]
         def process_github_source(org_repo, timestamp)
           source_url = "https://github.com/#{org_repo}.git"
           commit = Picotorokko::Env.fetch_remote_commit(source_url) || "abc1234"
           { "source" => source_url, "commit" => commit, "timestamp" => timestamp }
         end
 
+        # Process local path format (with or without pinned commit)
+        #
+        # Handles two path format variants:
+        #   1. Pinned commit: "path:/local/dir:abc1234" (commit explicitly specified)
+        #   2. Auto-detect: "path:/local/dir" (fetch current HEAD from repository)
+        #
+        # Format detection uses regex: `/^path:(.+):([a-f0-9]{7,})$/`
+        # - Match → Extract path and commit from regex groups
+        # - No match → Strip "path:" prefix and call `fetch_local_commit`
+        #
+        # @param path_spec [String] Path specification (path:/dir or path:/dir:SHA)
+        # @param timestamp [String] Formatted timestamp (YYYYMMDD_HHMMSS)
+        # @return [Hash{String => String}] Repository metadata
+        #   - "source": Path identifier (preserved from input)
+        #   - "commit": 7-character commit SHA (from spec or local Git)
+        #   - "timestamp": Provided timestamp string
+        #
+        # @rbs (String, String) -> Hash[String, String]
         def process_path_source(path_spec, timestamp)
           if path_spec =~ /^path:(.+):([a-f0-9]{7,})$/
             path = Regexp.last_match(1)
@@ -104,6 +216,16 @@ module Picotorokko
           { "source" => source_key, "commit" => commit, "timestamp" => timestamp }
         end
 
+        # Fetch current HEAD commit SHA from local Git repository
+        #
+        # Executes `git rev-parse --short=7 HEAD` in the specified directory.
+        # Validates that path exists before attempting Git command.
+        #
+        # @param path [String] Absolute or relative path to Git repository
+        # @return [String] 7-character short commit SHA from repository HEAD
+        # @raise [RuntimeError] If path does not exist
+        #
+        # @rbs (String) -> String
         def fetch_local_commit(path)
           raise "Error: Path does not exist" unless Dir.exist?(path)
 
@@ -112,6 +234,7 @@ module Picotorokko
           end
         end
 
+        # @rbs (String) -> void
         def auto_fetch_environment(env_name)
           timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
           repos_info = {}
@@ -254,7 +377,68 @@ module Picotorokko
         puts "  2. ptrk build setup #{env_name}  # Setup build environment"
       end
 
-      # Fetch latest commits from all repos (reusable method for Init)
+      # Fetch latest commit versions from all default repositories
+      #
+      # This method fetches the current HEAD commit SHA and timestamp from all
+      # repositories defined in `Picotorokko::Env::REPOS`. It performs temporary
+      # shallow clones to extract commit metadata efficiently.
+      #
+      # **Process**:
+      #   1. For each repository in REPOS hash:
+      #      - Fetch remote HEAD commit SHA using `fetch_remote_commit`
+      #      - Create temporary directory for shallow clone
+      #      - Clone with `--depth 1` (single commit, no history)
+      #      - Extract 7-character short commit hash via `git rev-parse`
+      #      - Extract commit timestamp via `git show -s --format=%ci`
+      #      - Clean up temporary directory
+      #
+      # **Why shallow clone?**
+      #   Using `git clone --depth 1` significantly improves performance by:
+      #   - Downloading only the latest commit (not entire history)
+      #   - Reducing network transfer time and disk usage
+      #   - Enabling timestamp extraction from commit metadata
+      #   Note: `git ls-remote` provides commit SHA but not timestamp
+      #
+      # **Error handling**:
+      #   - Raises error if `fetch_remote_commit` returns nil
+      #   - Raises error if clone command fails (exit status non-zero)
+      #   - Temporary directories cleaned up automatically by `Dir.mktmpdir`
+      #
+      # **Return value structure**:
+      #   Hash with repository names as keys, each containing:
+      #   - `"commit"`: 7-character short commit SHA (String)
+      #   - `"timestamp"`: Formatted as "YYYYMMDD_HHMMSS" (String)
+      #
+      # **Performance notes**:
+      #   - Network-bound operation (requires internet access)
+      #   - Parallel execution not implemented (sequential by default)
+      #   - Typical execution: 5-15 seconds for 3 repositories
+      #
+      # **Caching behavior**:
+      #   This method does NOT cache results. Each call performs fresh network
+      #   requests to ensure latest commit information.
+      #
+      # @return [Hash{String => Hash{String => String}}] Repository metadata
+      #   Example: {
+      #     "R2P2-ESP32" => {
+      #       "commit" => "a1b2c3d",
+      #       "timestamp" => "20250114_123045"
+      #     },
+      #     "picoruby-esp32" => { ... },
+      #     "picoruby" => { ... }
+      #   }
+      #
+      # @example Typical usage in 'latest' command
+      #   repos_info = fetch_latest_repos
+      #   Picotorokko::Env.set_environment("latest",
+      #     repos_info["R2P2-ESP32"],
+      #     repos_info["picoruby-esp32"],
+      #     repos_info["picoruby"])
+      #
+      # @raise [RuntimeError] If fetch_remote_commit fails for any repository
+      # @raise [RuntimeError] If git clone command fails (exit status non-zero)
+      #
+      # @rbs () -> Hash[String, Hash[String, String]]
       def fetch_latest_repos
         require "tmpdir"
 
@@ -299,16 +483,19 @@ module Picotorokko
 
       private
 
+      # @rbs (String) -> void
       def show_env_not_found(env_name)
         puts "Error: Environment '#{env_name}' not found in .picoruby-env.yml"
       end
 
+      # @rbs (String, Hash[String, untyped]) -> void
       def show_env_details(env_name, env_config)
         puts "Environment: #{env_name}"
         display_repo_versions(env_config)
         display_metadata(env_config)
       end
 
+      # @rbs (Hash[String, untyped]) -> void
       def display_repo_versions(env_config)
         puts "\nRepo versions:"
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
@@ -319,11 +506,13 @@ module Picotorokko
         end
       end
 
+      # @rbs (Hash[String, untyped]) -> void
       def display_metadata(env_config)
         puts "\nCreated: #{env_config["created_at"]}"
         puts "Notes: #{env_config["notes"]}" unless env_config["notes"].to_s.empty?
       end
 
+      # @rbs (String, String) -> (String | nil)
       def resolve_work_path(repo, build_path)
         case repo
         when "R2P2-ESP32"
@@ -335,6 +524,7 @@ module Picotorokko
         end
       end
 
+      # @rbs (String, String) -> void
       def export_repo_changes(repo, work_path)
         Dir.chdir(work_path) do
           changed_files = `git diff --name-only 2>/dev/null`.split("\n")
@@ -367,6 +557,7 @@ module Picotorokko
         end
       end
 
+      # @rbs (String, String, (String | nil)) -> void
       def show_repo_diff(repo, patch_repo_dir, work_path)
         puts "#{repo}:"
 

@@ -95,6 +95,30 @@ module Picotorokko
       end
 
       # Transparently delegate undefined commands to R2P2-ESP32 Rakefile
+      #
+      # Implements Ruby's method_missing to provide transparent delegation of unknown
+      # commands to the R2P2-ESP32 Rakefile. This allows the ptrk device command to
+      # expose any Rake task defined in R2P2-ESP32 without hardcoding them.
+      #
+      # **Security**: Uses whitelist validation by parsing the Rakefile AST with Prism
+      # to ensure only legitimate Rake tasks can be executed. Prevents arbitrary command
+      # injection through the command name.
+      #
+      # **Workflow**:
+      # 1. Parse --env option from args (default: 'current')
+      # 2. Resolve environment name and validate R2P2 build path exists
+      # 3. Extract available Rake tasks from R2P2-ESP32/Rakefile via AST parsing
+      # 4. Validate requested task is in the whitelist (if available)
+      # 5. Delegate to R2P2-ESP32 Rakefile via rake command
+      #
+      # **Example**:
+      #   ptrk device flash --env development
+      #   ptrk device monitor --env stable-2024-11
+      #   ptrk device custom_task --env latest
+      #
+      # @param method_name [Symbol] The task name to delegate
+      # @param args [Array] Arguments including --env option
+      # @raise [Thor::UndefinedCommandError] If task not found in whitelist
       # @rbs (*untyped) -> void
       def method_missing(method_name, *args)
         # Ignore Thor internal method calls
@@ -128,6 +152,7 @@ module Picotorokko
         )
       end
 
+      # @rbs (Symbol, bool) -> bool
       def respond_to_missing?(method_name, include_private = false)
         # Thorの内部メソッド以外は全てR2P2タスクとして扱う可能性がある
         !method_name.to_s.start_with?("_") || super
@@ -136,6 +161,7 @@ module Picotorokko
       private
 
       # --env option を args から抽出
+      # @rbs (Array[untyped]) -> (String | nil)
       def parse_env_from_args(args)
         return nil if args.empty?
 
@@ -153,6 +179,7 @@ module Picotorokko
 
       # Apply Mrbgemfile if it exists
       # Reads Mrbgemfile and applies mrbgems to build_config files
+      # @rbs (String) -> void
       def apply_mrbgemfile(_env_name)
         mrbgemfile_path = File.join(Env.project_root, "Mrbgemfile")
         return unless File.exist?(mrbgemfile_path)
@@ -162,6 +189,7 @@ module Picotorokko
       end
 
       # Apply mrbgems to all build_config/*.rb files
+      # @rbs (String) -> void
       def apply_to_build_configs(mrbgemfile_content)
         build_config_dir = File.join(Env.project_root, "build_config")
         return unless Dir.exist?(build_config_dir)
@@ -180,6 +208,7 @@ module Picotorokko
       end
 
       # 利用可能なR2P2-ESP32タスクを表示
+      # @rbs (String) -> void
       def show_available_tasks(env_name)
         actual_env = resolve_env_name(env_name)
         r2p2_path = validate_and_get_r2p2_path(actual_env)
@@ -190,6 +219,7 @@ module Picotorokko
       end
 
       # R2P2-ESP32のRakefileにタスクを委譲
+      # @rbs (String, String) -> void
       def delegate_to_r2p2(command, env_name)
         actual_env = resolve_env_name(env_name)
         r2p2_path = validate_and_get_r2p2_path(actual_env)
@@ -199,6 +229,7 @@ module Picotorokko
       end
 
       # 環境名を解決（currentの場合は実環境名に変換）
+      # @rbs (String) -> String
       def resolve_env_name(env_name)
         return env_name unless env_name == "current"
 
@@ -211,6 +242,7 @@ module Picotorokko
       end
 
       # 環境を検証してR2P2パスを取得
+      # @rbs (String) -> String
       def validate_and_get_r2p2_path(env_name)
         env_config = Picotorokko::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
@@ -225,6 +257,7 @@ module Picotorokko
       end
 
       # Rakefileから利用可能なタスクを取得
+      # @rbs (String) -> Array[String]
       def available_rake_tasks(r2p2_path)
         rakefile_path = File.join(r2p2_path, "Rakefile")
         return [] unless File.exist?(rakefile_path)
@@ -243,14 +276,57 @@ module Picotorokko
     end
 
     # AST-based Rake task extractor for secure, static analysis
+    #
+    # **Purpose**: Safely extract Rake task names from a Rakefile without executing it.
+    # Uses the Prism Ruby parser to analyze the AST (Abstract Syntax Tree) instead of
+    # relying on `rake -T`, which requires the full Rakefile to be executable.
+    #
+    # **Security Model**: Static AST analysis prevents any code execution, making it safe
+    # to analyze untrusted or partially-working Rakefiles. No shell escape needed.
+    #
+    # **Supported Task Patterns**:
+    # 1. Direct task definition:
+    #    ```ruby
+    #    task :build
+    #    task "flash"
+    #    ```
+    #
+    # 2. Dynamically generated tasks:
+    #    ```ruby
+    #    %w[esp32 rp2040].each do |target|
+    #      task "setup_#{target}"
+    #    end
+    #    # Expands to: setup_esp32, setup_rp2040
+    #    ```
+    #
+    # **Limitations**: Does not support:
+    # - Rake::TaskLib subclasses (require execution)
+    # - Tasks defined in included files
+    # - Complex string interpolation beyond simple variable expansion
+    #
+    # **Algorithm**:
+    # 1. Visit all call nodes in AST
+    # 2. Find `task()` calls with task name argument
+    # 3. For block iteration patterns, extract array elements and expand with variable
+    # 4. Return sorted, unique task names
+    #
+    # @example Usage in device.rb:available_rake_tasks
+    #   result = Prism.parse(File.read("Rakefile"))
+    #   extractor = RakeTaskExtractor.new
+    #   result.value.accept(extractor)
+    #   extractor.tasks  # => ["build", "flash", "monitor", ...]
+    #
     class RakeTaskExtractor < Prism::Visitor
       attr_reader :tasks
 
+      # Initialize task extractor with empty task list
+      # @rbs () -> void
       def initialize
         super
         @tasks = []
       end
 
+      # @rbs (Prism::CallNode) -> void
       def visit_call_node(node)
         case node.name
         when :task
@@ -265,6 +341,7 @@ module Picotorokko
       private
 
       # Standard task definition: task :name or task "name"
+      # @rbs (Prism::CallNode) -> void
       def handle_task_definition(node)
         return unless node.arguments&.arguments&.any?
 
@@ -273,6 +350,7 @@ module Picotorokko
       end
 
       # Dynamic task generation: %w[...].each do |var| task "name_#{var}" end
+      # @rbs (Prism::CallNode) -> void
       def handle_each_block_with_task_generation(node)
         # Only handle array literals (not constants, method calls)
         return unless node.receiver.is_a?(Prism::ArrayNode)
@@ -298,6 +376,7 @@ module Picotorokko
       end
 
       # Extract string values from array literal
+      # @rbs (Prism::ArrayNode) -> Array[String]
       def extract_array_elements(array_node)
         array_node.elements.filter_map do |elem|
           elem.unescaped if elem.is_a?(Prism::StringNode)
@@ -305,6 +384,7 @@ module Picotorokko
       end
 
       # Get block parameter name from |var| syntax
+      # @rbs (Prism::BlockNode | nil) -> (Symbol | nil)
       def extract_block_parameter(block_node)
         params = block_node&.parameters&.parameters
         return unless params&.requireds&.any?
@@ -313,6 +393,7 @@ module Picotorokko
       end
 
       # Find all task definitions within a block and extract their patterns
+      # @rbs (Prism::BlockNode | nil, Symbol) -> Array[Array[Hash[Symbol, (String | Symbol)]]]
       def extract_task_patterns_from_block(block_node, param_name)
         body = block_node&.body&.body
         return [] unless body
@@ -322,12 +403,14 @@ module Picotorokko
       end
 
       # Check if statement is a task() call with arguments
+      # @rbs (untyped) -> bool
       def task_call?(stmt)
         stmt.is_a?(Prism::CallNode) && stmt.name == :task && stmt.arguments&.arguments&.any?
       end
 
       # Extract pattern from interpolated string like "setup_#{name}"
       # Returns array of { type: :string/:variable, value: ... } hashes
+      # @rbs (untyped, Symbol) -> (Array[Hash[Symbol, (String | Symbol)]] | nil)
       def extract_task_pattern(arg_node, param_name)
         return unless arg_node.is_a?(Prism::InterpolatedStringNode)
 
@@ -343,6 +426,7 @@ module Picotorokko
       end
 
       # Extract variable from embedded statement if it matches the block parameter
+      # @rbs (Prism::EmbeddedStatementsNode, Symbol) -> (Hash[Symbol, untyped] | nil)
       def extract_embedded_variable(stmt_node, param_name)
         var = stmt_node.statements.body[0]
         return unless var.is_a?(Prism::LocalVariableReadNode)
@@ -353,6 +437,7 @@ module Picotorokko
 
       # Expand pattern by replacing :variable placeholders with actual values
       # Example: [{ type: :string, value: "setup_" }, { type: :variable }] + "esp32" → "setup_esp32"
+      # @rbs (Array[Hash[Symbol, untyped]], String) -> String
       def expand_pattern(pattern, value)
         pattern.map do |part|
           case part[:type]
@@ -365,6 +450,7 @@ module Picotorokko
       end
 
       # Extract simple task name from string or symbol node
+      # @rbs (untyped) -> (String | nil)
       def extract_task_name(arg_node)
         case arg_node
         when Prism::StringNode, Prism::SymbolNode

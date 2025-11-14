@@ -5,6 +5,7 @@ module Picotorokko
     # Prism AST ベースのRubyテンプレートエンジン
     # テンプレート内の TEMPLATE_* 定数をプレースホルダとして認識し、置換する
     class RubyTemplateEngine
+      # @rbs (String, Hash[Symbol, untyped]) -> void
       def initialize(template_path, variables)
         @template_path = template_path
         @variables = variables
@@ -14,6 +15,7 @@ module Picotorokko
       #
       # @return [String] レンダリング後のRubyコード
       # @raise [StandardError] テンプレートまたは出力が無効なRubyの場合
+      # @rbs () -> String
       def render
         # テンプレートを読み込み、有効性を検証
         template_source = File.read(@template_path, encoding: "UTF-8")
@@ -36,6 +38,7 @@ module Picotorokko
       private
 
       # テンプレートが有効なRubyコードであることを確認
+      # @rbs (String) -> void
       def verify_template_validity!(source)
         result = Prism.parse(source)
         return if result.success?
@@ -44,6 +47,7 @@ module Picotorokko
       end
 
       # 出力が有効なRubyコードであることを確認
+      # @rbs (String) -> void
       def verify_output_validity!(source)
         result = Prism.parse(source)
         return if result.success?
@@ -56,6 +60,7 @@ module Picotorokko
       # @param source [String] 元のソースコード
       # @param replacements [Array] 置換情報の配列
       # @return [String] 置換後のコード
+      # @rbs (String, Array[Hash[Symbol, untyped]]) -> String
       def apply_replacements(source, replacements)
         output = source.dup
 
@@ -72,12 +77,14 @@ module Picotorokko
     class PlaceholderVisitor < Prism::Visitor
       attr_reader :replacements
 
+      # @rbs (Hash[Symbol, untyped]) -> void
       def initialize(variables)
         super()
         @variables = variables
         @replacements = []
       end
 
+      # @rbs (Prism::ConstantReadNode) -> void
       def visit_constant_read_node(node)
         const_name = node.name.to_s
         if const_name.start_with?("TEMPLATE_")

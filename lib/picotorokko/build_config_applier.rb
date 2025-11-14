@@ -31,6 +31,7 @@ module Picotorokko
 
     private
 
+    # @rbs (String) -> String
     def remove_existing_marker(content)
       lines = content.split("\n")
       begin_idx = lines.find_index { |line| line.include?("# === BEGIN Mrbgemfile generated ===") }
@@ -44,6 +45,7 @@ module Picotorokko
       lines.join("\n")
     end
 
+    # @rbs (String, BuildBlockExtractor) -> String
     def insert_gems_at_block_end(content, _extractor)
       lines = content.split("\n")
 
@@ -63,6 +65,7 @@ module Picotorokko
       lines.join("\n")
     end
 
+    # @rbs (Array[String]) -> Integer | nil
     def find_build_block_end_line(lines)
       # Find "MRuby::Build.new do |conf|" and match the closing "end"
       build_start = lines.find_index { |line| line.match?(/MRuby::Build\.new\s+do\s*\|conf\|/) }
@@ -79,16 +82,19 @@ module Picotorokko
       nil
     end
 
+    # @rbs () -> Array[String]
     def generate_gem_lines
       @gems.map { |gem| "  #{format_gem_line(gem)}" }
     end
 
+    # @rbs (Hash[Symbol, (String | Symbol | nil)]) -> String
     def format_gem_line(gem)
       source_line = "conf.gem #{gem[:source_type]}: \"#{gem[:source]}\""
       params = format_optional_params(gem)
       params.empty? ? source_line : "#{source_line}, #{params.join(", ")}"
     end
 
+    # @rbs (Hash[Symbol, (String | Symbol | nil)]) -> Array[String]
     def format_optional_params(gem)
       params = []
       params << "branch: \"#{gem[:branch]}\"" if gem[:branch]
@@ -122,6 +128,7 @@ module Picotorokko
 
     private
 
+    # @rbs (Prism::CallNode) -> bool
     def mrbuild_new?(node)
       # Check method: new
       return false unless node.name == :new
@@ -133,6 +140,7 @@ module Picotorokko
       receiver_code == "MRuby::Build"
     end
 
+    # @rbs (untyped) -> String | nil
     def receiver_slice(receiver)
       case receiver
       when Prism::ConstantPathNode, Prism::ConstantReadNode

@@ -91,6 +91,7 @@ module Picotorokko
 
       private
 
+      # @rbs (String, String) -> void
       def copy_template_files(source, target)
         files_to_copy = [
           ".rubocop.yml",

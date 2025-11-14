@@ -1032,6 +1032,59 @@ ptrk build setup ENV_NAME
 
 ---
 
+## Type System & Type Annotations
+
+The picotorokko gem leverages **rbs-inline** type annotations for comprehensive static type analysis and runtime safety.
+
+### Type Coverage
+
+**93.2% of methods are fully annotated** (165 of 177 methods):
+- Template engines: 19 methods with complete signatures
+- Core modules: 16 methods (Executor, PatchApplier, MrbgemsDSL, BuildConfigApplier)
+- Command classes: 42 methods (Device, Env, Mrbgems, Rubocop, Init)
+
+### Type Annotation Format
+
+All public and private methods include `@rbs` inline comments following the rbs syntax:
+
+```ruby
+# Example: Device command with type-annotated private method
+module Picotorokko
+  module Commands
+    class Device < Thor
+      # @rbs (String) -> String
+      private def resolve_env_name(env_name)
+        # Resolves "current" to actual environment name
+      end
+
+      # @rbs (String, String) -> void
+      private def delegate_to_r2p2(command, env_name)
+        # Delegates task to R2P2-ESP32 Rakefile
+      end
+    end
+  end
+end
+```
+
+### Type Checking Tools
+
+**Steep** (optional development tool) validates type safety:
+
+```bash
+bundle exec steep check
+```
+
+Expected output: Type definitions for external libraries (Thor, Prism) are unavailable, but all picotorokko gem code passes type validation.
+
+### Benefits
+
+1. **Static Analysis**: Catch type errors before runtime
+2. **IDE Support**: Enable autocomplete and error detection in modern editors
+3. **Documentation**: Type signatures serve as executable documentation
+4. **Refactoring Safety**: Type checker validates changes across the codebase
+
+---
+
 ## Implementation Details for Gem Developers
 
 For architectural decisions, implementation strategies, and detailed component specifications backing this user-facing specification, see [`.claude/docs/spec/`](./.claude/docs/spec/).

@@ -298,6 +298,11 @@ For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONT
 
 ### Documentation
 
+#### API Documentation
+
+- [**RubyDoc.info**](https://rubydoc.info/gems/picotorokko/) - Generated from RBS type definitions
+- [Type System & Annotations](docs/type-annotation-guide.md) - How we use rbs-inline annotations and Steep type checking
+
 #### Architecture & Design
 
 - [Executor Abstraction](docs/architecture/executor-abstraction-design.md) - Dependency injection pattern for system command testing with ProductionExecutor and MockExecutor
@@ -359,6 +364,39 @@ bundle exec gem build picotorokko.gemspec
 ```bash
 bundle exec exe/ptrk --help
 ```
+
+#### 7. Type checking with Steep (optional)
+
+The gem includes rbs-inline type annotations for all public and private methods, enabling static type checking:
+
+```bash
+# Run Steep type checker (requires steep gem)
+bundle exec steep check
+
+# Generate RBS signatures from rbs-inline annotations
+bundle exec rake rbs:generate
+```
+
+**Type Annotation Coverage**: 93.2% (165 of 177 methods)
+
+All command classes and core modules include complete type signatures using rbs-inline format:
+- **Template Engines** (19 methods): Engine, RubyTemplateEngine, StringTemplateEngine, YamlTemplateEngine, CTemplateEngine
+- **Core Modules** (16 methods): Executor, PatchApplier, MrbgemsDSL, BuildConfigApplier
+- **Commands** (42 methods): Device, Env, Mrbgems, Rubocop, Init
+
+Example type annotation:
+
+```ruby
+# lib/picotorokko/commands/device.rb
+class Device < Thor
+  # @rbs (String) -> String
+  private def resolve_env_name(env_name)
+    # implementation
+  end
+end
+```
+
+Refer to `.claude/docs/testing-guidelines.md` for TDD + RuboCop integration workflow details.
 
 ## License
 

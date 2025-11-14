@@ -25,6 +25,8 @@ jobs:
           cache-version: 1
       - name: Run tests with coverage
         run: bundle exec rake test
+      - name: Generate RBS files from annotations
+        run: bundle exec rake rbs:generate
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: always()

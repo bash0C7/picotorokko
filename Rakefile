@@ -70,6 +70,35 @@ task :steep do
   puts "✓ Type check passed!"
 end
 
+# ============================================================================
+# DOCUMENTATION TASKS (Priority 2: RBS Documentation Generation)
+# ============================================================================
+
+namespace :doc do
+  desc "Verify RBS documentation files are generated and ready"
+  task generate: :rbs do
+    puts ""
+    puts "✓ RBS documentation files ready in sig/generated/"
+    puts ""
+    puts "📚 Documentation Generation Summary:"
+    puts "  Phase 2: RubyDoc.info (automatic on gem publish)"
+    puts "  Phase 3: Local RBS validation via rbs-inline"
+    puts ""
+    puts "  Generated:"
+    puts "  - RBS files: sig/generated/*.rbs"
+    puts "  - Type checking: bundle exec steep check"
+    puts ""
+    puts "  Publishing:"
+    puts "  - RubyDoc.info auto-generates docs from RBS files"
+    puts "  - URL: https://rubydoc.info/gems/picotorokko/"
+    puts ""
+    puts "  Development:"
+    puts "  - Edit rbs-inline annotations in lib/**/*.rb"
+    puts "  - Run: bundle exec rake rbs:generate"
+    puts "  - Verify: bundle exec steep check"
+  end
+end
+
 # 開発時のデフォルトタスク：全テスト（main suite + device suite）実行
 # この設定は下の DEFAULT & CONVENIENCE TASKS セクションで上書きされます
 

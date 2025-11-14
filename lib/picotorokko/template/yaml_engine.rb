@@ -7,6 +7,7 @@ module Picotorokko
     #
     # 注意: Psych の制限により、置換時にコメントは失われます
     class YamlTemplateEngine
+      # @rbs (String, Hash[Symbol, untyped]) -> void
       def initialize(template_path, variables)
         @template_path = template_path
         @variables = variables
@@ -15,6 +16,7 @@ module Picotorokko
       # テンプレートをレンダリングして結果のYAML文字列を返す
       #
       # @return [String] レンダリング後のYAML
+      # @rbs () -> String
       def render
         # YAMLファイルを読み込み
         yaml_data = YAML.load_file(@template_path)
@@ -33,6 +35,7 @@ module Picotorokko
       # @param obj オブジェクト（Hash, Array, String など）
       # @param variables [Hash] 置換変数
       # @return 置換後のオブジェクト
+      # @rbs (untyped, Hash[Symbol, untyped]) -> untyped
       def replace_placeholders!(obj, variables)
         case obj
         when Hash
@@ -51,6 +54,7 @@ module Picotorokko
       # @param str [String] 対象文字列
       # @param variables [Hash] 置換変数
       # @return [String] 置換後の文字列
+      # @rbs (String, Hash[Symbol, untyped]) -> String
       def replace_string_placeholder(str, variables)
         # __PTRK_TEMPLATE_VAR_NAME__ パターンをマッチ
         if str.match?(/\A__PTRK_TEMPLATE_\w+__\z/)

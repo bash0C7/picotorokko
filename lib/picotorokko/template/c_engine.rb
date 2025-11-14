@@ -4,6 +4,7 @@ module Picotorokko
     # シンプルな文字列置換アプローチを使用
     # TEMPLATE_* パターンの識別子を変数値で置換する
     class CTemplateEngine
+      # @rbs (String, Hash[Symbol, untyped]) -> void
       def initialize(template_path, variables)
         @template_path = template_path
         @variables = variables
@@ -12,6 +13,7 @@ module Picotorokko
       # テンプレートをレンダリングして結果のCコード文字列を返す
       #
       # @return [String] レンダリング後のCコード
+      # @rbs () -> String
       def render
         source = File.read(@template_path, encoding: "UTF-8")
 

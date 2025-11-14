@@ -7,6 +7,7 @@ module Picotorokko
     # .erb ファイルの場合は ERB を処理
     # その他のファイルの場合は {{VARIABLE_NAME}} プレースホルダを置換
     class StringTemplateEngine
+      # @rbs (String, Hash[Symbol, untyped]) -> void
       def initialize(template_path, variables)
         @template_path = template_path
         @variables = variables
@@ -15,6 +16,7 @@ module Picotorokko
       # テンプレートをレンダリングして結果の文字列を返す
       #
       # @return [String] レンダリング後の文字列
+      # @rbs () -> String
       def render
         source = File.read(@template_path, encoding: "UTF-8")
 
@@ -28,6 +30,7 @@ module Picotorokko
 
       private
 
+      # @rbs (String) -> String
       def render_erb(source)
         context_obj = Object.new
         @variables.each do |key, value|
@@ -38,6 +41,7 @@ module Picotorokko
         erb.result(context_obj.instance_eval { binding })
       end
 
+      # @rbs (String) -> String
       def render_placeholders(source)
         # {{VAR_NAME}} パターンのプレースホルダを置換
         @variables.each do |key, value|

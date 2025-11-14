@@ -15,6 +15,7 @@ module Picotorokko
     # @param working_dir [String, nil] 実行時のワーキングディレクトリ
     # @return [Array<String>] [stdout, stderr]
     # @raise [RuntimeError] コマンド失敗時（exit code != 0）
+    # @rbs (String, String | nil) -> [String, String]
     def execute(command, working_dir = nil)
       raise NotImplementedError
     end
@@ -24,6 +25,7 @@ module Picotorokko
   class ProductionExecutor
     include Executor
 
+    # @rbs (String, String | nil) -> [String, String]
     def execute(command, working_dir = nil)
       execute_block = lambda do
         stdout, stderr, status = Open3.capture3(command)
@@ -41,11 +43,13 @@ module Picotorokko
   class MockExecutor
     include Executor
 
+    # @rbs () -> void
     def initialize
       @calls = []
       @results = {} # command => [stdout, stderr, should_fail]
     end
 
+    # @rbs (String, String | nil) -> [String, String]
     def execute(command, working_dir = nil)
       @calls << { command: command, working_dir: working_dir }
 
@@ -68,6 +72,7 @@ module Picotorokko
     # @param stdout [String] 標準出力
     # @param stderr [String] 標準エラー
     # @param fail [Boolean] 失敗を模擬するか
+    # @rbs (String, stdout: String, stderr: String, fail: bool) -> void
     def set_result(command, stdout: "", stderr: "", fail: false)
       @results[command] = [stdout, stderr, fail]
     end
