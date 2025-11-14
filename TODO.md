@@ -119,17 +119,56 @@ All tests passing (197 total). Covered 88.69% line coverage.
 
 **Goal**: Generate comprehensive documentation from RBS type definitions
 
-**Strategy**: Rely on RubyDoc.info for Phase 2 (zero config). Evaluate rbs-doc/Steep docs for Phase 3.
+**Strategy**: Rely on RubyDoc.info for Phase 2 (zero config). Local generation with YARD for Phase 3.
 
-**Status**: ✅ Phase 2 COMPLETE (Session 3)
+**Status**: ✅ Phase 2 & 3 COMPLETE (Session 3)
+
+**Phase 2 Completion**:
 - README.md updated with RubyDoc.info links and documentation section
-- rake doc:generate task added (Phase 2 & 3 support)
 - .rbs files ready in sig/generated/ for gem publication
 - Release workflow (release.yml) ready for publication
+- gemspec metadata: documentation_uri set
 
-**Next Step (Phase 3)**: Evaluate rbs-doc or Steep RBS docs maturity for local generation support
+**Phase 3 Implementation** (Session 3 continued):
+- YARD gem added to development dependencies (v0.9.x)
+- rake doc:generate task fully implemented:
+  * Configured YARD::Rake::YardocTask with lib/**/*.rb + exe files
+  * Output to doc/ directory (ignored by git)
+  * README.md as main documentation
+  * Markdown markup support
+  * Error handling for missing YARD installation
+- YARD verification: **66.28% documented**
+  * 26 files, 10 modules, 27 classes
+  * 109 methods (66 documented)
+  * HTML documentation generation working
+  * Local preview: `open doc/index.html`
 
-**Reference**: [`.claude/docs/documentation-generation.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/documentation-generation.md)
+**Documentation Flow**:
+1. **Development (local)**: `bundle exec rake doc:generate`
+   - Generates HTML docs via YARD
+   - Preview in browser: `doc/index.html`
+2. **Publishing**: gem push to RubyGems.org
+   - RubyDoc.info auto-detects .rbs files + YARD docs
+   - Auto-generates: https://rubydoc.info/gems/picotorokko/
+3. **Type Checking**: `bundle exec steep check`
+   - rbs-inline annotations validated by Steep
+   - Zero errors in production code
+
+**Design Insight** (Session 3 Discovery):
+- rbs-doc gem does NOT EXIST (investigated during Phase 3)
+- YARD is mature, industry-standard, RubyGems-integrated
+- rbs-inline (type annotations) + YARD (documentation) complementary design
+- @rbs comments for Steep validation
+- YARD comments for HTML documentation
+
+**Next Step (Phase 4)**: CI Integration & YARD Comment Enhancement
+- Add doc generation to GitHub Actions
+- Expand YARD comments for higher coverage (currently 66.28%)
+- Optional: Deploy docs to GitHub Pages
+
+**References**:
+- Investigation: [`.claude/docs/documentation-generation.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/documentation-generation.md) (updated with Phase 3 findings)
+- Generated docs: `doc/` (auto-generated, not in git)
 
 ---
 
@@ -139,24 +178,48 @@ All tests passing (197 total). Covered 88.69% line coverage.
 
 **Strategy**: Integrate documentation checks into dev workflow (CLAUDE.md + Quality Gates). Escalate to Claude Skill (Phase 2) and CI validation (Phase 4) later.
 
-**Status**: ✅ Phase 1 COMPLETE (Session 3 verification complete)
+**Status**:
+- ✅ Phase 1 COMPLETE: Documentation workflow integrated
+- ✅ Phase 2 COMPLETE (Session 3): Claude Skill implemented
+
+**Phase 1 Completion** (Session 3 verification):
 - CLAUDE.md: Documentation Check integrated into before-commit workflow
 - tdd-rubocop-cycle.md: Phase 4 includes documentation verification
 - testing-guidelines.md: Quality Gates includes documentation update requirement
 - documentation-structure.md: Complete file change → docs mapping table
-- TODO.md: Quality Gates updated with documentation requirements
+
+**Phase 2 Implementation** (Session 3 continued):
+- Claude Skill: `.claude/skills/documentation-sync/` created
+  * README.md: Skill overview, usage examples, integration
+  * sync-documentation.md: Complete implementation guide with:
+    - File change detection algorithm
+    - Mapping table integration
+    - Checklist generation logic
+    - Multiple scenario examples (command changes, template changes, test-only)
+    - Error handling and success criteria
+- Automated `git diff` analysis to detect changed files
+- Suggest corresponding documentation updates using mapping table
+- Generate documentation update checklist with priorities (MUST/SHOULD/OPTIONAL)
 
 **Available Documentation Mapping**: `.claude/docs/documentation-structure.md` (lines 201-256)
 - Quick reference table: Trigger files → Target documents
 - Priority levels: MUST / SHOULD / OPTIONAL
 - Implementation examples with actionable steps
 
-**Next Phase (Phase 2)**: Claude Skill for Documentation Sync
-- Automated `git diff` analysis to detect changed files
-- Suggest corresponding documentation updates
-- Generate documentation update checklist
+**Phase 2 Features**:
+- Input: Optional (detect all changes, or specific file/branch)
+- Output: Structured markdown with prioritized checklist
+- Integration: Fits into CLAUDE.md "Before every commit" workflow
+- Special cases: Type system checks, test-only changes, multiple categories
 
-**Reference**: [`.claude/docs/documentation-automation-design.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/documentation-automation-design.md)
+**Next Phase (Phase 3)**: Git post-commit Hook
+- Non-blocking warning after commit
+- Remind developer if docs weren't updated
+- Reference Phase 2 Skill for analysis
+
+**References**:
+- Design: [`.claude/docs/documentation-automation-design.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/documentation-automation-design.md)
+- Skill: `.claude/skills/documentation-sync/`
 
 ---
 
