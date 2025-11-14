@@ -28,6 +28,7 @@ module Picotorokko
 
       private
 
+      # @rbs (String) -> String
       def prepare_and_validate_directory(name)
         mrbgem_dir = File.join(Dir.pwd, "mrbgems", name)
         raise "Error: Directory already exists: #{mrbgem_dir}" if Dir.exist?(mrbgem_dir)
@@ -39,6 +40,7 @@ module Picotorokko
         mrbgem_dir
       end
 
+      # @rbs (String) -> Hash[Symbol, String]
       def prepare_template_context(name)
         c_prefix = name.downcase
         author_name = options[:author] || `git config user.name`.strip || "Your Name"
@@ -51,6 +53,7 @@ module Picotorokko
         }
       end
 
+      # @rbs (String, Hash[Symbol, String]) -> void
       def render_template_files(mrbgem_dir, context)
         templates_dir = templates_directory
         template_files = build_template_file_map(mrbgem_dir, context[:c_prefix])
@@ -63,12 +66,14 @@ module Picotorokko
         end
       end
 
+      # @rbs (String, String, Hash[Symbol, String]) -> void
       def render_single_template(template_path, output_path, variables)
         rendered_content = Picotorokko::Template::Engine.render(template_path, variables)
         File.write(output_path, rendered_content, encoding: "UTF-8")
         puts "✓ Created: #{File.basename(output_path)}"
       end
 
+      # @rbs (String, String) -> Hash[String, String]
       def build_template_file_map(mrbgem_dir, c_prefix)
         {
           "mrbgem.rake.erb" => File.join(mrbgem_dir, "mrbgem.rake"),
@@ -78,11 +83,13 @@ module Picotorokko
         }
       end
 
+      # @rbs () -> String
       def templates_directory
         gem_root = File.expand_path("../../../", __dir__)
         File.join(gem_root, "lib", "picotorokko", "templates", "mrbgem_app")
       end
 
+      # @rbs (String, String) -> void
       def print_success_message(name, c_prefix)
         puts "\n=== mrbgem Template Generated ==="
         puts "Location: mrbgems/#{name}/"
