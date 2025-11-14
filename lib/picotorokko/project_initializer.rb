@@ -50,6 +50,9 @@ module Picotorokko
     end
 
     # @rbs () -> void
+    # Create default environment with latest repository versions
+    # Automatically called during project initialization
+    # Network errors are caught and logged without blocking initialization
     def setup_default_environment
       env_command = Picotorokko::Commands::Env.new
       repos_info = env_command.fetch_latest_repos

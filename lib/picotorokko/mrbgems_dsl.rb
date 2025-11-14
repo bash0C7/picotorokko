@@ -2,6 +2,7 @@ module Picotorokko
   # MrbgemsDSL: Parser for Mrbgemfile with Ruby DSL evaluation
   # Converts Mrbgemfile syntax into structured gem specifications
   class MrbgemsDSL
+    # @rbs (String, String) -> void
     def initialize(dsl_code, config_name)
       @dsl_code = dsl_code
       @config_name = config_name
@@ -9,21 +10,23 @@ module Picotorokko
       @build_config_files = []
     end
 
+    # @rbs () -> Array[Hash[Symbol, (String | Symbol | nil)]]
     def gems
       evaluate_dsl
       @gems
     end
 
+    # @rbs () { (self) -> void } -> void
     def mrbgems
       yield self
     end
 
-    # conf メソッドエイリアス（conf.gem を使用可能にする）
+    # @rbs () -> self
     def conf
       self
     end
 
-    # gem メソッド：単一の mrbgem を追加
+    # @rbs (**Hash[Symbol, String]) -> void
     def gem(**params)
       source_type, source = detect_source_type(params)
       gem_spec = {
@@ -36,7 +39,7 @@ module Picotorokko
       @gems << gem_spec
     end
 
-    # build_config_files メソッド：条件分岐用
+    # @rbs () -> Array[String]
     def build_config_files
       [@config_name]
     end
