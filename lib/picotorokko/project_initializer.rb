@@ -42,6 +42,21 @@ module Picotorokko
       print_success_message
     end
 
+    # @rbs () -> void
+    def setup_default_environment
+      env_command = Picotorokko::Commands::Env.new
+      repos_info = env_command.fetch_latest_repos
+
+      env_name = "default"
+      Picotorokko::Env.set_environment(
+        env_name,
+        repos_info["R2P2-ESP32"],
+        repos_info["picoruby-esp32"],
+        repos_info["picoruby"],
+        notes: "Auto-generated default environment during project initialization"
+      )
+    end
+
     private
 
     # @rbs (String | nil) -> String
