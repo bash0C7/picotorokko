@@ -379,6 +379,156 @@ ptrk init
 
 ---
 
+### 📦 Mrbgemfile Configuration
+
+#### Overview
+
+The `Mrbgemfile` is a Ruby DSL (Domain-Specific Language) for declaring mrbgem dependencies in your PicoRuby project. It allows you to specify which mrbgems to include in your build, with support for different sources (GitHub, local paths, core gems), branches, commit references, and conditional includes based on target platform.
+
+**Location**: `<project-root>/Mrbgemfile`
+
+**Purpose**: Automatically inject gem declarations into MRuby build configuration files during the build process
+
+#### Syntax
+
+The `Mrbgemfile` uses Ruby syntax with a block-based DSL:
+
+```ruby
+mrbgems do |conf|
+  # Gem declarations go here
+end
+```
+
+#### Gem Declaration Examples
+
+**GitHub gems** (org/repo format):
+```ruby
+mrbgems do |conf|
+  # With branch specification
+  conf.gem github: "picoruby/picoruby-json", branch: "main"
+
+  # With commit hash reference
+  conf.gem github: "user/custom-gem", ref: "abc1234"
+
+  # Latest main branch (implicit)
+  conf.gem github: "user/simple-gem"
+end
+```
+
+**Core mrbgems**:
+```ruby
+mrbgems do |conf|
+  conf.gem core: "sprintf"
+  conf.gem core: "fiber"
+end
+```
+
+**Local gems** (path-based):
+```ruby
+mrbgems do |conf|
+  conf.gem path: "./local-gems/my-sensor"
+  conf.gem path: "../shared-gems/helpers"
+end
+```
+
+**Git repositories** (arbitrary URLs):
+```ruby
+mrbgems do |conf|
+  conf.gem git: "https://gitlab.com/custom/gem.git", branch: "develop"
+end
+```
+
+#### Conditional Evaluation
+
+Gem includes can be conditional based on the build target:
+
+```ruby
+mrbgems do |conf|
+  # Always included
+  conf.gem core: "sprintf"
+
+  # Only included for ESP32 builds
+  conf.gem github: "picoruby/picoruby-esp32-wifi" if conf.build_config_files.include?("xtensa-esp")
+
+  # Only included for non-ESP32 builds
+  conf.gem github: "picoruby/generic-wifi" unless conf.build_config_files.include?("xtensa-esp")
+
+  # Platform-specific conditional
+  if conf.build_config_files.include?("rp2040")
+    conf.gem github: "picoruby/rp2040-sdk"
+  end
+end
+```
+
+The `conf.build_config_files` method returns an array containing the current build target name (e.g., `["xtensa-esp"]`, `["rp2040"]`), allowing conditional logic based on the target platform.
+
+#### Supported Gem Parameters
+
+| Parameter | Required | Type | Example | Notes |
+|-----------|----------|------|---------|-------|
+| `github` | * | String | `"org/repo"` | GitHub org/repo format |
+| `core` | * | String | `"sprintf"` | Core mrbgem name |
+| `path` | * | String | `"./local"` | Relative or absolute path |
+| `git` | * | String | `"https://..."` | Full Git repository URL |
+| `branch` | Optional | String | `"main"` | Git branch name (only with github/git) |
+| `ref` | Optional | String | `"abc1234"` | Commit hash (overrides branch) |
+
+*: One of these must be specified (mutually exclusive)
+
+#### How It Works
+
+1. **Parse**: The `Mrbgemfile` is evaluated as Ruby code with access to a special DSL context
+2. **Conditional Evaluation**: Conditional statements (if/unless) are evaluated based on build target
+3. **Collect Gems**: All `conf.gem` calls are collected into a list
+4. **Application**: During `ptrk device build`, the gem list is applied to MRuby `build_config/*.rb` files
+5. **Injection**: Gem declarations are injected between markers in the build configuration:
+   - `# === BEGIN Mrbgemfile generated ===`
+   - `# === END Mrbgemfile generated ===`
+
+#### Build Configuration Integration
+
+The Mrbgemfile is automatically applied when you run:
+
+```bash
+ptrk device build
+```
+
+This command:
+1. Reads your `Mrbgemfile`
+2. Evaluates it with the current build target context
+3. Injects the resulting gems into `build/current/R2P2-ESP32/build_config/*.rb` files
+4. Builds the firmware with the specified gems included
+
+#### Example: Complete Mrbgemfile
+
+```ruby
+# PicoRuby application gem dependencies
+mrbgems do |conf|
+  # Core utilities (always included)
+  conf.gem core: "sprintf"
+  conf.gem core: "fiber"
+
+  # Essential libraries
+  conf.gem github: "picoruby/picoruby-json", branch: "main"
+  conf.gem github: "picoruby/picoruby-yaml"
+
+  # Platform-specific I/O
+  if conf.build_config_files.include?("xtensa-esp")
+    conf.gem github: "picoruby/picoruby-esp32-nvs"
+    conf.gem github: "picoruby/picoruby-esp32-gpio"
+    conf.gem github: "ksbmyk/picoruby-ws2812", branch: "main"
+  elsif conf.build_config_files.include?("rp2040")
+    conf.gem github: "picoruby/picoruby-rp2040-gpio"
+    conf.gem github: "user/custom-rp2040-lib"
+  end
+
+  # Custom local gem
+  conf.gem path: "./mrbgems/app"
+end
+```
+
+---
+
 ### 🔍 Environment Inspection Commands
 
 #### `ptrk env show`

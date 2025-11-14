@@ -233,11 +233,31 @@ module Picotorokko
       # @rbs () -> void
       desc "latest", "Fetch latest commit versions and create environment definition"
       def latest
+        puts "Fetching latest commits from GitHub..."
+        repos_info = fetch_latest_repos
+
+        # latest環境として保存
+        env_name = "latest"
+        puts "\nSaving as environment definition '#{env_name}' in .picoruby-env.yml..."
+
+        Picotorokko::Env.set_environment(
+          env_name,
+          repos_info["R2P2-ESP32"],
+          repos_info["picoruby-esp32"],
+          repos_info["picoruby"],
+          notes: "Auto-generated latest versions"
+        )
+
+        puts "✓ Environment definition '#{env_name}' created successfully in .picoruby-env.yml"
+        puts "\nNext steps:"
+        puts "  1. ptrk cache fetch #{env_name}  # Fetch repositories to cache"
+        puts "  2. ptrk build setup #{env_name}  # Setup build environment"
+      end
+
+      # Fetch latest commits from all repos (reusable method for Init)
+      def fetch_latest_repos
         require "tmpdir"
 
-        puts "Fetching latest commits from GitHub..."
-
-        # 各リポジトリの最新コミットを取得
         repos_info = {}
 
         Picotorokko::Env::REPOS.each do |repo_name, repo_url|
@@ -274,22 +294,7 @@ module Picotorokko
           end
         end
 
-        # latest環境として保存
-        env_name = "latest"
-        puts "\nSaving as environment definition '#{env_name}' in .picoruby-env.yml..."
-
-        Picotorokko::Env.set_environment(
-          env_name,
-          repos_info["R2P2-ESP32"],
-          repos_info["picoruby-esp32"],
-          repos_info["picoruby"],
-          notes: "Auto-generated latest versions"
-        )
-
-        puts "✓ Environment definition '#{env_name}' created successfully in .picoruby-env.yml"
-        puts "\nNext steps:"
-        puts "  1. ptrk cache fetch #{env_name}  # Fetch repositories to cache"
-        puts "  2. ptrk build setup #{env_name}  # Setup build environment"
+        repos_info
       end
 
       private

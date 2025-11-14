@@ -104,25 +104,64 @@ ptrk mrbgems generate MyDisplay --author "Alice"
 
 ⚠️ **Important**: Always specify PROJECT_NAME. Running `ptrk init` without a name will initialize the current directory, not create a subdirectory.
 
-#### 2. Create a new environment
+#### 2. Declare gem dependencies (Mrbgemfile)
 
-```bash
-ptrk env set development --commit abc1234
+Create a `Mrbgemfile` in your project root to declare mrbgem dependencies:
+
+```ruby
+# Mrbgemfile - Declare mrbgem dependencies for your project
+mrbgems do |conf|
+  # Core mrbgems (always included)
+  conf.gem core: "sprintf"
+  conf.gem core: "fiber"
+
+  # Essential libraries from GitHub
+  conf.gem github: "picoruby/picoruby-json", branch: "main"
+  conf.gem github: "picoruby/picoruby-yaml"
+
+  # Platform-specific gems based on build target
+  if conf.build_config_files.include?("xtensa-esp")
+    conf.gem github: "picoruby/picoruby-esp32-gpio"
+    conf.gem github: "picoruby/picoruby-esp32-nvs"
+  elsif conf.build_config_files.include?("rp2040")
+    conf.gem github: "picoruby/picoruby-rp2040-gpio"
+  end
+
+  # Local custom gems
+  conf.gem path: "./mrbgems/app"
+end
 ```
 
-#### 3. List all environments
+The `Mrbgemfile` is automatically applied when you build your project. It supports:
+- **GitHub gems**: `github: "org/repo"` with optional `branch:` or `ref:` parameters
+- **Core mrbgems**: `core: "sprintf"`
+- **Local paths**: `path: "./local-gems/my-gem"`
+- **Git URLs**: `git: "https://..."` with `branch:` or `ref:`
+- **Conditional logic**: Include gems based on build target with `if/unless`
+
+For complete Mrbgemfile documentation, see [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md) and [SPEC.md](SPEC.md#-mrbgemfile-configuration).
+
+#### 3. Create a new environment
+
+```bash
+ptrk env set development
+```
+
+This automatically fetches the latest versions of all repositories and stores them in `.picoruby-env.yml`.
+
+#### 4. List all environments
 
 ```bash
 ptrk env list
 ```
 
-#### 4. View environment details
+#### 5. View environment details
 
 ```bash
 ptrk env show development
 ```
 
-#### 5. Build, flash, and monitor
+#### 6. Build, flash, and monitor
 
 ```bash
 ptrk device flash --env development
@@ -173,6 +212,33 @@ ptrk device build --env development
 - `ptrk mrbgems generate [NAME]` - Generate application-specific mrbgem template (default: App)
   - Creates `mrbgems/{NAME}/` with Ruby code and C extension template
   - Use `--author` option to specify author name: `ptrk mrbgems generate --author "Your Name"`
+
+#### Mrbgemfile Configuration
+
+The `Mrbgemfile` at your project root declares mrbgem dependencies using a Ruby DSL. It's automatically applied during `ptrk device build`.
+
+**Gem Sources**:
+- `github: "org/repo"` — GitHub repository (with optional `branch:` or `ref:`)
+- `core: "sprintf"` — Core mrbgem from mruby
+- `path: "./local"` — Local path (relative or absolute)
+- `git: "https://..."` — Custom Git URL (with optional `branch:` or `ref:`)
+
+**Example**:
+```ruby
+mrbgems do |conf|
+  conf.gem core: "sprintf"
+  conf.gem github: "picoruby/picoruby-json", branch: "main"
+
+  # Platform-specific: only for ESP32
+  if conf.build_config_files.include?("xtensa-esp")
+    conf.gem github: "picoruby/picoruby-esp32-gpio"
+  end
+
+  conf.gem path: "./mrbgems/app"
+end
+```
+
+For complete documentation and examples, see [SPEC.md#-mrbgemfile-configuration](SPEC.md#-mrbgemfile-configuration) and [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md).
 
 #### PicoRuby RuboCop Configuration
 

@@ -52,6 +52,9 @@ module Picotorokko
         actual_env = resolve_env_name(env_name)
         validate_and_get_r2p2_path(actual_env)
 
+        # Apply Mrbgemfile if it exists
+        apply_mrbgemfile(actual_env)
+
         puts "Building: #{actual_env}"
         delegate_to_r2p2("build", env_name)
         puts "\u2713 Build completed"
@@ -146,6 +149,34 @@ module Picotorokko
         end
 
         nil
+      end
+
+      # Apply Mrbgemfile if it exists
+      # Reads Mrbgemfile and applies mrbgems to build_config files
+      def apply_mrbgemfile(_env_name)
+        mrbgemfile_path = File.join(Env.project_root, "Mrbgemfile")
+        return unless File.exist?(mrbgemfile_path)
+
+        mrbgemfile_content = File.read(mrbgemfile_path)
+        apply_to_build_configs(mrbgemfile_content)
+      end
+
+      # Apply mrbgems to all build_config/*.rb files
+      def apply_to_build_configs(mrbgemfile_content)
+        build_config_dir = File.join(Env.project_root, "build_config")
+        return unless Dir.exist?(build_config_dir)
+
+        Dir.glob(File.join(build_config_dir, "*.rb")).each do |config_file|
+          config_name = File.basename(config_file, ".rb")
+          dsl = MrbgemsDSL.new(mrbgemfile_content, config_name)
+          gems = dsl.gems
+
+          next if gems.empty?
+
+          content = File.read(config_file)
+          modified = BuildConfigApplier.apply(content, gems)
+          File.write(config_file, modified)
+        end
       end
 
       # 利用可能なR2P2-ESP32タスクを表示

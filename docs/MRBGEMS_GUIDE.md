@@ -275,8 +275,108 @@ ptrk env patch_export development  # Saves changes to patch/ directory
 ptrk env set development           # Clean rebuild with patches
 ```
 
+## Declaring Gems in Mrbgemfile
+
+After creating your custom mrbgems and installing external dependencies, declare them in your project's `Mrbgemfile` to include them in the build.
+
+### Adding Custom Gems to Mrbgemfile
+
+```ruby
+# Mrbgemfile - Declare mrbgem dependencies
+mrbgems do |conf|
+  # Your custom application-specific gems (created with ptrk mrbgems generate)
+  conf.gem path: "./mrbgems/app"
+  conf.gem path: "./mrbgems/Sensor"
+  conf.gem path: "./mrbgems/Motor"
+
+  # External mrbgems from GitHub
+  conf.gem github: "picoruby/picoruby-json", branch: "main"
+  conf.gem github: "picoruby/picoruby-yaml"
+
+  # Core mrbgems
+  conf.gem core: "sprintf"
+end
+```
+
+### Complete Example with Custom and External Gems
+
+```ruby
+# Mrbgemfile - Application with both custom and external gems
+mrbgems do |conf|
+  # ========== Core Utilities ==========
+  conf.gem core: "sprintf"
+  conf.gem core: "fiber"
+
+  # ========== Data Format Support ==========
+  conf.gem github: "picoruby/picoruby-json", branch: "main"
+  conf.gem github: "picoruby/picoruby-yaml"
+
+  # ========== Hardware Abstraction (Platform-Specific) ==========
+  if conf.build_config_files.include?("xtensa-esp")
+    # ESP32-specific hardware gems
+    conf.gem github: "picoruby/picoruby-esp32-gpio"
+    conf.gem github: "picoruby/picoruby-esp32-nvs"
+    conf.gem github: "picoruby/picoruby-esp32-wifi"
+    conf.gem github: "picoruby/picoruby-esp32-i2c"
+  elsif conf.build_config_files.include?("rp2040")
+    # RP2040-specific hardware gems
+    conf.gem github: "picoruby/picoruby-rp2040-gpio"
+    conf.gem github: "picoruby/picoruby-rp2040-spi"
+  end
+
+  # ========== Custom Application Gems ==========
+  # These are created with: ptrk mrbgems generate NAME
+  conf.gem path: "./mrbgems/app"
+  conf.gem path: "./mrbgems/Sensor"
+  conf.gem path: "./mrbgems/Motor"
+end
+```
+
+### Workflow
+
+1. **Generate custom gems** (as shown in this guide):
+   ```bash
+   ptrk mrbgems generate Sensor
+   ptrk mrbgems generate Motor
+   ```
+
+2. **Declare in Mrbgemfile**:
+   ```ruby
+   mrbgems do |conf|
+     conf.gem path: "./mrbgems/Sensor"
+     conf.gem path: "./mrbgems/Motor"
+   end
+   ```
+
+3. **Build and test**:
+   ```bash
+   ptrk device build
+   ptrk device flash
+   ```
+
+## Integration: From Development to Build
+
+The complete workflow combines custom mrbgem development with Mrbgemfile declaration:
+
+```
+1. ptrk mrbgems generate Sensor  → Create custom mrbgem template
+   ↓
+2. Edit mrbgems/Sensor/src/sensor.c  → Implement functionality
+   ↓
+3. Add to Mrbgemfile  → Declare in build
+   conf.gem path: "./mrbgems/Sensor"
+   ↓
+4. ptrk device build  → Compile with all gems
+   ↓
+5. ptrk device flash  → Deploy to ESP32
+   ↓
+6. Use in Ruby code   → App.sensor_read() etc.
+```
+
 ## Reference
 
 - [PicoRuby mrbgems](https://github.com/picoruby/picoruby/tree/master/mrbgems)
 - [mrubyc API](https://github.com/picoruby/picoruby/tree/master/mrbgems/picoruby-mrubyc/lib/mrubyc)
 - [picoruby-irq Example](https://github.com/picoruby/picoruby/tree/master/mrbgems/picoruby-irq)
+- [Mrbgemfile Configuration Guide](../docs/MRBGEMS_GUIDE.md) — Comprehensive Mrbgemfile documentation
+- [SPEC.md#-mrbgemfile-configuration](../SPEC.md#-mrbgemfile-configuration) — Complete Mrbgemfile reference

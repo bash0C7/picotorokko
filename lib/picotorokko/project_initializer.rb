@@ -39,7 +39,32 @@ module Picotorokko
       # Generate mrbgems if requested
       generate_mrbgems
 
+      # Setup default environment with latest repo versions
+      begin
+        setup_default_environment
+      rescue StandardError => e
+        warn("Warning: Failed to setup default environment: #{e.message}")
+      end
+
       print_success_message
+    end
+
+    # @rbs () -> void
+    # Create default environment with latest repository versions
+    # Automatically called during project initialization
+    # Network errors are caught and logged without blocking initialization
+    def setup_default_environment
+      env_command = Picotorokko::Commands::Env.new
+      repos_info = env_command.fetch_latest_repos
+
+      env_name = "default"
+      Picotorokko::Env.set_environment(
+        env_name,
+        repos_info["R2P2-ESP32"],
+        repos_info["picoruby-esp32"],
+        repos_info["picoruby"],
+        notes: "Auto-generated default environment during project initialization"
+      )
     end
 
     private

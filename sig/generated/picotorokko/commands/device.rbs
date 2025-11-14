@@ -33,6 +33,13 @@ module Picotorokko
       # --env option を args から抽出
       def parse_env_from_args: (untyped args) -> untyped
 
+      # Apply Mrbgemfile if it exists
+      # Reads Mrbgemfile and applies mrbgems to build_config files
+      def apply_mrbgemfile: (untyped _env_name) -> untyped
+
+      # Apply mrbgems to all build_config/*.rb files
+      def apply_to_build_configs: (untyped mrbgemfile_content) -> untyped
+
       # 利用可能なR2P2-ESP32タスクを表示
       def show_available_tasks: (untyped env_name) -> untyped
 
