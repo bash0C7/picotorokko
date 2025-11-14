@@ -25,197 +25,45 @@ rake dev          # Development: RuboCop auto-fix + tests + coverage
 
 ---
 
-## 🚨 Urgent Tasks (Highest Priority)
-
-### [TODO-FEATURE-MRBGEMFILE] Implement Mrbgemfile gem installation feature
-
-**Status**: ✅ COMPLETE (Full implementation: Phase 1-3)
-
-**Implementation Summary**:
-- ✅ Phase 1: MrbgemsDSL parser (`lib/picotorokko/mrbgems_dsl.rb`)
-  * Ruby DSL evaluation matching `conf.gem` syntax
-  * Support for git, path, core sources
-  * Branch/ref/cmake parameters
-  * Comprehensive test coverage: `test/picotorokko/mrbgems_dsl_test.rb`
-
-- ✅ Phase 1: BuildConfigApplier & CMakeApplier
-  * Integrated in DSL workflow
-  * Mechanical scanning for CMAKE insertion
-  * Error handling: syntax errors, missing files, duplicates
-
-- ✅ Phase 1: Device#build integration
-  * `ptrk mrbgems generate` command (`lib/picotorokko/commands/mrbgems.rb`)
-  * Template scaffolding for custom mrbgems
-
-- ✅ Phase 2: ptrk init auto-fetch
-  * Default environment setup with R2P2-ESP32 latest
-  * Automatic build directory initialization
-  * Ready for immediate `ptrk device build`
-
-- ✅ Phase 3: Documentation
-  * SPEC.md updated with Mrbgemfile examples
-  * Commands documented in README.md
-  * Support for mrbgems workflow
-
-**Status**: All phases complete, tests passing (221 tests), integrated into CI
-
----
-
-## Completed Work
-
-### ✅ ptrk init Command (Complete)
-
-The `ptrk init` command is fully implemented and documented. See:
-- **README.md**: Quick start guide and options reference (lines 62-157)
-- **SPEC.md**: Complete specification with examples
-- **docs/PROJECT_INITIALIZATION_GUIDE.md**: Comprehensive user guide
-- **Features**: Project initialization, --with-ci, --with-mrbgem, --author, --path options
-
-All tests passing (197 total). Covered 88.69% line coverage.
-
-### ✅ Completed Infrastructure
-
-- ✅ Executor abstraction (ProductionExecutor, MockExecutor)
-- ✅ AST-based template engines (Ruby, YAML, C)
-- ✅ Device test framework integration
-- ✅ Command name refactoring (pra → picotorokko)
-- ✅ Rake task simplification (CI vs development)
-- ✅ Documentation structure cleanup
-
----
-
 ## Planned Features
 
 ### 🎯 Priority 1: Type System Integration (rbs-inline + Steep)
 
-**Goal**: Add type annotations and static type checking to improve code quality and IDE support
+**Status**: ✅ COMPLETE
 
-**Status**: Phase 2 complete! Full infrastructure + annotations + RBS generation + Steep type checking:
-- ✅ Dependencies: rbs ~> 3.4, steep ~> 1.8, rbs-inline ~> 0.11 in gemspec
-- ✅ Steepfile with lib and test targets
-- ✅ sig/ directory structure with generated/ subdir
-- ✅ Rake tasks: `rake rbs:generate`, `rake steep`
-- ✅ Comprehensive annotations across all commands (25+ methods)
-- ✅ RBS Collection with 54 external gems
-- ✅ 5 compiled .rbs files (309 lines) from source annotations
-- ✅ Steep type checking: 0 errors on picotorokko code ✓
+All components implemented and documented:
+- Type annotations in all commands
+- .rbs files generated from rbs-inline in sig/generated/
+- Steep type checking working (dev tool only, not in CI)
+- RubyDoc.info ready for gem publication
 
-**Reference Documentation**:
-- **Investigation**: [`.claude/docs/rbs-inline-research.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/rbs-inline-research.md)
-- **Strategy**: [`.claude/docs/type-system-strategy.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/type-system-strategy.md)
-- **Phase 2+**: [`.claude/docs/type-annotation-guide.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/type-annotation-guide.md)
-- **TDD Workflow**: [`.claude/docs/t-wada-style-tdd-guide.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/t-wada-style-tdd-guide.md)
+**See**: README.md "Documentation" section, SPEC.md "Type System & Type Annotations", `.claude/docs/type-annotation-guide.md`
 
 ---
 
 ### 📚 Priority 2: Gem Documentation Generation
 
-**Goal**: Generate comprehensive documentation from RBS type definitions
+**Status**: ✅ COMPLETE
 
-**Strategy**: Rely on RubyDoc.info for Phase 2 (zero config). Local generation with YARD for Phase 3.
+Documentation strategy implemented:
+- rbs-inline annotations as single source of truth
+- RubyDoc.info for automatic HTML generation on publish
+- YAML removed, no local HTML generation needed
 
-**Status**: ✅ Phase 2 & 3 COMPLETE (Session 3)
-
-**Phase 2 Completion**:
-- README.md updated with RubyDoc.info links and documentation section
-- .rbs files ready in sig/generated/ for gem publication
-- Release workflow (release.yml) ready for publication
-- gemspec metadata: documentation_uri set
-
-**Phase 3 Implementation** (Session 3 - rbs-inline only):
-- ✅ YARD REMOVED: User explicitly rejected YARD ("ただしYARDはつかわない！rbs-inlineをつかってください")
-- ✅ Single Source of Truth: rbs-inline annotations only
-- ✅ `rake rbs:generate` task: Generates .rbs files from annotations
-- ✅ GitHub Actions: rbs:generate integrated for documentation generation
-- ✅ RBS Collection REMOVED: Deleted 69 gem type stub files causing duplication errors
-- ✅ Steep removed from CI: Optional development tool only (`bundle exec steep check` manual)
-
-**Documentation Flow** (Final Design):
-1. **Development (local)**: `bundle exec rake rbs:generate`
-   - Generates RBS type definitions from rbs-inline annotations
-   - Stored in sig/generated/*.rbs
-2. **Type Checking** (optional): `bundle exec steep check`
-   - rbs-inline annotations validated by Steep (dev tool, not CI)
-   - Local verification before commit
-3. **Publishing**: gem push to RubyGems.org
-   - RubyDoc.info auto-detects .rbs files
-   - Auto-generates: https://rubydoc.info/gems/picotorokko/
-   - Type definitions documented automatically
-
-**Design Principle** (User Specification):
-- Matches picotorokko gem architecture ("これはpicotorokko gemと同様です")
-- Single comment format (@rbs) = no duplication
-- RubyDoc.info handles HTML generation on publish
-- No YARD, no local HTML generation needed
-
-**CI Status**:
-- ✅ Tests: 221/221 passing
-- ✅ RuboCop: 0 violations
-- ✅ Coverage: 86.32% line / 65.12% branch
-- ✅ rbs:generate: Integrated in GitHub Actions
-- ✅ Steep in CI: REMOVED (duplicate declaration errors in gem stubs)
-
-**Next Step (Phase 4)**: Optional enhancements
-- Monitor RubyDoc.info documentation quality after gem publish
-- Expand rbs-inline coverage for Priority 1+ commands
-- Consider optional Steep integration for strict type checking (opt-in)
-
-**References**:
-- Design: [`.claude/docs/documentation-generation.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/documentation-generation.md) (updated Session 3)
+**See**: README.md "Documentation" section, SPEC.md "Type System & Type Annotations", `.claude/docs/documentation-generation.md`
 
 ---
 
 ### 🔄 Priority 3: Documentation Update Automation
 
-**Goal**: Ensure implementation changes always trigger documentation updates
+**Status**: ✅ COMPLETE
 
-**Strategy**: Integrate documentation checks into dev workflow (CLAUDE.md + Quality Gates). Escalate to Claude Skill (Phase 2) and CI validation (Phase 4) later.
+Automation implemented and integrated:
+- Git post-commit hook for documentation reminders
+- Claude Skill (documentation-sync) for checklist generation
+- CLAUDE.md workflow integration
 
-**Status**:
-- ✅ Phase 1 COMPLETE: Documentation workflow integrated
-- ✅ Phase 2 COMPLETE (Session 3): Claude Skill implemented
-
-**Phase 1 Completion** (Session 3 verification):
-- CLAUDE.md: Documentation Check integrated into before-commit workflow
-- tdd-rubocop-cycle.md: Phase 4 includes documentation verification
-- testing-guidelines.md: Quality Gates includes documentation update requirement
-- documentation-structure.md: Complete file change → docs mapping table
-
-**Phase 2 Implementation** (Session 3 continued):
-- Claude Skill: `.claude/skills/documentation-sync/` created
-  * README.md: Skill overview, usage examples, integration
-  * sync-documentation.md: Complete implementation guide with:
-    - File change detection algorithm
-    - Mapping table integration
-    - Checklist generation logic
-    - Multiple scenario examples (command changes, template changes, test-only)
-    - Error handling and success criteria
-- Automated `git diff` analysis to detect changed files
-- Suggest corresponding documentation updates using mapping table
-- Generate documentation update checklist with priorities (MUST/SHOULD/OPTIONAL)
-
-**Available Documentation Mapping**: `.claude/docs/documentation-structure.md` (lines 201-256)
-- Quick reference table: Trigger files → Target documents
-- Priority levels: MUST / SHOULD / OPTIONAL
-- Implementation examples with actionable steps
-
-**Phase 2 Features**:
-- Input: Optional (detect all changes, or specific file/branch)
-- Output: Structured markdown with prioritized checklist
-- Integration: Fits into CLAUDE.md "Before every commit" workflow
-- Special cases: Type system checks, test-only changes, multiple categories
-
-**Phase 3 Implementation** (Session 3 complete):
-- ✅ Git post-commit Hook: `.git/hooks/post-commit` implemented
-- ✅ Non-blocking reminder after commit
-- ✅ Detects changed files and suggests documentation updates
-- ✅ Priority-based checklist (🔴MUST / 🟡SHOULD / ⚪OPTIONAL)
-- ✅ Integrates with documentation-sync skill
-- ✅ Manually tested and working correctly
-
-**References**:
-- Design: [`.claude/docs/documentation-automation-design.md`](https://github.com/picoruby/picotorokko/blob/main/.claude/docs/documentation-automation-design.md)
-- Skill: `.claude/skills/documentation-sync/`
+**See**: CLAUDE.md "Before every commit" section, `.claude/docs/documentation-automation-design.md`, `.claude/skills/documentation-sync/`
 
 ---
 
