@@ -208,31 +208,101 @@ API documentation is automatically generated from type annotations:
 - **[User Guides](docs/)** - Installation, CI/CD setup, etc.
 ```
 
-### Phase 3: ローカル生成可能化（検討）
+### Phase 3: ローカル生成可能化 ✅ COMPLETE (Session 3 - 2025-11-14)
 
-**Objective**: ローカル開発時に documentation 確認可能
+**Objective**: ローカル開発時に documentation 確認可能 (YARD を使用)
 
-**実装予定**:
+**実装完了**:
 ```bash
-# 以下のいずれかを実装
-1. rbs-doc が成熟 → Rake task で rbs-doc 実行
-2. Steep RBS docs が充実 → Steep 出力活用
-3. カスタム script で .rbs から HTML 生成
+# YARD 追加
+gem install yard  # or: bundle install (YARD in gemspec)
+
+# ローカルでドキュメント生成
+bundle exec rake doc:generate
+
+# 生成されたドキュメント
+# - HTML: doc/index.html
+# - Output: 66.28% documented (26 files, 109 methods)
 ```
 
-**Rakefile に追加予定**:
+**実装詳細**:
+
+**Step 1: YARD を開発依存に追加** ✅
 ```ruby
+# picotorokko.gemspec
+spec.add_development_dependency "yard", "~> 0.9"
+```
+
+**Step 2: Rakefile に Rake task 追加** ✅
+```ruby
+# Rakefile
+begin
+  require "yard"
+  YARD::Rake::YardocTask.new do |t|
+    t.files   = ["lib/**/*.rb", "exe/**/*"]
+    t.options = ["--output-dir", "doc", "--readme", "README.md", "--markup", "markdown"]
+  end
+rescue LoadError
+  # YARD not installed
+  task :yard do
+    puts "⚠️  YARD not available. Install with: gem install yard"
+  end
+end
+
 namespace :doc do
-  desc "Generate RBS documentation (local)"
-  task :generate do
-    # sh "bundle exec rbs-doc sig"
-    # or
-    # sh "bundle exec steep docs"
-    puts "RBS documentation generation not yet implemented"
-    puts "See: https://rubydoc.info/gems/picotorokko/ for published docs"
+  desc "Generate API documentation with YARD"
+  task :generate => :yard do
+    puts "✓ API documentation generated in doc/"
   end
 end
 ```
+
+**Step 3: gemspec に documentation_uri 設定** ✅
+```ruby
+spec.metadata["documentation_uri"] = "https://rubydoc.info/gems/picotorokko/"
+```
+
+**Step 4: .gitignore 確認** ✅
+```
+doc/       # YARD generated docs (already in .gitignore)
+.yardoc/   # YARD cache (already in .gitignore)
+```
+
+**使用方法**:
+```bash
+# ローカルでドキュメント生成
+bundle exec rake doc:generate
+
+# 生成されたドキュメント確認
+open doc/index.html  # macOS
+xdg-open doc/index.html  # Linux
+
+# RubyDoc.info（自動生成、gem publish 時）
+# https://rubydoc.info/gems/picotorokko/
+```
+
+**マトリックス**:
+- Files: 26
+- Modules: 10 (5 undocumented)
+- Classes: 27 (3 undocumented)
+- Methods: 109 (43 undocumented)
+- **Documentation Coverage: 66.28%**
+
+**注記**: rbs-inline コメント (@rbs) と YARD コメント（説明文）は分離設計
+- @rbs: 型チェック用（Steep で検証）
+- YARD: HTML ドキュメント用（説明・使用例）
+- YARD は @rbs タグを認識しないため警告が出ますが、ドキュメント生成に問題はありません
+
+**Phase 3 実装による変更**:
+- ✅ ローカルで doc 生成可能
+- ✅ doc/ ディレクトリに HTML ドキュメント出力
+- ✅ RubyDoc.info への自動デプロイ（gem publish 時）
+- ✅ gemspec に documentation_uri メタデータ設定
+
+**後続の考慮項目**:
+- YARD コメント追加（オプション）: メソッドに説明文を追加すれば coverage 向上
+- CI 統合: GitHub Actions で doc 生成を自動化
+- doc/ ディレクトリ: .gitignore に登録済み（生成物なので commit 不要）
 
 ---
 
