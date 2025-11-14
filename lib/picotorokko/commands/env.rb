@@ -77,6 +77,7 @@ module Picotorokko
       end
 
       no_commands do # rubocop:disable Metrics/BlockLength
+        # @rbs (String, String) -> Hash[String, String]
         def process_source(source_spec, timestamp)
           if source_spec.start_with?("path:")
             process_path_source(source_spec, timestamp)
@@ -85,12 +86,14 @@ module Picotorokko
           end
         end
 
+        # @rbs (String, String) -> Hash[String, String]
         def process_github_source(org_repo, timestamp)
           source_url = "https://github.com/#{org_repo}.git"
           commit = Picotorokko::Env.fetch_remote_commit(source_url) || "abc1234"
           { "source" => source_url, "commit" => commit, "timestamp" => timestamp }
         end
 
+        # @rbs (String, String) -> Hash[String, String]
         def process_path_source(path_spec, timestamp)
           if path_spec =~ /^path:(.+):([a-f0-9]{7,})$/
             path = Regexp.last_match(1)
@@ -104,6 +107,7 @@ module Picotorokko
           { "source" => source_key, "commit" => commit, "timestamp" => timestamp }
         end
 
+        # @rbs (String) -> String
         def fetch_local_commit(path)
           raise "Error: Path does not exist" unless Dir.exist?(path)
 
@@ -112,6 +116,7 @@ module Picotorokko
           end
         end
 
+        # @rbs (String) -> void
         def auto_fetch_environment(env_name)
           timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
           repos_info = {}
@@ -255,6 +260,7 @@ module Picotorokko
       end
 
       # Fetch latest commits from all repos (reusable method for Init)
+      # @rbs () -> Hash[String, Hash[String, String]]
       def fetch_latest_repos
         require "tmpdir"
 
@@ -299,16 +305,19 @@ module Picotorokko
 
       private
 
+      # @rbs (String) -> void
       def show_env_not_found(env_name)
         puts "Error: Environment '#{env_name}' not found in .picoruby-env.yml"
       end
 
+      # @rbs (String, Hash[String, untyped]) -> void
       def show_env_details(env_name, env_config)
         puts "Environment: #{env_name}"
         display_repo_versions(env_config)
         display_metadata(env_config)
       end
 
+      # @rbs (Hash[String, untyped]) -> void
       def display_repo_versions(env_config)
         puts "\nRepo versions:"
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
@@ -319,11 +328,13 @@ module Picotorokko
         end
       end
 
+      # @rbs (Hash[String, untyped]) -> void
       def display_metadata(env_config)
         puts "\nCreated: #{env_config["created_at"]}"
         puts "Notes: #{env_config["notes"]}" unless env_config["notes"].to_s.empty?
       end
 
+      # @rbs (String, String) -> (String | nil)
       def resolve_work_path(repo, build_path)
         case repo
         when "R2P2-ESP32"
@@ -335,6 +346,7 @@ module Picotorokko
         end
       end
 
+      # @rbs (String, String) -> void
       def export_repo_changes(repo, work_path)
         Dir.chdir(work_path) do
           changed_files = `git diff --name-only 2>/dev/null`.split("\n")
@@ -367,6 +379,7 @@ module Picotorokko
         end
       end
 
+      # @rbs (String, String, (String | nil)) -> void
       def show_repo_diff(repo, patch_repo_dir, work_path)
         puts "#{repo}:"
 
