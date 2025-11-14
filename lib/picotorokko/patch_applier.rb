@@ -6,6 +6,7 @@ module Picotorokko
     # パッチディレクトリ内のファイルをワーキングディレクトリに適用
     # patch_repo_dir: パッチを含むディレクトリ（patch/repo 配下など）
     # work_path: ワーキングディレクトリのパス（build/ 配下など）
+    # @rbs (String, String) -> void
     def self.apply_patches_to_directory(patch_repo_dir, work_path)
       Dir.glob("#{patch_repo_dir}/**/*").each do |patch_file|
         next if File.directory?(patch_file)

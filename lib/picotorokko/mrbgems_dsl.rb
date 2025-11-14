@@ -46,10 +46,12 @@ module Picotorokko
 
     private
 
+    # @rbs () -> untyped
     def evaluate_dsl
       instance_eval(@dsl_code, __FILE__)
     end
 
+    # @rbs (Hash[Symbol, untyped]) -> [Symbol, String]
     def detect_source_type(params)
       if params[:github]
         [:github, params[:github]]
