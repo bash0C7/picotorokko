@@ -365,6 +365,39 @@ bundle exec gem build picotorokko.gemspec
 bundle exec exe/ptrk --help
 ```
 
+#### 7. Type checking with Steep (optional)
+
+The gem includes rbs-inline type annotations for all public and private methods, enabling static type checking:
+
+```bash
+# Run Steep type checker (requires steep gem)
+bundle exec steep check
+
+# Generate RBS signatures from rbs-inline annotations
+bundle exec rake rbs:generate
+```
+
+**Type Annotation Coverage**: 93.2% (165 of 177 methods)
+
+All command classes and core modules include complete type signatures using rbs-inline format:
+- **Template Engines** (19 methods): Engine, RubyTemplateEngine, StringTemplateEngine, YamlTemplateEngine, CTemplateEngine
+- **Core Modules** (16 methods): Executor, PatchApplier, MrbgemsDSL, BuildConfigApplier
+- **Commands** (42 methods): Device, Env, Mrbgems, Rubocop, Init
+
+Example type annotation:
+
+```ruby
+# lib/picotorokko/commands/device.rb
+class Device < Thor
+  # @rbs (String) -> String
+  private def resolve_env_name(env_name)
+    # implementation
+  end
+end
+```
+
+Refer to `.claude/docs/testing-guidelines.md` for TDD + RuboCop integration workflow details.
+
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
