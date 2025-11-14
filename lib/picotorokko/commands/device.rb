@@ -152,14 +152,13 @@ module Picotorokko
       end
 
       # Apply Mrbgemfile if it exists
-      # Reads Mrbgemfile and applies mrbgems to build_config files and CMakeLists.txt
+      # Reads Mrbgemfile and applies mrbgems to build_config files
       def apply_mrbgemfile(_env_name)
         mrbgemfile_path = File.join(Env.project_root, "Mrbgemfile")
         return unless File.exist?(mrbgemfile_path)
 
         mrbgemfile_content = File.read(mrbgemfile_path)
         apply_to_build_configs(mrbgemfile_content)
-        apply_to_cmake(mrbgemfile_content)
       end
 
       # Apply mrbgems to all build_config/*.rb files
@@ -178,20 +177,6 @@ module Picotorokko
           modified = BuildConfigApplier.apply(content, gems)
           File.write(config_file, modified)
         end
-      end
-
-      # Apply cmake directives to CMakeLists.txt
-      def apply_to_cmake(mrbgemfile_content)
-        dsl = MrbgemsDSL.new(mrbgemfile_content, "default")
-        gems = dsl.gems
-
-        cmake_directives = gems.select { |g| g[:cmake] }.map { |g| g[:cmake] }
-        return if cmake_directives.empty?
-
-        cmake_path = File.join(Env.project_root, "CMakeLists.txt")
-        content = File.exist?(cmake_path) ? File.read(cmake_path) : ""
-        modified = CMakeApplier.apply(content, cmake_directives)
-        File.write(cmake_path, modified)
       end
 
       # 利用可能なR2P2-ESP32タスクを表示

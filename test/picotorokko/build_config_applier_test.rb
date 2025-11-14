@@ -8,8 +8,8 @@ class PicotororkoBuildConfigApplierTest < PraTestCase
     RUBY
 
     gems = [
-      { source_type: :github, source: "ws2812", branch: "main", ref: nil, cmake: nil },
-      { source_type: :core, source: "sprintf", branch: nil, ref: nil, cmake: nil }
+      { source_type: :github, source: "ws2812", branch: "main", ref: nil },
+      { source_type: :core, source: "sprintf", branch: nil, ref: nil }
     ]
 
     result = Picotorokko::BuildConfigApplier.apply(content, gems)
@@ -29,7 +29,7 @@ class PicotororkoBuildConfigApplierTest < PraTestCase
     RUBY
 
     gems = [
-      { source_type: :github, source: "test/gem", branch: "main", ref: nil, cmake: nil }
+      { source_type: :github, source: "test/gem", branch: "main", ref: nil }
     ]
 
     result = Picotorokko::BuildConfigApplier.apply(content, gems)
@@ -47,10 +47,10 @@ class PicotororkoBuildConfigApplierTest < PraTestCase
     RUBY
 
     gems = [
-      { source_type: :github, source: "gh/gem", branch: "main", ref: nil, cmake: nil },
-      { source_type: :core, source: "sprintf", branch: nil, ref: nil, cmake: nil },
-      { source_type: :path, source: "./local/gem", branch: nil, ref: nil, cmake: nil },
-      { source_type: :git, source: "https://example.com/gem.git", branch: "develop", ref: nil, cmake: nil }
+      { source_type: :github, source: "gh/gem", branch: "main", ref: nil },
+      { source_type: :core, source: "sprintf", branch: nil, ref: nil },
+      { source_type: :path, source: "./local/gem", branch: nil, ref: nil },
+      { source_type: :git, source: "https://example.com/gem.git", branch: "develop", ref: nil }
     ]
 
     result = Picotorokko::BuildConfigApplier.apply(content, gems)
@@ -68,7 +68,7 @@ class PicotororkoBuildConfigApplierTest < PraTestCase
     RUBY
 
     gems = [
-      { source_type: :github, source: "test/gem", branch: nil, ref: "abc1234", cmake: nil }
+      { source_type: :github, source: "test/gem", branch: nil, ref: "abc1234" }
     ]
 
     result = Picotorokko::BuildConfigApplier.apply(content, gems)
@@ -86,7 +86,7 @@ class PicotororkoBuildConfigApplierTest < PraTestCase
     RUBY
 
     gems = [
-      { source_type: :github, source: "new/gem", branch: "new", ref: nil, cmake: nil }
+      { source_type: :github, source: "new/gem", branch: "new", ref: nil }
     ]
 
     result = Picotorokko::BuildConfigApplier.apply(content, gems)
@@ -112,7 +112,7 @@ class PicotororkoBuildConfigApplierTest < PraTestCase
     RUBY
 
     gems = [
-      { source_type: :core, source: "sprintf", branch: nil, ref: nil, cmake: nil }
+      { source_type: :core, source: "sprintf", branch: nil, ref: nil }
     ]
 
     result = Picotorokko::BuildConfigApplier.apply(content, gems)
