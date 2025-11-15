@@ -13,7 +13,8 @@ module Picotorokko
 
       private
 
-      def copy_template_files: (untyped source, untyped target) -> untyped
+      # @rbs (String, String) -> void
+      def copy_template_files: (String, String) -> void
     end
   end
 end

@@ -1,0 +1,13 @@
+# Generated from lib/picotorokko/patch_applier.rb with RBS::Inline
+
+module Picotorokko
+  # パッチ適用ロジック（複数のコマンドで再利用）
+  # @rbs < Object
+  module PatchApplier
+    # パッチディレクトリ内のファイルをワーキングディレクトリに適用
+    # patch_repo_dir: パッチを含むディレクトリ（patch/repo 配下など）
+    # work_path: ワーキングディレクトリのパス（build/ 配下など）
+    # @rbs (String, String) -> void
+    def self.apply_patches_to_directory: (String, String) -> void
+  end
+end

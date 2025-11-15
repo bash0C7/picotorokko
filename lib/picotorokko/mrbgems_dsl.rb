@@ -1,6 +1,9 @@
+# rbs_inline: enabled
+
 module Picotorokko
   # MrbgemsDSL: Parser for Mrbgemfile with Ruby DSL evaluation
   # Converts Mrbgemfile syntax into structured gem specifications
+  # @rbs < Object
   class MrbgemsDSL
     # @rbs (String, String) -> void
     def initialize(dsl_code, config_name)

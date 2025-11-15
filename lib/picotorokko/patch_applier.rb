@@ -1,7 +1,10 @@
 require "fileutils"
 
+# rbs_inline: enabled
+
 module Picotorokko
   # パッチ適用ロジック（複数のコマンドで再利用）
+  # @rbs < Object
   module PatchApplier
     # パッチディレクトリ内のファイルをワーキングディレクトリに適用
     # patch_repo_dir: パッチを含むディレクトリ（patch/repo 配下など）

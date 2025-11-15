@@ -1,6 +1,9 @@
+# rbs_inline: enabled
+
 module Picotorokko
   # BuildConfigApplier: Insert mrbgem definitions into build_config/*.rb files
   # Uses Prism AST to find MRuby::Build.new block and insert conf.gem lines
+  # @rbs < Object
   class BuildConfigApplier
     # @rbs (String, Array[Hash[Symbol, (String | Symbol | nil)]]) -> String
     def self.apply(content, gems)
@@ -105,7 +108,9 @@ module Picotorokko
   end
 
   # Visitor to find MRuby::Build.new blocks
+  # @rbs < Prism::Visitor
   class BuildBlockExtractor < Prism::Visitor
+    # @rbs () -> bool
     attr_reader :build_block_found
 
     # @rbs () -> void

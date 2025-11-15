@@ -2,9 +2,12 @@ require "fileutils"
 require "yaml"
 require_relative "template/engine"
 
+# rbs_inline: enabled
+
 module Picotorokko
   # Project initialization logic independent of Thor
   # Handles directory structure creation, template rendering, and project setup
+  # @rbs < Object
   class ProjectInitializer
     # Template files directory path
     TEMPLATES_DIR = File.expand_path("templates/project", __dir__)

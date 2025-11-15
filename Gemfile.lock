@@ -7,7 +7,7 @@ PATH
 PATH
   remote: lib/reality_marble
   specs:
-    reality_marble (0.1.0)
+    reality_marble (1.0.0)
 
 GEM
   remote: https://rubygems.org/

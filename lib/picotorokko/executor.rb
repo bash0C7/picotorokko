@@ -1,5 +1,7 @@
 require "open3"
 
+# rbs_inline: enabled
+
 module Picotorokko
   # 外部コマンド実行の抽象化層
   # ProductionExecutor: 実際のコマンド実行（Open3 使用）
@@ -9,6 +11,7 @@ module Picotorokko
   # エラー時：RuntimeError をthrow（exit code != 0）
 
   # 外部コマンド実行インターフェース
+  # @rbs < Object
   module Executor
     # コマンドを実行し、stdout と stderr を返す
     # @param command [String] 実行するコマンド
@@ -22,9 +25,11 @@ module Picotorokko
   end
 
   # 本番環境用：実際のコマンド実行
+  # @rbs < Object
   class ProductionExecutor
     include Executor
 
+    # コマンドを実行し、stdout と stderr を返す
     # @rbs (String, String | nil) -> [String, String]
     def execute(command, working_dir = nil)
       execute_block = lambda do
@@ -40,15 +45,18 @@ module Picotorokko
   end
 
   # テスト用：コマンド記録と結果制御
+  # @rbs < Object
   class MockExecutor
     include Executor
 
+    # 初期化：コマンド記録用の内部状態
     # @rbs () -> void
     def initialize
       @calls = []
       @results = {} # command => [stdout, stderr, should_fail]
     end
 
+    # コマンドを実行し、事前設定された結果を返す
     # @rbs (String, String | nil) -> [String, String]
     def execute(command, working_dir = nil)
       @calls << { command: command, working_dir: working_dir }
@@ -64,14 +72,10 @@ module Picotorokko
     end
 
     # テストから呼び出されたコマンドのリスト
-    # @return [Array<Hash>] 各呼び出しの { command:, working_dir: }
+    # @rbs () -> Array[Hash[Symbol, String | nil]]
     attr_reader :calls
 
     # コマンド実行結果を事前設定
-    # @param command [String] コマンド文字列
-    # @param stdout [String] 標準出力
-    # @param stderr [String] 標準エラー
-    # @param fail [Boolean] 失敗を模擬するか
     # @rbs (String, stdout: String, stderr: String, fail: bool) -> void
     def set_result(command, stdout: "", stderr: "", fail: false)
       @results[command] = [stdout, stderr, fail]

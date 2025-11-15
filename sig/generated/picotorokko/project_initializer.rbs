@@ -1,0 +1,67 @@
+# Generated from lib/picotorokko/project_initializer.rb with RBS::Inline
+
+module Picotorokko
+  # Project initialization logic independent of Thor
+  # Handles directory structure creation, template rendering, and project setup
+  # @rbs < Object
+  class ProjectInitializer
+    # Template files directory path
+    TEMPLATES_DIR: untyped
+
+    attr_reader project_root: untyped
+
+    attr_reader project_name: untyped
+
+    attr_reader options: untyped
+
+    # @rbs (String | nil, Hash[Symbol, untyped]) -> void
+    def initialize: (String | nil, Hash[Symbol, untyped]) -> void
+
+    # @rbs () -> void
+    def initialize_project: () -> void
+
+    # @rbs () -> void
+    # Create default environment with latest repository versions
+    # Automatically called during project initialization
+    # Network errors are caught and logged without blocking initialization
+    def setup_default_environment: () -> void
+
+    private
+
+    # @rbs (String | nil) -> String
+    def determine_project_root: (String | nil) -> String
+
+    # @rbs (String) -> void
+    def validate_project_name!: (String) -> void
+
+    # @rbs () -> void
+    def create_directories: () -> void
+
+    # @rbs () -> Hash[Symbol, (String | nil)]
+    def prepare_variables: () -> Hash[Symbol, String | nil]
+
+    # @rbs () -> (String | nil)
+    def detect_git_author: () -> (String | nil)
+
+    # @rbs (Hash[Symbol, (String | nil)]) -> void
+    def render_templates: (Hash[Symbol, String | nil]) -> void
+
+    # @rbs (String, Hash[Symbol, (String | nil)]) -> void
+    def render_template: (String, Hash[Symbol, String | nil]) -> void
+
+    # @rbs () -> void
+    def copy_template_files: () -> void
+
+    # @rbs () -> void
+    def generate_mrbgems: () -> void
+
+    # @rbs (String) -> void
+    def generate_single_mrbgem: (String) -> void
+
+    # @rbs (String, String, String, Hash[Symbol, untyped]) -> void
+    def render_mrbgem_templates: (String, String, String, Hash[Symbol, untyped]) -> void
+
+    # @rbs () -> void
+    def print_success_message: () -> void
+  end
+end

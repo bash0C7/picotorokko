@@ -23,80 +23,165 @@ module Picotorokko
       def help: () -> untyped
 
       # Transparently delegate undefined commands to R2P2-ESP32 Rakefile
+      #
+      # Implements Ruby's method_missing to provide transparent delegation of unknown
+      # commands to the R2P2-ESP32 Rakefile. This allows the ptrk device command to
+      # expose any Rake task defined in R2P2-ESP32 without hardcoding them.
+      #
+      # **Security**: Uses whitelist validation by parsing the Rakefile AST with Prism
+      # to ensure only legitimate Rake tasks can be executed. Prevents arbitrary command
+      # injection through the command name.
+      #
+      # **Workflow**:
+      # 1. Parse --env option from args (default: 'current')
+      # 2. Resolve environment name and validate R2P2 build path exists
+      # 3. Extract available Rake tasks from R2P2-ESP32/Rakefile via AST parsing
+      # 4. Validate requested task is in the whitelist (if available)
+      # 5. Delegate to R2P2-ESP32 Rakefile via rake command
+      #
+      # **Example**:
+      #   ptrk device flash --env development
+      #   ptrk device monitor --env stable-2024-11
+      #   ptrk device custom_task --env latest
+      #
+      # @param method_name [Symbol] The task name to delegate
+      # @param args [Array] Arguments including --env option
+      # @raise [Thor::UndefinedCommandError] If task not found in whitelist
       # @rbs (*untyped) -> void
       def method_missing: (*untyped) -> void
 
-      def respond_to_missing?: (untyped method_name, ?untyped include_private) -> untyped
+      # @rbs (Symbol, bool) -> bool
+      def respond_to_missing?: (Symbol, bool) -> bool
 
       private
 
       # --env option を args から抽出
-      def parse_env_from_args: (untyped args) -> untyped
+      # @rbs (Array[untyped]) -> (String | nil)
+      def parse_env_from_args: (Array[untyped]) -> (String | nil)
 
       # Apply Mrbgemfile if it exists
       # Reads Mrbgemfile and applies mrbgems to build_config files
-      def apply_mrbgemfile: (untyped _env_name) -> untyped
+      # @rbs (String) -> void
+      def apply_mrbgemfile: (String) -> void
 
       # Apply mrbgems to all build_config/*.rb files
-      def apply_to_build_configs: (untyped mrbgemfile_content) -> untyped
+      # @rbs (String) -> void
+      def apply_to_build_configs: (String) -> void
 
       # 利用可能なR2P2-ESP32タスクを表示
-      def show_available_tasks: (untyped env_name) -> untyped
+      # @rbs (String) -> void
+      def show_available_tasks: (String) -> void
 
       # R2P2-ESP32のRakefileにタスクを委譲
-      def delegate_to_r2p2: (untyped command, untyped env_name) -> untyped
+      # @rbs (String, String) -> void
+      def delegate_to_r2p2: (String, String) -> void
 
       # 環境名を解決（currentの場合は実環境名に変換）
-      def resolve_env_name: (untyped env_name) -> untyped
+      # @rbs (String) -> String
+      def resolve_env_name: (String) -> String
 
       # 環境を検証してR2P2パスを取得
-      def validate_and_get_r2p2_path: (untyped env_name) -> untyped
+      # @rbs (String) -> String
+      def validate_and_get_r2p2_path: (String) -> String
 
       # Rakefileから利用可能なタスクを取得
-      def available_rake_tasks: (untyped r2p2_path) -> untyped
+      # @rbs (String) -> Array[String]
+      def available_rake_tasks: (String) -> Array[String]
     end
 
     # AST-based Rake task extractor for secure, static analysis
+    #
+    # **Purpose**: Safely extract Rake task names from a Rakefile without executing it.
+    # Uses the Prism Ruby parser to analyze the AST (Abstract Syntax Tree) instead of
+    # relying on `rake -T`, which requires the full Rakefile to be executable.
+    #
+    # **Security Model**: Static AST analysis prevents any code execution, making it safe
+    # to analyze untrusted or partially-working Rakefiles. No shell escape needed.
+    #
+    # **Supported Task Patterns**:
+    # 1. Direct task definition:
+    #    ```ruby
+    #    task :build
+    #    task "flash"
+    #    ```
+    #
+    # 2. Dynamically generated tasks:
+    #    ```ruby
+    #    %w[esp32 rp2040].each do |target|
+    #      task "setup_#{target}"
+    #    end
+    #    # Expands to: setup_esp32, setup_rp2040
+    #    ```
+    #
+    # **Limitations**: Does not support:
+    # - Rake::TaskLib subclasses (require execution)
+    # - Tasks defined in included files
+    # - Complex string interpolation beyond simple variable expansion
+    #
+    # **Algorithm**:
+    # 1. Visit all call nodes in AST
+    # 2. Find `task()` calls with task name argument
+    # 3. For block iteration patterns, extract array elements and expand with variable
+    # 4. Return sorted, unique task names
+    #
+    # @example Usage in device.rb:available_rake_tasks
+    #   result = Prism.parse(File.read("Rakefile"))
+    #   extractor = RakeTaskExtractor.new
+    #   result.value.accept(extractor)
+    #   extractor.tasks  # => ["build", "flash", "monitor", ...]
     class RakeTaskExtractor < Prism::Visitor
       attr_reader tasks: untyped
 
-      def initialize: () -> untyped
+      # Initialize task extractor with empty task list
+      # @rbs () -> void
+      def initialize: () -> void
 
-      def visit_call_node: (untyped node) -> untyped
+      # @rbs (Prism::CallNode) -> void
+      def visit_call_node: (Prism::CallNode) -> void
 
       private
 
       # Standard task definition: task :name or task "name"
-      def handle_task_definition: (untyped node) -> untyped
+      # @rbs (Prism::CallNode) -> void
+      def handle_task_definition: (Prism::CallNode) -> void
 
       # Dynamic task generation: %w[...].each do |var| task "name_#{var}" end
-      def handle_each_block_with_task_generation: (untyped node) -> untyped
+      # @rbs (Prism::CallNode) -> void
+      def handle_each_block_with_task_generation: (Prism::CallNode) -> void
 
       # Extract string values from array literal
-      def extract_array_elements: (untyped array_node) -> untyped
+      # @rbs (Prism::ArrayNode) -> Array[String]
+      def extract_array_elements: (Prism::ArrayNode) -> Array[String]
 
       # Get block parameter name from |var| syntax
-      def extract_block_parameter: (untyped block_node) -> untyped
+      # @rbs (Prism::BlockNode | nil) -> (Symbol | nil)
+      def extract_block_parameter: (Prism::BlockNode | nil) -> (Symbol | nil)
 
       # Find all task definitions within a block and extract their patterns
-      def extract_task_patterns_from_block: (untyped block_node, untyped param_name) -> untyped
+      # @rbs (Prism::BlockNode | nil, Symbol) -> Array[Array[Hash[Symbol, (String | Symbol)]]]
+      def extract_task_patterns_from_block: (Prism::BlockNode | nil, Symbol) -> Array[Array[Hash[Symbol, String | Symbol]]]
 
       # Check if statement is a task() call with arguments
-      def task_call?: (untyped stmt) -> untyped
+      # @rbs (untyped) -> bool
+      def task_call?: (untyped) -> bool
 
       # Extract pattern from interpolated string like "setup_#{name}"
       # Returns array of { type: :string/:variable, value: ... } hashes
-      def extract_task_pattern: (untyped arg_node, untyped param_name) -> untyped
+      # @rbs (untyped, Symbol) -> (Array[Hash[Symbol, (String | Symbol)]] | nil)
+      def extract_task_pattern: (untyped, Symbol) -> (Array[Hash[Symbol, String | Symbol]] | nil)
 
       # Extract variable from embedded statement if it matches the block parameter
-      def extract_embedded_variable: (untyped stmt_node, untyped param_name) -> untyped
+      # @rbs (Prism::EmbeddedStatementsNode, Symbol) -> (Hash[Symbol, untyped] | nil)
+      def extract_embedded_variable: (Prism::EmbeddedStatementsNode, Symbol) -> (Hash[Symbol, untyped] | nil)
 
       # Expand pattern by replacing :variable placeholders with actual values
       # Example: [{ type: :string, value: "setup_" }, { type: :variable }] + "esp32" → "setup_esp32"
-      def expand_pattern: (untyped pattern, untyped value) -> untyped
+      # @rbs (Array[Hash[Symbol, untyped]], String) -> String
+      def expand_pattern: (Array[Hash[Symbol, untyped]], String) -> String
 
       # Extract simple task name from string or symbol node
-      def extract_task_name: (untyped arg_node) -> untyped
+      # @rbs (untyped) -> (String | nil)
+      def extract_task_name: (untyped) -> (String | nil)
     end
   end
 end

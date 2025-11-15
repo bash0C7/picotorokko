@@ -1,0 +1,61 @@
+# Generated from lib/picotorokko/build_config_applier.rb with RBS::Inline
+
+module Picotorokko
+  # BuildConfigApplier: Insert mrbgem definitions into build_config/*.rb files
+  # Uses Prism AST to find MRuby::Build.new block and insert conf.gem lines
+  # @rbs < Object
+  class BuildConfigApplier
+    # @rbs (String, Array[Hash[Symbol, (String | Symbol | nil)]]) -> String
+    def self.apply: (String, Array[Hash[Symbol, String | Symbol | nil]]) -> String
+
+    # @rbs (String, Array[Hash[Symbol, (String | Symbol | nil)]]) -> void
+    def initialize: (String, Array[Hash[Symbol, String | Symbol | nil]]) -> void
+
+    # @rbs () -> String
+    def apply: () -> String
+
+    private
+
+    # @rbs (String) -> String
+    def remove_existing_marker: (String) -> String
+
+    # @rbs (String, BuildBlockExtractor) -> String
+    def insert_gems_at_block_end: (String, BuildBlockExtractor) -> String
+
+    # @rbs (Array[String]) -> Integer | nil
+    def find_build_block_end_line: (Array[String]) -> Integer
+
+    # @rbs () -> Array[String]
+    def generate_gem_lines: () -> Array[String]
+
+    # @rbs (Hash[Symbol, (String | Symbol | nil)]) -> String
+    def format_gem_line: (Hash[Symbol, String | Symbol | nil]) -> String
+
+    # @rbs (Hash[Symbol, (String | Symbol | nil)]) -> Array[String]
+    def format_optional_params: (Hash[Symbol, String | Symbol | nil]) -> Array[String]
+  end
+
+  # Visitor to find MRuby::Build.new blocks
+  # @rbs < Prism::Visitor
+  class BuildBlockExtractor < Prism::Visitor
+    # @rbs () -> bool
+    attr_reader build_block_found: untyped
+
+    # @rbs () -> void
+    def initialize: () -> void
+
+    # @rbs () -> bool
+    def build_block_found?: () -> bool
+
+    # @rbs (Prism::Node) -> void
+    def visit_call_node: (Prism::Node) -> void
+
+    private
+
+    # @rbs (Prism::CallNode) -> bool
+    def mrbuild_new?: (Prism::CallNode) -> bool
+
+    # @rbs (untyped) -> String | nil
+    def receiver_slice: (untyped) -> String
+  end
+end

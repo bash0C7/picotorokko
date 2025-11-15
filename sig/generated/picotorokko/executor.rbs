@@ -1,0 +1,47 @@
+# Generated from lib/picotorokko/executor.rb with RBS::Inline
+
+module Picotorokko
+  # 外部コマンド実行インターフェース
+  # @rbs < Object
+  module Executor
+    # コマンドを実行し、stdout と stderr を返す
+    # @param command [String] 実行するコマンド
+    # @param working_dir [String, nil] 実行時のワーキングディレクトリ
+    # @return [Array<String>] [stdout, stderr]
+    # @raise [RuntimeError] コマンド失敗時（exit code != 0）
+    # @rbs (String, String | nil) -> [String, String]
+    def execute: (String, String | nil) -> [ String, String ]
+  end
+
+  # 本番環境用：実際のコマンド実行
+  # @rbs < Object
+  class ProductionExecutor
+    include Executor
+
+    # コマンドを実行し、stdout と stderr を返す
+    # @rbs (String, String | nil) -> [String, String]
+    def execute: (String, String | nil) -> [ String, String ]
+  end
+
+  # テスト用：コマンド記録と結果制御
+  # @rbs < Object
+  class MockExecutor
+    include Executor
+
+    # 初期化：コマンド記録用の内部状態
+    # @rbs () -> void
+    def initialize: () -> void
+
+    # コマンドを実行し、事前設定された結果を返す
+    # @rbs (String, String | nil) -> [String, String]
+    def execute: (String, String | nil) -> [ String, String ]
+
+    # テストから呼び出されたコマンドのリスト
+    # @rbs () -> Array[Hash[Symbol, String | nil]]
+    attr_reader calls: untyped
+
+    # コマンド実行結果を事前設定
+    # @rbs (String, stdout: String, stderr: String, fail: bool) -> void
+    def set_result: (String, stdout: String, stderr: String, fail: bool) -> void
+  end
+end

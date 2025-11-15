@@ -1,0 +1,34 @@
+# Generated from lib/picotorokko/mrbgems_dsl.rb with RBS::Inline
+
+module Picotorokko
+  # MrbgemsDSL: Parser for Mrbgemfile with Ruby DSL evaluation
+  # Converts Mrbgemfile syntax into structured gem specifications
+  # @rbs < Object
+  class MrbgemsDSL
+    # @rbs (String, String) -> void
+    def initialize: (String, String) -> void
+
+    # @rbs () -> Array[Hash[Symbol, (String | Symbol | nil)]]
+    def gems: () -> Array[Hash[Symbol, String | Symbol | nil]]
+
+    # @rbs () { (self) -> void } -> void
+    def mrbgems: () { (self) -> void } -> void
+
+    # @rbs () -> self
+    def conf: () -> self
+
+    # @rbs (**Hash[Symbol, String]) -> void
+    def gem: (**Hash[Symbol, String]) -> void
+
+    # @rbs () -> Array[String]
+    def build_config_files: () -> Array[String]
+
+    private
+
+    # @rbs () -> untyped
+    def evaluate_dsl: () -> untyped
+
+    # @rbs (Hash[Symbol, untyped]) -> [Symbol, String]
+    def detect_source_type: (Hash[Symbol, untyped]) -> [ Symbol, String ]
+  end
+end

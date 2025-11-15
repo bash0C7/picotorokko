@@ -14,19 +14,26 @@ module Picotorokko
 
       private
 
-      def prepare_and_validate_directory: (untyped name) -> untyped
+      # @rbs (String) -> String
+      def prepare_and_validate_directory: (String) -> String
 
-      def prepare_template_context: (untyped name) -> untyped
+      # @rbs (String) -> Hash[Symbol, String]
+      def prepare_template_context: (String) -> Hash[Symbol, String]
 
-      def render_template_files: (untyped mrbgem_dir, untyped context) -> untyped
+      # @rbs (String, Hash[Symbol, String]) -> void
+      def render_template_files: (String, Hash[Symbol, String]) -> void
 
-      def render_single_template: (untyped template_path, untyped output_path, untyped variables) -> untyped
+      # @rbs (String, String, Hash[Symbol, String]) -> void
+      def render_single_template: (String, String, Hash[Symbol, String]) -> void
 
-      def build_template_file_map: (untyped mrbgem_dir, untyped c_prefix) -> untyped
+      # @rbs (String, String) -> Hash[String, String]
+      def build_template_file_map: (String, String) -> Hash[String, String]
 
-      def templates_directory: () -> untyped
+      # @rbs () -> String
+      def templates_directory: () -> String
 
-      def print_success_message: (untyped name, untyped c_prefix) -> untyped
+      # @rbs (String, String) -> void
+      def print_success_message: (String, String) -> void
     end
   end
 end
