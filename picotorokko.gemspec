@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "thor", "~> 1.3"
 
   # Development dependencies
-  spec.add_development_dependency "reality_marble", git: "https://github.com/bash0C7/reality_marble.git"
+  spec.add_development_dependency "reality_marble", ">= 0.1.0"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "test-unit", "~> 3.0"
   spec.add_development_dependency "rubocop", "~> 1.81"

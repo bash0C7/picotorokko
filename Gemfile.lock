@@ -1,13 +1,14 @@
+GIT
+  remote: https://github.com/bash0C7/reality_marble.git
+  revision: 679a2bee1bf41b1a83442454985f0e2c78a13dca
+  specs:
+    reality_marble (1.0.0)
+
 PATH
   remote: .
   specs:
     picotorokko (0.1.0)
       thor (~> 1.3)
-
-PATH
-  remote: lib/reality_marble
-  specs:
-    reality_marble (1.0.0)
 
 GEM
   remote: https://rubygems.org/
