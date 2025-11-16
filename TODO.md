@@ -187,15 +187,15 @@ All features must meet these criteria before merging:
 
 ### Phase Breakdown
 
-- **Phase 0**: Test Infrastructure & Documentation (3 days)
-  - [ ] TODO.md に Epic 記録
-  - [ ] SPEC.md に Device Testing 仕様追加
-  - [ ] docs/DEVICE_TESTING_GUIDE.md 作成
+- **Phase 0**: Test Infrastructure & Documentation (3 days) ✅ COMPLETE
+  - [x] TODO.md に Epic 記録
+  - [x] SPEC.md に Device Testing 仕様追加
+  - [x] docs/DEVICE_TESTING_GUIDE.md 作成
 
-- **Phase 1**: Test Template Generation via ptrk init (2 days)
-  - [ ] Create test/app_test.rb template with Picotest examples
-  - [ ] Update ProjectInitializer to add test directory
-  - [ ] Update Mrbgemfile template to include picoruby-picotest
+- **Phase 1**: Test Template Generation via ptrk init (2 days) - IN PROGRESS
+  - [x] Create test/app_test.rb template with Picotest examples (Phase 1.1 ✅)
+  - [x] Update ProjectInitializer to add test directory (Phase 1.1 ✅)
+  - [ ] Update Mrbgemfile template to include picoruby-picotest (Phase 1.3 - TODO)
 
 - **Phase 2**: Device Command --test Option (3 days)
   - [ ] Implement ptrk device build --test
