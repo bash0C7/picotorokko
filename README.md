@@ -64,211 +64,119 @@ gem install picotorokko
 
 #### 1. Initialize a new project
 
-**Always specify a project name** to avoid initializing in the current directory:
-
 ```bash
 ptrk init my-project
 cd my-project
 ```
 
-**Optional flags**:
+**Options**:
 - `--author "Your Name"` — Set project author (default: auto-detected from git config)
-- `--path /path/to/dir` — Create project in specified directory (if omitted, uses current directory as base)
-- `--with-ci` — Include GitHub Actions workflow for CI/CD
+- `--path /path/to/dir` — Create project in specified directory
+- `--with-ci` — Include GitHub Actions workflow
 
-**Common usage patterns**:
+#### 2. Setup environment and build
 
-Default behavior (creates `./my-project/`):
 ```bash
-ptrk init my-project
-cd my-project
+# Fetch latest repository versions
+ptrk env latest
+
+# Build firmware
+ptrk device build
+
+# Flash to device
+ptrk device flash
+
+# Monitor serial output
+ptrk device monitor
 ```
 
-Create in a specific directory:
-```bash
-ptrk init my-project --path /home/user/projects
-cd /home/user/projects/my-project
-```
+#### 3. Create additional mrbgems (optional)
 
-Create with CI/CD and custom author:
-```bash
-ptrk init my-project --with-ci --author "Alice"
-cd my-project
-```
-
-**Creating additional mrbgems** (after project initialization):
 ```bash
 ptrk mrbgems generate MySensor
-ptrk mrbgems generate MyDisplay --author "Alice"
-```
-
-⚠️ **Important**: Always specify PROJECT_NAME. Running `ptrk init` without a name will initialize the current directory, not create a subdirectory.
-
-#### 2. Declare gem dependencies (Mrbgemfile)
-
-Create a `Mrbgemfile` in your project root to declare mrbgem dependencies:
-
-```ruby
-# Mrbgemfile - Declare mrbgem dependencies for your project
-mrbgems do |conf|
-  # Core mrbgems (always included)
-  conf.gem core: "sprintf"
-  conf.gem core: "fiber"
-
-  # Essential libraries from GitHub
-  conf.gem github: "picoruby/picoruby-json", branch: "main"
-  conf.gem github: "picoruby/picoruby-yaml"
-
-  # Platform-specific gems based on build target
-  if conf.build_config_files.include?("xtensa-esp")
-    conf.gem github: "picoruby/picoruby-esp32-gpio"
-    conf.gem github: "picoruby/picoruby-esp32-nvs"
-  elsif conf.build_config_files.include?("rp2040")
-    conf.gem github: "picoruby/picoruby-rp2040-gpio"
-  end
-
-  # Local custom gems
-  conf.gem path: "./mrbgems/app"
-end
-```
-
-The `Mrbgemfile` is automatically applied when you build your project. It supports:
-- **GitHub gems**: `github: "org/repo"` with optional `branch:` or `ref:` parameters
-- **Core mrbgems**: `core: "sprintf"`
-- **Local paths**: `path: "./local-gems/my-gem"`
-- **Git URLs**: `git: "https://..."` with `branch:` or `ref:`
-- **Conditional logic**: Include gems based on build target with `if/unless`
-
-For complete Mrbgemfile documentation, see [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md) and [SPEC.md](SPEC.md#-mrbgemfile-configuration).
-
-#### 3. Create a new environment
-
-```bash
-ptrk env set development
-```
-
-This automatically fetches the latest versions of all repositories and stores them in `.picoruby-env.yml`.
-
-#### 4. List all environments
-
-```bash
-ptrk env list
-```
-
-#### 5. View environment details
-
-```bash
-ptrk env show development
-```
-
-#### 6. Build, flash, and monitor
-
-```bash
-ptrk device flash --env development
-ptrk device monitor --env development
-ptrk device build --env development
+ptrk mrbgems generate MyMotor
 ```
 
 ### Commands Reference
 
 #### Project Initialization
 
-- `ptrk init [PROJECT_NAME]` - Initialize a new PicoRuby project
-  - **[PROJECT_NAME]** — (Required) Name of the project. If omitted, shows usage guide
-  - `--author "Name"` — Set author name (default: auto-detected from git config)
-  - `--path /dir` — Create project in specified directory (default: current directory)
-  - `--with-ci` — Include GitHub Actions workflow template for CI/CD
+```bash
+ptrk init [PROJECT_NAME]
+```
 
-  **Default mrbgem "app"**: Every project automatically includes a default `app` mrbgem for device-specific C functions. Use this for performance tuning — implement hot paths in C while keeping most code in Ruby.
+Options:
+- `--author "Name"` — Set project author
+- `--path /dir` — Create project in specified directory
+- `--with-ci` — Include GitHub Actions workflow
 
-  **Creating additional mrbgems**: Use the dedicated command for more gems:
-  ```bash
-  ptrk mrbgems generate MySensor
-  ptrk mrbgems generate MyDisplay --author "Your Name"
-  ```
-
-  **Local Development**: If developing ptrk locally, edit the generated `Gemfile` to use path reference:
-  ```ruby
-  gem "picotorokko", path: "../path/to/picotorokko"
-  ```
-
-  **Note**: Always provide PROJECT_NAME to create a project in a subdirectory.
+Creates a new PicoRuby project with complete directory structure, default `app` mrbgem, and configuration files.
 
 #### Environment Management
 
-- `ptrk env list` - List all environments in `ptrk_env/`
-- `ptrk env set <NAME> [--commit <SHA>] [--branch <BRANCH>]` - Create or update an environment
-- `ptrk env reset <NAME>` - Reset an environment by removing and recreating it
-- `ptrk env show [NAME]` - Show details of a specific environment
+```bash
+ptrk env latest                 # Fetch latest versions and create 'latest' environment
+ptrk env list                   # List all environments
+ptrk env set <NAME>             # Create/update environment
+ptrk env show <NAME>            # Display environment details
+ptrk env reset <NAME>           # Reset environment
+```
 
 #### Patch Management
 
-- `ptrk env patch_export <NAME>` - Export uncommitted changes from environment to local patch directory
-- `ptrk env patch_apply <NAME>` - Apply stored patches to environment
-- `ptrk env patch_diff <NAME>` - Display differences between working changes and stored patches
+```bash
+ptrk env patch_apply <NAME>     # Apply patches to environment
+ptrk env patch_export <NAME>    # Export changes to patches
+ptrk env patch_diff <NAME>      # Show diff between working changes and patches
+```
 
-#### Application-Specific mrbgem Management
+#### Device Operations
 
-- `ptrk mrbgems generate [NAME]` - Generate application-specific mrbgem template (default: App)
-  - Creates `mrbgems/{NAME}/` with Ruby code and C extension template
-  - Use `--author` option to specify author name: `ptrk mrbgems generate --author "Your Name"`
+```bash
+ptrk device build               # Build firmware
+ptrk device flash               # Flash to device
+ptrk device monitor             # Monitor serial output
+ptrk device setup_esp32         # Setup ESP32 environment
+ptrk device tasks               # Show R2P2-ESP32 available tasks
+```
 
-#### Mrbgemfile Configuration
+#### mrbgem Management
 
-The `Mrbgemfile` at your project root declares mrbgem dependencies using a Ruby DSL. It's automatically applied during `ptrk device build`.
+```bash
+ptrk mrbgems generate [NAME]    # Generate application-specific mrbgem
+```
 
-**Gem Sources**:
-- `github: "org/repo"` — GitHub repository (with optional `branch:` or `ref:`)
-- `core: "sprintf"` — Core mrbgem from mruby
-- `path: "./local"` — Local path (relative or absolute)
-- `git: "https://..."` — Custom Git URL (with optional `branch:` or `ref:`)
+### Mrbgemfile Configuration
 
-**Example**:
+Create `Mrbgemfile` in your project root to declare mrbgem dependencies:
+
 ```ruby
 mrbgems do |conf|
+  # Core mrbgems
   conf.gem core: "sprintf"
-  conf.gem github: "picoruby/picoruby-json", branch: "main"
+  conf.gem core: "fiber"
 
-  # Platform-specific: only for ESP32
+  # GitHub repositories
+  conf.gem github: "picoruby/picoruby-json", branch: "main"
+  conf.gem github: "picoruby/picoruby-yaml"
+
+  # Platform-specific (ESP32)
   if conf.build_config_files.include?("xtensa-esp")
     conf.gem github: "picoruby/picoruby-esp32-gpio"
   end
 
+  # Local gems
   conf.gem path: "./mrbgems/app"
 end
 ```
 
-For complete documentation and examples, see [SPEC.md#-mrbgemfile-configuration](SPEC.md#-mrbgemfile-configuration) and [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md).
+Supported gem sources:
+- `github: "org/repo"` — GitHub repository
+- `core: "name"` — Core mrbgem
+- `path: "./local"` — Local path
+- `git: "https://..."` — Custom Git URL
 
-#### PicoRuby RuboCop Configuration
-
-- `ptrk rubocop setup` - Setup RuboCop configuration for PicoRuby development
-- `ptrk rubocop update` - Update PicoRuby method database from latest definitions
-
-For detailed guide, see [docs/RUBOCOP_PICORUBY_GUIDE.md](docs/RUBOCOP_PICORUBY_GUIDE.md).
-
-#### Device Operations
-
-- `ptrk device flash --env <NAME>` - Flash firmware to ESP32
-- `ptrk device monitor --env <NAME>` - Monitor ESP32 serial output
-- `ptrk device build --env <NAME>` - Build firmware for ESP32
-- `ptrk device setup_esp32 --env <NAME>` - Setup ESP32 build environment
-- `ptrk device help --env <NAME>` - Show available R2P2-ESP32 tasks
-
-The `ptrk device` command transparently delegates tasks to R2P2-ESP32's Rakefile:
-
-```bash
-# Run any Rake task defined in R2P2-ESP32
-bundle exec ptrk device <task_name> --env <NAME>
-
-# Examples (assuming these tasks exist in R2P2-ESP32):
-bundle exec ptrk device custom_task --env development
-bundle exec ptrk device build_app --env development
-```
-
-#### Other
-
-- `ptrk version` or `ptrk -v` - Show ptrk version
+See [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md) for complete documentation.
 
 ### Requirements
 
@@ -330,11 +238,11 @@ bundle install
 #### 2. Run tests
 
 ```bash
-# Run all tests (183 main + 14 device)
+# Run all tests
 bundle exec rake
 
 # Or run specific test suites
-bundle exec rake test          # Main test suite only (183 tests)
+bundle exec rake test          # Main test suite
 ```
 
 #### 3. Development workflow: RuboCop auto-fix + tests + coverage

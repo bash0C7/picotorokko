@@ -195,7 +195,16 @@ All features must meet these criteria before merging:
 - **Phase 1**: Test Template Generation via ptrk init (2 days) - IN PROGRESS
   - [x] Create test/app_test.rb template with Picotest examples (Phase 1.1 ✅)
   - [x] Update ProjectInitializer to add test directory (Phase 1.1 ✅)
+  - [ ] **[BLOCKER]** Create Mrbgemfile template (Phase 1.2 - REQUIRED)
+    - ⚠️ **CRITICAL**: Mrbgemfileテンプレートが存在しない（lib/picotorokko/templates/project/Mrbgemfile）
+    - 現状: ProjectInitializer.rbはMrbgemfileを生成しない
+    - 影響: playground/でのATOM Matrixプロジェクト作成時に手動作成が必要
+    - 必要な実装:
+      1. lib/picotorokko/templates/project/Mrbgemfile テンプレート作成
+      2. ProjectInitializer#render_templates に "Mrbgemfile" 追加
+      3. テンプレート内容: 空のmrbgems do |conf| ブロック（ユーザーが手動でgem追加）
   - [ ] Update Mrbgemfile template to include picoruby-picotest (Phase 1.3 - TODO)
+    - Phase 1.2完了後に実装可能
 
 - **Phase 2**: Device Command --test Option (3 days)
   - [ ] Implement ptrk device build --test
@@ -231,3 +240,88 @@ All features must meet these criteria before merging:
 - PicoRuby Picotest: https://github.com/picoruby/picoruby/tree/master/mrbgems/picoruby-picotest
 - Picotest doubles API: Minitest-like, supports stub/mock with call count verification
 - Reality Marble: External gem (not used for device testing, but DSL reference)
+
+---
+
+## 📋 [TODO-DOCUMENTATION-SPEC-IMPLEMENTATION-SYNC] (Session 3 End Discovery)
+
+**Context**: During playground/tilt_led_level device creation (first ptrk user experience), discovered significant disconnect between SPEC.md (specification/planned) and actual command implementation.
+
+### Issue Summary
+SPEC.md contains features not yet implemented; README.md and documentation reference non-existent commands. Auto-generated templates (ptrk init → tilt_led_level/README.md) propagate obsolete examples to users.
+
+### Affected Files & Obsolete References
+
+#### README.md (Root Gem Documentation)
+- **Lines ~181-307** (removed in session): Referenced unimplemented commands
+  - `ptrk cache fetch main` — NOT implemented (no cache management)
+  - `ptrk build setup main` — NOT implemented (no build env setup beyond init)
+  - `ptrk build list` — NOT implemented
+  - `ptrk cache prune` — NOT implemented
+- **Current commands** (verified via `bundle exec ptrk {env,device} help`):
+  - `ptrk env latest|list|set|show|reset`
+  - `ptrk device build|flash|monitor`
+- **Status**: PARTIALLY UPDATED (command section removed; needs verification for remaining obsolete refs)
+
+#### SPEC.md (Specification Document)
+- **Entire cache management section** (Phase 2) — Describes unimplemented feature
+  - `ptrk cache fetch`, `ptrk cache prune`, `ptrk cache lock`
+  - No implementation exists in lib/picotorokko/commands/
+- **Build environment management section** (Phase 2) — Partially implemented
+  - `ptrk build list`, `ptrk build setup`, `ptrk build reset`
+  - Only `ptrk env` commands implemented; build-level separation not in current design
+- **Action**: Remove unimplemented sections OR mark clearly as "Planned (v0.2+)"
+
+#### tilt_led_level/README.md (Auto-Generated from Template)
+- **Auto-generated content** (via ptrk init): Includes obsolete command examples
+  - Section: "Quick Start" references `ptrk cache fetch`, `ptrk build setup`
+  - Users copying these examples will fail
+- **Root cause**: lib/picotorokko/templates/project/README_TEMPLATE.md contains hardcoded example commands
+- **Action**: Update template to use only implemented commands: `ptrk env latest`, `ptrk device build/flash/monitor`
+
+#### lib/picotorokko/ Code Comments & Help Text
+- **Status**: Not yet audited; likely contains references to unimplemented features
+- **Action**: Grep for `cache`, `build setup`, `build list` in code + help text
+
+### Scope of Documentation Update
+
+**Must Update**:
+1. ✅ README.md — Command reference section (partially done; verify complete)
+2. 📝 SPEC.md — Remove/mark cache management, update build env description
+3. 📝 lib/picotorokko/templates/project/README_TEMPLATE.md — Update Quick Start commands
+4. 📝 lib/picotorokko/commands/device.rb + env.rb — Help text must match actual options
+5. 📝 Code comments — Remove references to unimplemented features
+
+**Should Review**:
+- lib/picotorokko/commands/ — All command files for help/option descriptions
+- lib/picotorokko/ — Comments mentioning "cache" or "build environment management"
+- bin/ptrk — Usage output if custom
+
+**Do NOT Update Yet**:
+- playground/ files (only user-facing, can stay)
+- Older documentation in docs/examples (lower priority)
+
+### Quality Checklist for Next Session
+
+- [ ] SPEC.md: Audit all sections; identify implemented vs. planned features
+- [ ] SPEC.md: Mark planned features with version tags (v0.2+) or move to separate "Roadmap" section
+- [ ] README.md: Verify command examples match `bundle exec ptrk --help` output exactly
+- [ ] Templates: Update README_TEMPLATE.md Quick Start section
+- [ ] Code: Grep for "cache" and "build setup" references; remove/clarify
+- [ ] Help text: Run each command with --help; compare against documentation
+- [ ] Test: Verify no doc references commands that fail when run
+
+### Session Notes
+
+- Discovered confusion between "specification document" (SPEC.md = planned) vs. "feature documentation" (README.md = current)
+- User feedback: "SPEC.md is specification, not current state documentation"
+- User explicitly requested: "実装をベースに最新化して、古い記載は一切残さず消してください。未リリースなのでリリースノートのような履歴記載もなし" (Update based ONLY on implementation; remove all old content; no release notes)
+- **Lesson**: SPEC.md = "what we plan to build"; README.md = "what we have built now"
+
+### Timeline
+
+- **Session 4+**: Complete documentation sync (est. 2-3 hours)
+  - Start with SPEC.md audit (identify all unimplemented sections)
+  - Update README_TEMPLATE.md (impacts all future `ptrk init` projects)
+  - Verify help text matches implementation
+  - Final check: All commands in docs runnable and match actual behavior
