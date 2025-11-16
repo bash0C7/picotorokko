@@ -94,6 +94,7 @@ module Picotorokko
     def create_directories
       directories = [
         "storage/home",
+        "test",
         "patch/R2P2-ESP32",
         "patch/picoruby-esp32",
         "patch/picoruby",
@@ -139,7 +140,8 @@ module Picotorokko
         "Gemfile",
         "README.md",
         "CLAUDE.md",
-        "storage/home/app.rb"
+        "storage/home/app.rb",
+        "test/app_test.rb"
       ]
 
       template_files.each do |template_file|
