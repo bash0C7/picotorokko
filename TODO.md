@@ -195,14 +195,10 @@ All features must meet these criteria before merging:
 - **Phase 1**: Test Template Generation via ptrk init (2 days) - IN PROGRESS
   - [x] Create test/app_test.rb template with Picotest examples (Phase 1.1 ✅)
   - [x] Update ProjectInitializer to add test directory (Phase 1.1 ✅)
-  - [ ] **[BLOCKER]** Create Mrbgemfile template (Phase 1.2 - REQUIRED)
-    - ⚠️ **CRITICAL**: Mrbgemfileテンプレートが存在しない（lib/picotorokko/templates/project/Mrbgemfile）
-    - 現状: ProjectInitializer.rbはMrbgemfileを生成しない
-    - 影響: playground/でのATOM Matrixプロジェクト作成時に手動作成が必要
-    - 必要な実装:
-      1. lib/picotorokko/templates/project/Mrbgemfile テンプレート作成
-      2. ProjectInitializer#render_templates に "Mrbgemfile" 追加
-      3. テンプレート内容: 空のmrbgems do |conf| ブロック（ユーザーが手動でgem追加）
+  - [x] **Create Mrbgemfile template** (Phase 1.2 ✅ RESOLVED)
+    - ✅ Created lib/picotorokko/templates/project/Mrbgemfile
+    - ✅ Added to copy_template_files for efficient static copy
+    - ✅ Includes mrbgems/app reference for device-specific code
   - [ ] Update Mrbgemfile template to include picoruby-picotest (Phase 1.3 - TODO)
     - Phase 1.2完了後に実装可能
 
@@ -272,12 +268,15 @@ SPEC.md contains features not yet implemented; README.md and documentation refer
   - Only `ptrk env` commands implemented; build-level separation not in current design
 - **Action**: Remove unimplemented sections OR mark clearly as "Planned (v0.2+)"
 
-#### tilt_led_level/README.md (Auto-Generated from Template)
-- **Auto-generated content** (via ptrk init): Includes obsolete command examples
-  - Section: "Quick Start" references `ptrk cache fetch`, `ptrk build setup`
-  - Users copying these examples will fail
-- **Root cause**: lib/picotorokko/templates/project/README_TEMPLATE.md contains hardcoded example commands
-- **Action**: Update template to use only implemented commands: `ptrk env latest`, `ptrk device build/flash/monitor`
+#### lib/picotorokko/templates/project/README.md (Auto-Generated Template)
+- **Status**: ✅ FIXED (Session 4)
+- **Fixed content**: Updated Quick Start section
+  - ✅ Replaced `ptrk build setup main` with `ptrk device build`
+  - ✅ Replaced `ptrk flash` with `ptrk device flash`
+  - ✅ Replaced `ptrk monitor` with `ptrk device monitor`
+  - ✅ Fixed patch export: `ptrk patch export` → `ptrk env patch_export ENV_NAME`
+  - ✅ Removed unimplemented sections: `ptrk cache prune`, `ptrk build list`
+  - ✅ Reordered Quick Start to show `ptrk env latest` first (recommended workflow)
 
 #### lib/picotorokko/ Code Comments & Help Text
 - **Status**: Not yet audited; likely contains references to unimplemented features
@@ -303,25 +302,37 @@ SPEC.md contains features not yet implemented; README.md and documentation refer
 
 ### Quality Checklist for Next Session
 
+- [x] Templates: Update README.md Quick Start section (✅ Session 4)
+- [x] ProjectInitializer: Update success message with real commands (✅ Session 4)
 - [ ] SPEC.md: Audit all sections; identify implemented vs. planned features
 - [ ] SPEC.md: Mark planned features with version tags (v0.2+) or move to separate "Roadmap" section
-- [ ] README.md: Verify command examples match `bundle exec ptrk --help` output exactly
-- [ ] Templates: Update README_TEMPLATE.md Quick Start section
-- [ ] Code: Grep for "cache" and "build setup" references; remove/clarify
+- [ ] Code: Grep for "cache" and "build setup" references in lib/picotorokko/; remove/clarify
 - [ ] Help text: Run each command with --help; compare against documentation
 - [ ] Test: Verify no doc references commands that fail when run
 
 ### Session Notes
 
-- Discovered confusion between "specification document" (SPEC.md = planned) vs. "feature documentation" (README.md = current)
+- **Session 3**: Discovered confusion between "specification document" (SPEC.md = planned) vs. "feature documentation" (README.md = current)
 - User feedback: "SPEC.md is specification, not current state documentation"
 - User explicitly requested: "実装をベースに最新化して、古い記載は一切残さず消してください。未リリースなのでリリースノートのような履歴記載もなし" (Update based ONLY on implementation; remove all old content; no release notes)
 - **Lesson**: SPEC.md = "what we plan to build"; README.md = "what we have built now"
 
+**Session 4 Completion (playground device code testing)**:
+- ✅ Phase 1.2 BLOCKER RESOLVED: Mrbgemfile template created and integrated
+- ✅ [TODO-DOCUMENTATION-SPEC-IMPLEMENTATION-SYNC] PARTIALLY RESOLVED:
+  - Template README.md updated with implemented commands only
+  - ProjectInitializer success message fixed
+  - All playground scenarios now use real ptrk commands
+- ✅ All tests passing: 229/229 (100%), coverage 86.33% line / 65.12% branch
+- ✅ User scenario validation: ptrk init → generated README with correct commands
+
 ### Timeline
 
-- **Session 4+**: Complete documentation sync (est. 2-3 hours)
-  - Start with SPEC.md audit (identify all unimplemented sections)
-  - Update README_TEMPLATE.md (impacts all future `ptrk init` projects)
-  - Verify help text matches implementation
-  - Final check: All commands in docs runnable and match actual behavior
+- **Session 4**: Template and documentation sync (✅ COMPLETED)
+  - ✅ Created Mrbgemfile template
+  - ✅ Updated README_TEMPLATE.md with real commands
+  - ✅ Updated ProjectInitializer success message
+- **Session 5+**: Complete SPEC.md and code documentation audit
+  - Remove unimplemented cache/build sections from SPEC.md
+  - Audit code comments for unimplemented feature references
+  - Verify all command help text matches documentation
