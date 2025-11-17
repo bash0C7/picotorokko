@@ -164,21 +164,21 @@ Current version: **0.1.0** (released to RubyGems)
 
 ## 🐛 [TODO-CODE-QUALITY-ISSUES] Found During Coverage Analysis (Session Latest)
 
-### ProjectInitializer Issues (lib/picotorokko/project_initializer.rb)
+### ✅ COMPLETED ISSUES
 
-1. **[ISSUE-1] detect_git_author returns empty string instead of nil**
+#### ProjectInitializer Issues (lib/picotorokko/project_initializer.rb)
+
+1. **✅ [ISSUE-1] detect_git_author returns empty string instead of nil** - FIXED
    - Location: line 126-131
-   - Problem: `git config user.name` returns empty string when not set, but `.strip` doesn't convert to nil
-   - Impact: `prepare_variables` (line 112) treats empty string as valid author, shows empty field in templates
-   - Test gap: No test for missing git user.name (only test with partial config exists)
-   - Severity: Low (cosmetic, doesn't break initialization)
+   - Fix: Changed to use `git -C #{project_root}` and convert empty string to nil
+   - Result: Tests passing, author detection works correctly for all scenarios
+   - Commit: dd28037
 
-2. **[ISSUE-2] validate_project_name! rejects valid mixed-case names**
-   - Location: line 88 `\A[a-zA-Z0-9_-]+\z`
-   - Problem: Regex allows UPPERCASE letters but convention expects lowercase+dashes
-   - Example: "TestProject" is accepted but "test-project" is recommended
-   - Test gap: Tests added for uppercase rejection, but spec doesn't clarify intent
-   - Severity: Low (follows project conventions, but documentation mismatch)
+2. **✅ [ISSUE-2] validate_project_name! rejects valid mixed-case names** - FIXED
+   - Location: line 88 `\A[a-z0-9_-]+\z`
+   - Fix: Changed regex from `[a-zA-Z0-9_-]` to `[a-z0-9_-]` to enforce lowercase
+   - Result: Tests passing, uppercase rejection working as expected
+   - Commit: dd28037
 
 3. **[ISSUE-3] render_template silently skips missing templates**
    - Location: line 157-160
