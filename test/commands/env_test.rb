@@ -1366,7 +1366,7 @@ class PraCommandsEnvTest < PraTestCase
           # Create a mock executor that fails on git clone
           mock_executor = Picotorokko::MockExecutor.new
           mock_executor.set_result(
-            "git clone https://github.com/test/repo.git dest",
+            "git clone --depth 1 https://github.com/test/repo.git dest",
             fail: true,
             stderr: "fatal: could not read Username"
           )
@@ -1399,7 +1399,7 @@ class PraCommandsEnvTest < PraTestCase
         begin
           # Mock clone succeeds, checkout fails
           mock_executor = Picotorokko::MockExecutor.new
-          clone_cmd = "git clone https://github.com/test/repo.git dest"
+          clone_cmd = "git clone --depth 1 https://github.com/test/repo.git dest"
           mock_executor.set_result(clone_cmd, stdout: "Cloning...")
 
           checkout_cmd = "git checkout abc1234"

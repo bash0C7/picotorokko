@@ -185,7 +185,7 @@ module Picotorokko
         return if Dir.exist?(dest_path)
 
         puts "Cloning #{repo_url} to #{dest_path}..."
-        cmd = "git clone #{Shellwords.escape(repo_url)} #{Shellwords.escape(dest_path)}"
+        cmd = "git clone --depth 1 #{Shellwords.escape(repo_url)} #{Shellwords.escape(dest_path)}"
         executor.execute(cmd)
 
         # 指定コミットにチェックアウト
