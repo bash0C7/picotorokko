@@ -235,7 +235,21 @@ class PicotorokkoProjectInitializerTest < PraTestCase
   end
 
   test "render_template raises error when template file is missing" do
-    omit "[TODO-ISSUE-3-IMPL]: render_template missing file error handling. Tests added; implementation in ISSUE-3 phase."
+    tmpdir = nil
+    begin
+      tmpdir = Dir.mktmpdir("ptrk_test")
+
+      initializer = Picotorokko::ProjectInitializer.new("test-project", { path: tmpdir })
+
+      # Call render_template with non-existent template
+      error = assert_raises(Picotorokko::Error) do
+        initializer.send(:render_template, "non_existent_template.md", {})
+      end
+
+      assert_match(/Template not found/, error.message)
+    ensure
+      FileUtils.rm_rf(tmpdir) if tmpdir && Dir.exist?(tmpdir)
+    end
   end
 
   test "render_template raises error when template engine fails" do

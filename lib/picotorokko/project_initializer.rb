@@ -154,10 +154,7 @@ module Picotorokko
       template_path = File.join(TEMPLATES_DIR, template_file)
       output_path = File.join(project_root, template_file)
 
-      unless File.exist?(template_path)
-        puts "Warning: Template not found: #{template_path}"
-        return
-      end
+      raise Picotorokko::Error, "Template not found: #{template_path}" unless File.exist?(template_path)
 
       # Render template using Prism-based engine (supports .rb, .yml, .md, etc.)
       content = Picotorokko::Template::Engine.render(template_path, variables)
