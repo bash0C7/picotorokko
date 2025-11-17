@@ -235,7 +235,7 @@ module Picotorokko
 
         current = Picotorokko::Env.get_current_env
         if current.nil?
-          raise "Error: No current environment set. Use 'pra device <command> --env <name>' to specify an environment"
+          raise "Error: No current environment set. Use 'ptrk device <command> --env <name>' to specify an environment"
         end
 
         current

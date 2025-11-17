@@ -439,49 +439,54 @@ module Picotorokko
       # @raise [RuntimeError] If git clone command fails (exit status non-zero)
       #
       # @rbs () -> Hash[String, Hash[String, String]]
-      def fetch_latest_repos
-        require "tmpdir"
+      no_commands do
+        def fetch_latest_repos
+          require "tmpdir"
 
-        repos_info = {}
+          repos_info = {}
+          Picotorokko::Env::REPOS.each do |repo_name, repo_url|
+            puts "  Checking #{repo_name}..."
+            commit = Picotorokko::Env.fetch_remote_commit(repo_url, "HEAD")
+            raise "Failed to fetch commit for #{repo_name}" if commit.nil?
 
-        Picotorokko::Env::REPOS.each do |repo_name, repo_url|
-          puts "  Checking #{repo_name}..."
-
-          # リモートから最新コミットを取得
-          commit = Picotorokko::Env.fetch_remote_commit(repo_url, "HEAD")
-          raise "Failed to fetch commit for #{repo_name}" if commit.nil?
-
-          # 一時ディレクトリでshallow cloneしてタイムスタンプ取得
-          Dir.mktmpdir do |tmpdir|
-            tmp_repo = File.join(tmpdir, repo_name)
-            puts "    Cloning to get timestamp..."
-
-            # Shallow clone（高速化のため）
-            cmd = "git clone --depth 1 --branch HEAD #{Shellwords.escape(repo_url)} #{Shellwords.escape(tmp_repo)} 2>/dev/null"
-            unless system(cmd)
-              raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd.sub(" 2>/dev/null", "")}"
-            end
-
-            # コミットハッシュとタイムスタンプ取得
-            Dir.chdir(tmp_repo) do
-              short_hash = `git rev-parse --short=7 HEAD`.strip
-              timestamp_str = `git show -s --format=%ci HEAD`.strip
-              timestamp = Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
-
-              repos_info[repo_name] = {
-                "commit" => short_hash,
-                "timestamp" => timestamp
-              }
-
-              puts "    ✓ #{repo_name}: #{short_hash} (#{timestamp})"
-            end
+            repos_info[repo_name] = fetch_repo_info(repo_name, repo_url)
           end
-        end
 
-        repos_info
+          repos_info
+        end
       end
 
       private
+
+      # @rbs (String, String) -> Hash[String, String]
+      def fetch_repo_info(repo_name, repo_url)
+        require "tmpdir"
+
+        Dir.mktmpdir do |tmpdir|
+          tmp_repo = File.join(tmpdir, repo_name)
+          puts "    Cloning to get timestamp..."
+
+          # Shallow clone（高速化のため）
+          cmd = "git clone --depth 1 #{Shellwords.escape(repo_url)} #{Shellwords.escape(tmp_repo)} 2>/dev/null"
+          unless system(cmd)
+            raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd.sub(" 2>/dev/null", "")}"
+          end
+
+          # コミットハッシュとタイムスタンプ取得
+          Dir.chdir(tmp_repo) do
+            short_hash = `git rev-parse --short=7 HEAD`.strip
+            timestamp_str = `git show -s --format=%ci HEAD`.strip
+            timestamp = Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
+
+            puts "    ✓ #{repo_name}: #{short_hash} (#{timestamp})"
+
+            {
+              "commit" => short_hash,
+              "timestamp" => timestamp
+            }
+          end
+        end
+      end
 
       # @rbs (String) -> void
       def show_env_not_found(env_name)
