@@ -824,6 +824,20 @@ end
     - Test gap: No test for duplicate placeholders
     - Severity: MEDIUM (template rendering broken for DRY code)
 
+### Commands/Env (lib/picotorokko/commands/env.rb) - 316 lines
+
+22. **[TODO-RUBOCOP-CLASS-LENGTH] Env class exceeds RuboCop line limit**
+    - Location: lib/picotorokko/commands/env.rb:14
+    - Problem: Class has 316 lines (threshold: 300)
+    - Impact: RuboCop reports single violation, affects CI cleanliness
+    - Solution: Refactor Env class into smaller modules:
+      - EnvRepository (environment YAML persistence)
+      - EnvValidator (validation logic)
+      - EnvBuilder (clone/checkout operations)
+      - EnvInspector (inspection/listing)
+    - Severity: MEDIUM (style/maintainability issue, not functional)
+    - Estimated effort: 2-3 refactoring commits
+
 ### Summary by Priority
 
 **CRITICAL (implement immediately)**:
@@ -839,6 +853,7 @@ end
 **MEDIUM** (implement next):
 - ISSUE-19: mrbgems directory validation
 - ISSUE-21: Duplicate placeholder handling
+- TODO-RUBOCOP-CLASS-LENGTH: Refactor Env class to reduce line count
 
 ### Overall Test Coverage Status
 
