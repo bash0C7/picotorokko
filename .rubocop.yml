@@ -9,6 +9,7 @@ AllCops:
     - ".cache/**/*"
     - "patch/**/*"
     - "storage/**/*"
+    - "playground/**/*" # User-facing ptrk usage experiments, not gem code
     - "lib/reality_marble/**/*" # Separate gem, has its own RuboCop config
     - "lib/picotorokko/templates/**/*" # User-facing templates, not core gem code
     - "test/commands/device_test.rb" # Excluded from test suite - see TODO.md [TODO-INFRASTRUCTURE-DEVICE-TEST]

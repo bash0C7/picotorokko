@@ -1,5 +1,6 @@
 # rbs_inline: enabled
 
+require "shellwords"
 require "thor"
 require "prism"
 
@@ -215,7 +216,8 @@ module Picotorokko
 
         puts "Available R2P2-ESP32 tasks for environment: #{actual_env}"
         puts "=" * 60
-        Picotorokko::Env.execute_with_esp_env("rake -T", r2p2_path)
+        rake_cmd = build_rake_command(r2p2_path, "-T")
+        Picotorokko::Env.execute_with_esp_env(rake_cmd, r2p2_path)
       end
 
       # R2P2-ESP32のRakefileにタスクを委譲
@@ -224,8 +226,11 @@ module Picotorokko
         actual_env = resolve_env_name(env_name)
         r2p2_path = validate_and_get_r2p2_path(actual_env)
 
+        # Build appropriate rake command (with or without bundler)
+        rake_cmd = build_rake_command(r2p2_path, command)
+
         # ESP-IDF環境でR2P2-ESP32のrakeタスクを実行
-        Picotorokko::Env.execute_with_esp_env("rake #{command}", r2p2_path)
+        Picotorokko::Env.execute_with_esp_env(rake_cmd, r2p2_path)
       end
 
       # 環境名を解決（currentの場合は実環境名に変換）
@@ -339,6 +344,15 @@ module Picotorokko
       end
 
       private
+
+      # Build rake command with appropriate prefix (bundle exec or not)
+      # Detects Gemfile in R2P2-ESP32 directory to determine if bundler is needed
+      # @rbs (String, String) -> String
+      def build_rake_command(r2p2_path, task_name)
+        gemfile_path = File.join(r2p2_path, "Gemfile")
+        rake_cmd = File.exist?(gemfile_path) ? "bundle exec rake" : "rake"
+        "cd #{Shellwords.escape(r2p2_path)} && #{rake_cmd} #{task_name}"
+      end
 
       # Standard task definition: task :name or task "name"
       # @rbs (Prism::CallNode) -> void
