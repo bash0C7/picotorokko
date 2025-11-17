@@ -867,3 +867,183 @@ end
 | **TOTAL** | **3196** | **N/A** | **High-level** | **Low-level** | **~25-30%** |
 
 **Estimated additional tests needed**: 30-40 tests to reach 95%+ coverage across all modules
+
+---
+
+## 🚀 [TODO-TEST-PERFORMANCE-OPTIMIZATION] Test Execution Speed Tuning (Next Session)
+
+**Session Goal**: Accelerate t-wada style TDD cycles by optimizing test runtime without changing product code.
+
+**Current Baseline** (2025-11-18):
+- **Total runtime**: 86.79 seconds (~1min 27sec)
+- **Test count**: 246 tests, 528 assertions
+- **Coverage**: 84.68% line, 65.54% branch
+- **Throughput**: 2.83 tests/sec, 6.08 assertions/sec
+- **Bottleneck**: Dir.mktmpdir operations (134 uses, ~40-80 seconds total = 46-92% of runtime)
+
+### Detailed Performance Analysis
+
+#### Performance Bottleneck Breakdown
+
+**1. Dir.mktmpdir Operations (HIGHEST PRIORITY)**
+- **Occurrences**: 134 total across 10 files
+- **Estimated cost**: 0.3-1.0 sec per block (includes file creation/deletion)
+- **Total impact**: 40-80 seconds (46-92% of all test time)
+- **Distribution**:
+  - `test/commands/env_test.rb`: 60 uses
+  - `test/commands/init_test.rb`: 15 uses
+  - `test/commands/mrbgems_test.rb`: 10 uses
+  - `test/commands/rubocop_test.rb`: 10 uses
+  - Others: 39 uses across 6 files
+- **Root cause**: Each test case creates isolated tmpdir, destroys on completion
+- **Optimization potential**: 20-40 sec (via reuse), 30-50 sec (via parallelization)
+
+**2. SimpleCov Branch Coverage Measurement (MEDIUM PRIORITY)**
+- **Configuration**: `enable_coverage :branch` in test/test_helper.rb:4
+- **Estimated overhead**: 10-17 seconds (12-20% slowdown)
+- **Current behavior**: Branch coverage measured in all runs (dev + CI)
+- **Optimization opportunity**: Disable in dev, enable only in CI (via ENV vars)
+
+**3. SimpleCov XML Output (LOW PRIORITY)**
+- **Formatter**: CoberturaFormatter (generates XML reports)
+- **Estimated overhead**: 2-5 seconds (2-6%)
+- **Current behavior**: XML generated in all runs
+- **Optimization opportunity**: Use HTMLFormatter in dev, CoberturaFormatter only in CI
+
+**4. FileUtils Operations (MEDIUM IMPACT)**
+- **Occurrences**: 126 across 11 files
+- **Per-operation cost**: 0.05-0.2 seconds
+- **Total impact**: 6-25 seconds
+- **Files**: env_test.rb (60), project_initializer_test.rb (12), template/c_engine_test.rb (10), others (44)
+
+**5. capture_stdout (NEGLIGIBLE)**
+- **Occurrences**: 75 across 6 files
+- **Per-call cost**: 1-5ms
+- **Total impact**: 0.1-0.4 seconds
+- **No optimization needed**
+
+**6. system() calls (MINIMAL)**
+- **Occurrences**: 31 (mostly Git operations)
+- **Status**: Already mocked via SystemCommandMocking
+- **No optimization needed**
+
+**NOT FOUND** ✅:
+- ❌ `sleep` commands (0 occurrences) - Good!
+- ❌ `Timeout` use (0 occurrences) - Good!
+
+### Proposed Optimization Phases
+
+#### Phase 1: Immediate Implementation (Low Risk, 12-22 sec gain)
+
+**1.1: SimpleCov Formatter Environment Variable Control**
+- **Change**: Use HTMLFormatter in dev, CoberturaFormatter in CI
+- **Code location**: test/test_helper.rb:5-6
+- **Implementation**:
+  ```ruby
+  unless ENV["CI"]
+    SimpleCov.formatter = SimpleCov::Formatter::HTMLFormatter
+  else
+    SimpleCov.formatter = SimpleCov::Formatter::CoberturaFormatter
+  end
+  ```
+- **Expected gain**: 2-5 seconds (2-6%)
+- **Risk**: None (dev/CI separation already in place)
+- **Verification**: Run `bundle exec rake test` locally, verify HTML report generated
+
+**1.2: SimpleCov Branch Coverage CI-Only**
+- **Change**: Disable branch coverage in dev, enable in CI
+- **Code location**: test/test_helper.rb:3
+- **Current**: `enable_coverage :branch` (always)
+- **Implementation**:
+  ```ruby
+  SimpleCov.start do
+    add_filter "/test/"
+    add_filter "/vendor/"
+    add_filter "/lib/picotorokko/templates/"
+    enable_coverage :branch if ENV["CI"]  # Dev: line-only, CI: branch coverage
+    minimum_coverage line: 75
+    minimum_coverage branch: 55 if ENV["CI"]
+  end
+  ```
+- **Expected gain**: 10-17 seconds (12-20%)
+- **Risk**: Low (coverage thresholds still enforced in CI)
+- **Verification**:
+  - Local: `bundle exec rake test` (faster, no branch coverage)
+  - CI: `bundle exec rake ci` (full coverage validation)
+
+**Combined Phase 1 gain**: 12-22 seconds → Final runtime: 65-75 seconds
+
+---
+
+#### Phase 2: Parallel Test Execution (Medium Risk, 30-50 sec gain)
+
+**2.1: test-unit Parallel Worker Configuration**
+- **Approach**: Use test-unit's `--max-workers` option for multi-core execution
+- **Code location**: Rakefile (test task definition)
+- **Current**: No parallelization configured
+- **Implementation**:
+  ```ruby
+  Rake::TestTask.new(:test) do |t|
+    t.ruby_opts = ["-W1"]
+    t.options = "--max-workers=4"  # Parallel execution on 4 cores
+  end
+  ```
+- **Expected gain**: 30-50 seconds (35-58% with 4-core machine, scales with CPU count)
+- **Risk**: Medium (requires verification that tests don't share state)
+- **Current state safety**: `Dir.mktmpdir` blocks are independent per test, low coupling risk
+- **Verification checklist**:
+  1. Run: `bundle exec rake test` and verify all tests pass
+  2. Manually run 3x to check for flaky tests
+  3. Compare results: parallel vs sequential (same assertion counts)
+  4. Verify CI environment: Adjust `--max-workers` based on CI runner CPU count
+
+**Combined Phase 1+2 gain**: 42-72 seconds → Final runtime: 15-45 seconds (83% improvement)
+
+---
+
+#### Phase 3: Dir.mktmpdir Reuse Strategy (High Risk, Reserve for Later)
+
+**NOT IMPLEMENTED YET** - High risk, requires careful design:
+- **Approach**: Setup/teardown pattern with shared tmpdir + subdirectories per test
+- **Risk factors**:
+  - Test state leakage between cases
+  - Parallel execution collision
+  - Flakiness from stale temp files
+  - Debugging complexity (no isolation)
+- **Estimated gain**: 20-40 seconds (if successful)
+- **Recommendation**: Implement only after Phase 1+2 validated and verified stable
+
+---
+
+### Implementation Checklist
+
+- [ ] **Phase 1.1**: Edit SimpleCov formatter (2-5 sec gain)
+- [ ] **Phase 1.2**: Edit SimpleCov branch coverage (10-17 sec gain)
+- [ ] **Verify Phase 1**: Run tests locally, confirm ≥12 sec improvement
+- [ ] **Phase 2.1**: Add `--max-workers=4` to Rakefile test task
+- [ ] **Verify Phase 2**: Run tests 3x, check for flakiness, compare performance
+- [ ] **Validate combined**: Run `bundle exec rake ci`, confirm quality gates pass
+- [ ] **Document**: Update SPEC.md "Test Execution" section with new performance metrics
+
+### Expected Outcomes
+
+**After Phase 1 alone**:
+- Dev test runtime: 65-75 seconds (still acceptable for TDD microcycles)
+- CI test runtime: 86-90 seconds (unchanged, coverage still validated)
+
+**After Phase 1+2**:
+- Dev test runtime: 15-45 seconds (3-6x faster, excellent for TDD)
+- CI test runtime: Similar (parallelization may vary by CI runner)
+- Dev TDD cycle: Red (1s) → Green (2s) → RuboCop (5s) → Refactor → Commit (total ~10-15 sec per cycle)
+
+### Monitoring & Regression Detection
+
+**After implementation**, periodically measure with:
+```bash
+time bundle exec rake test
+```
+
+**Alert conditions** (add to pre-push hook if needed):
+- Test runtime > 60 seconds (investigate performance regression)
+- Test runtime variation > 10 seconds (check for flakiness)
+- Coverage drop > 1% (regression in test effectiveness)
