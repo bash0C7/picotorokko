@@ -336,3 +336,101 @@ SPEC.md contains features not yet implemented; README.md and documentation refer
   - Remove unimplemented cache/build sections from SPEC.md
   - Audit code comments for unimplemented feature references
   - Verify all command help text matches documentation
+
+---
+
+## 🚨 [TODO-INFRASTRUCTURE-FETCH-LATEST-REPOS-COMMAND] Phase 1 BLOCKER (Session 5)
+
+**Context**: User tested `ptrk env latest` in playground/tilt-led; encountered 3 infrastructure issues
+
+### Issue 1: fetch_latest_repos Thor Warning
+
+**File**: `lib/picotorokko/commands/env.rb:442`
+
+**Problem**:
+```
+[WARNING] Attempted to create command "fetch_latest_repos" without usage or description.
+Call desc if you want this method to be available as command or declare it inside
+a no_commands{} block.
+```
+
+**Root Cause**: Method `fetch_latest_repos` defined at line 442 lacks `desc` decorator; Thor requires all public methods to have documentation.
+
+**Solution**:
+1. Add `desc` decorator before `def fetch_latest_repos` (line 442)
+2. OR move method to after `private` declaration (make it private method)
+3. Check if method is actually used as internal helper (`fetch_latest_repos` is called by `latest` command at line 360) → should be PRIVATE
+
+**TDD Cycle**:
+- RED: Add test verifying `ptrk env latest` runs without Thor warnings
+- GREEN: Mark fetch_latest_repos as private method (move after `private` line)
+- RUBOCOP: `bundle exec rubocop -A`
+- REFACTOR: Verify method usage only internal
+- COMMIT: "fix: make fetch_latest_repos private to resolve Thor warning"
+
+---
+
+### Issue 2: Old Command Name in Error Message
+
+**File**: `lib/picotorokko/commands/device.rb:238`
+
+**Problem**:
+```ruby
+raise "Error: No current environment set. Use 'pra device <command> --env <name>' to specify an environment"
+```
+
+**Root Cause**: Outdated command name "pra" should be "ptrk" (project renamed at some point)
+
+**Solution**: Change "pra" → "ptrk" in error message
+
+**TDD Cycle**:
+- RED: Add test verifying error message contains "ptrk" not "pra"
+- GREEN: Update error message at line 238
+- RUBOCOP: `bundle exec rubocop -A`
+- REFACTOR: Check for other "pra" references in codebase (grep)
+- COMMIT: "fix: update error message command name pra → ptrk"
+
+**Search**: grep for "pra " in lib/ to find all occurrences
+
+---
+
+### Issue 3: Invalid git clone --branch HEAD Syntax
+
+**File**: `lib/picotorokko/commands/env.rb:460`
+
+**Problem**:
+```ruby
+cmd = "git clone --depth 1 --branch HEAD #{Shellwords.escape(repo_url)} #{...}"
+```
+
+Exit code 128 when executing:
+```
+git clone --depth 1 --branch HEAD https://github.com/picoruby/R2P2-ESP32.git ...
+```
+
+**Root Cause**: `--branch HEAD` is invalid syntax. HEAD is a symbolic reference, not a branch name. Correct approaches:
+1. Use default branch: `git clone --depth 1 {repo_url}` (omit --branch)
+2. Or use specific branch: `git clone --depth 1 --branch main {repo_url}`
+
+**Solution**: Remove `--branch HEAD` entirely; git clone defaults to HEAD (master/main)
+
+**TDD Cycle**:
+- RED: Add test for fetch_latest_repos with mocked git (or test with real repo)
+- GREEN: Remove `--branch HEAD` from command line at line 460
+- RUBOCOP: `bundle exec rubocop -A`
+- REFACTOR: Verify git command syntax is correct
+- COMMIT: "fix: remove invalid --branch HEAD from git clone"
+
+**Testing Note**: This command fails because user doesn't have full R2P2-ESP32 clone; affected by network/git behavior. May need mock for reliable test.
+
+---
+
+### Impact & Severity
+
+- **Severity**: HIGH - Blocks `ptrk env latest` and all `ptrk device` commands that depend on env setup
+- **User Impact**: Cannot proceed with device build workflow in playground tests
+- **Estimated Fix Time**: ~15 minutes (3 TDD cycles, ~5 min each)
+
+### Blocking Phase
+
+All three issues must be resolved before continuing Phase 2 (Device Command --test Option).
