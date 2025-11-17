@@ -530,7 +530,7 @@ module Picotorokko
         FileUtils.rm_rf(target_path)
 
         # Clone repository - check return value
-        clone_cmd = "git clone #{Shellwords.escape(repo_url)} #{Shellwords.escape(target_path)}"
+        clone_cmd = "git clone --filter=blob:none #{Shellwords.escape(repo_url)} #{Shellwords.escape(target_path)}"
         raise "Clone failed: #{repo_name} from #{repo_url}" unless system(clone_cmd)
 
         # Checkout specific commit - check return value
