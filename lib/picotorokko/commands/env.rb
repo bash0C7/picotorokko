@@ -500,10 +500,20 @@ module Picotorokko
         # Create build directory if it doesn't exist
         FileUtils.mkdir_p(build_path)
 
-        # Clone each repository
-        Picotorokko::Env::REPOS.each do |repo_name, repo_url|
-          puts "  Cloning #{repo_name}..."
-          clone_and_checkout_repo(repo_name, repo_url, build_path, repos_info)
+        # Track cloned repos for rollback on failure
+        cloned_repos = []
+
+        begin
+          # Clone each repository
+          Picotorokko::Env::REPOS.each do |repo_name, repo_url|
+            puts "  Cloning #{repo_name}..."
+            clone_and_checkout_repo(repo_name, repo_url, build_path, repos_info)
+            cloned_repos << File.join(build_path, repo_name)
+          end
+        rescue StandardError
+          # Rollback: remove all cloned repos on failure
+          cloned_repos.each { |path| FileUtils.rm_rf(path) }
+          raise
         end
       end
 
