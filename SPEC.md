@@ -208,21 +208,37 @@ environments:
 │
 ├── .picoruby-env.yml       # Environment configuration file
 ├── .gitignore              # Standard gitignore for ptrk projects
+├── .rubocop.yml            # PicoRuby-specific linting configuration (auto-generated)
 ├── Gemfile                 # Ruby dependencies with picotorokko gem
 ├── README.md               # Project README (customizable template)
-└── CLAUDE.md               # ptrk user development guide (auto-generated)
+├── CLAUDE.md               # PicoRuby development guide (auto-generated)
+└── Mrbgemfile              # mrbgems dependencies (auto-generated)
 ```
 
 **Generated Files**:
 
 1. **`.gitignore`** - Excludes `.cache/`, `build/`, `ptrk_env/*/` from version control
 2. **`.picoruby-env.yml`** - Initial environment configuration (empty, ready for `ptrk env set`)
-3. **`ptrk_env/.gitkeep`** - Preserves directory in git
-4. **`Gemfile`** - Contains `picotorokko` gem dependency (when available in gems)
-5. **`README.md`** - Template-generated with project name and author
-6. **`CLAUDE.md`** - Auto-generated development guide for ptrk users
-7. **`storage/home/main.rb`** - Example Ruby application (optional, can be customized)
-8. **`patch/README.md`** - Guide for patch management workflow
+3. **`.rubocop.yml`** - PicoRuby-specific linting configuration:
+   - TargetRubyVersion: 3.3 for microcontroller development
+   - Stricter Metrics/MethodLength (20 max) for memory efficiency
+   - Excludes ptrk_env/, .cache/, patch/, vendor/ from linting
+   - Allows Japanese comments for device documentation
+4. **`Mrbgemfile`** - mrbgems dependency declarations:
+   - Pre-configured with picoruby-picotest reference
+   - Platform-specific mrbgem support
+   - GitHub repository references
+5. **`Gemfile`** - Contains `picotorokko` gem dependency (when available in gems)
+6. **`ptrk_env/.gitkeep`** - Preserves directory in git
+7. **`README.md`** - Template-generated with project name and author, includes ptrk command references
+8. **`CLAUDE.md`** - Comprehensive PicoRuby development guide including:
+   - mrbgems dependency management
+   - Peripheral APIs (I2C, GPIO, RMT) with code examples
+   - Memory optimization techniques
+   - RuboCop configuration guide
+   - Picotest testing framework examples
+9. **`storage/home/main.rb`** - Example Ruby application (optional, can be customized)
+10. **`patch/README.md`** - Guide for patch management workflow
 
 **Operation**:
 1. Validate project name (alphanumeric + dashes/underscores)

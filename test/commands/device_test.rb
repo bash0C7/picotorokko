@@ -466,7 +466,45 @@ class PraCommandsDeviceTest < PraTestCase
     end
   end
 
-  private
+  # Rake command building tests
+  sub_test_case "build_rake_command helper" do
+    test "returns 'bundle exec rake' when Gemfile exists" do
+      Dir.mktmpdir do |tmpdir|
+        FileUtils.touch(File.join(tmpdir, 'Gemfile'))
+        device = Picotorokko::Commands::Device.new
+
+        cmd = device.send(:build_rake_command, tmpdir, 'build')
+
+        assert_match(/bundle exec rake/, cmd)
+        assert_match(/build$/, cmd)
+      end
+    end
+
+    test "returns 'rake' when Gemfile does not exist" do
+      Dir.mktmpdir do |tmpdir|
+        device = Picotorokko::Commands::Device.new
+
+        cmd = device.send(:build_rake_command, tmpdir, 'build')
+
+        assert_match(/^cd .* && rake build$/, cmd)
+        assert_not_match(/bundle exec/, cmd)
+      end
+    end
+
+    test "properly escapes paths in command" do
+      Dir.mktmpdir do |tmpdir|
+        path_with_spaces = File.join(tmpdir, 'path with spaces')
+        FileUtils.mkdir_p(path_with_spaces)
+        device = Picotorokko::Commands::Device.new
+
+        cmd = device.send(:build_rake_command, path_with_spaces, 'build')
+
+        # Should contain escaped path
+        assert_match(/cd .*path.*with.*spaces/, cmd)
+      end
+    end
+  end
+
 
   def capture_stdout
     original_stdout = $stdout

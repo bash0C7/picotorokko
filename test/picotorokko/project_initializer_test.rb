@@ -134,4 +134,103 @@ class PicotorokkoProjectInitializerTest < PraTestCase
       FileUtils.rm_rf(tmpdir) if tmpdir && Dir.exist?(tmpdir)
     end
   end
+
+  test "initialize_project creates .rubocop.yml with PicoRuby config" do
+    tmpdir = Dir.mktmpdir
+    project_name = "test_project"
+
+    begin
+      # Mock setup_default_environment to avoid network calls
+      original_method = Picotorokko::ProjectInitializer.instance_method(:setup_default_environment)
+      Picotorokko::ProjectInitializer.define_method(:setup_default_environment) do
+        # No-op
+      end
+
+      initializer = Picotorokko::ProjectInitializer.new(project_name, path: tmpdir)
+      initializer.initialize_project
+
+      # Verify .rubocop.yml was created
+      rubocop_file = File.join(tmpdir, project_name, ".rubocop.yml")
+      assert File.exist?(rubocop_file), ".rubocop.yml should be created"
+
+      # Verify content
+      content = File.read(rubocop_file, encoding: "UTF-8")
+      assert_match(/TargetRubyVersion/, content, "Should specify target Ruby version")
+      assert_match(/ptrk_env/, content, "Should exclude ptrk_env directory")
+      assert_match(%r{Metrics/MethodLength}, content, "Should have MethodLength config")
+    ensure
+      Picotorokko::ProjectInitializer.define_method(:setup_default_environment, original_method)
+      FileUtils.rm_rf(tmpdir) if tmpdir && Dir.exist?(tmpdir)
+    end
+  end
+
+  test "CLAUDE.md includes PicoRuby development guide" do
+    tmpdir = Dir.mktmpdir
+    project_name = "test_project"
+
+    begin
+      # Mock setup_default_environment to avoid network calls
+      original_method = Picotorokko::ProjectInitializer.instance_method(:setup_default_environment)
+      Picotorokko::ProjectInitializer.define_method(:setup_default_environment) do
+        # No-op
+      end
+
+      initializer = Picotorokko::ProjectInitializer.new(project_name, path: tmpdir)
+      initializer.initialize_project
+
+      # Read CLAUDE.md with UTF-8 encoding for international characters
+      claude_file = File.join(tmpdir, project_name, "CLAUDE.md")
+      content = File.read(claude_file, encoding: "UTF-8")
+
+      # Verify PicoRuby specific content
+      assert_match(/mrbgem/, content, "Should mention mrbgems")
+      assert_match(/I2C/, content, "Should mention I2C for peripherals")
+      assert_match(/GPIO/, content, "Should mention GPIO")
+      assert_match(/Memory Optimization/, content, "Should discuss memory optimization")
+    ensure
+      Picotorokko::ProjectInitializer.define_method(:setup_default_environment, original_method)
+      FileUtils.rm_rf(tmpdir) if tmpdir && Dir.exist?(tmpdir)
+    end
+  end
+
+  test "validate_project_name! rejects uppercase letters" do
+    initializer = Picotorokko::ProjectInitializer.new("TestProject")
+    assert_raise(RuntimeError) do
+      initializer.send(:validate_project_name!, "TestProject")
+    end
+  end
+
+  test "validate_project_name! rejects special characters" do
+    initializer = Picotorokko::ProjectInitializer.new("test-project!")
+    assert_raise(RuntimeError) do
+      initializer.send(:validate_project_name!, "test-project!")
+    end
+  end
+
+  test "validate_project_name! rejects dots in name" do
+    initializer = Picotorokko::ProjectInitializer.new("test.project")
+    assert_raise(RuntimeError) do
+      initializer.send(:validate_project_name!, "test.project")
+    end
+  end
+
+  test "detect_git_author handles git command failure gracefully" do
+    tmpdir = Dir.mktmpdir
+    project_name = "test_project"
+
+    begin
+      # Create a temporary git repo with no user.name configured
+      Dir.chdir(tmpdir) do
+        `git init --quiet`
+        `git config --local user.email "test@example.com"` # Only email, no name
+      end
+
+      initializer = Picotorokko::ProjectInitializer.new(project_name, path: tmpdir)
+      author = initializer.send(:detect_git_author)
+      # Should return nil or empty string when git config user.name is not set
+      assert(author.nil? || author.empty?, "Should handle missing git user.name gracefully")
+    ensure
+      FileUtils.rm_rf(tmpdir) if tmpdir && Dir.exist?(tmpdir)
+    end
+  end
 end

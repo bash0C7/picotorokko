@@ -1,4 +1,6 @@
 require "English"
+require "fileutils"
+require "shellwords"
 require "thor"
 require "picotorokko/patch_applier"
 
@@ -372,9 +374,12 @@ module Picotorokko
         )
 
         puts "✓ Environment definition '#{env_name}' created successfully in .picoruby-env.yml"
-        puts "\nNext steps:"
-        puts "  1. ptrk cache fetch #{env_name}  # Fetch repositories to cache"
-        puts "  2. ptrk build setup #{env_name}  # Setup build environment"
+
+        # Setup build environment
+        puts "\nSetting up build environment..."
+        setup_build_environment(env_name, repos_info)
+
+        puts "✓ Build environment setup complete"
       end
 
       # Fetch latest commit versions from all default repositories
@@ -439,49 +444,86 @@ module Picotorokko
       # @raise [RuntimeError] If git clone command fails (exit status non-zero)
       #
       # @rbs () -> Hash[String, Hash[String, String]]
-      def fetch_latest_repos
-        require "tmpdir"
+      no_commands do
+        def fetch_latest_repos
+          require "tmpdir"
 
-        repos_info = {}
+          repos_info = {}
+          Picotorokko::Env::REPOS.each do |repo_name, repo_url|
+            puts "  Checking #{repo_name}..."
+            commit = Picotorokko::Env.fetch_remote_commit(repo_url, "HEAD")
+            raise "Failed to fetch commit for #{repo_name}" if commit.nil?
 
-        Picotorokko::Env::REPOS.each do |repo_name, repo_url|
-          puts "  Checking #{repo_name}..."
-
-          # リモートから最新コミットを取得
-          commit = Picotorokko::Env.fetch_remote_commit(repo_url, "HEAD")
-          raise "Failed to fetch commit for #{repo_name}" if commit.nil?
-
-          # 一時ディレクトリでshallow cloneしてタイムスタンプ取得
-          Dir.mktmpdir do |tmpdir|
-            tmp_repo = File.join(tmpdir, repo_name)
-            puts "    Cloning to get timestamp..."
-
-            # Shallow clone（高速化のため）
-            cmd = "git clone --depth 1 --branch HEAD #{Shellwords.escape(repo_url)} #{Shellwords.escape(tmp_repo)} 2>/dev/null"
-            unless system(cmd)
-              raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd.sub(" 2>/dev/null", "")}"
-            end
-
-            # コミットハッシュとタイムスタンプ取得
-            Dir.chdir(tmp_repo) do
-              short_hash = `git rev-parse --short=7 HEAD`.strip
-              timestamp_str = `git show -s --format=%ci HEAD`.strip
-              timestamp = Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
-
-              repos_info[repo_name] = {
-                "commit" => short_hash,
-                "timestamp" => timestamp
-              }
-
-              puts "    ✓ #{repo_name}: #{short_hash} (#{timestamp})"
-            end
+            repos_info[repo_name] = fetch_repo_info(repo_name, repo_url)
           end
-        end
 
-        repos_info
+          repos_info
+        end
       end
 
       private
+
+      # @rbs (String, String) -> Hash[String, String]
+      def fetch_repo_info(repo_name, repo_url)
+        require "tmpdir"
+
+        Dir.mktmpdir do |tmpdir|
+          tmp_repo = File.join(tmpdir, repo_name)
+          puts "    Cloning to get timestamp..."
+
+          # Shallow clone（高速化のため）
+          cmd = "git clone --depth 1 #{Shellwords.escape(repo_url)} #{Shellwords.escape(tmp_repo)} 2>/dev/null"
+          unless system(cmd)
+            raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd.sub(" 2>/dev/null", "")}"
+          end
+
+          # コミットハッシュとタイムスタンプ取得
+          Dir.chdir(tmp_repo) do
+            short_hash = `git rev-parse --short=7 HEAD`.strip
+            timestamp_str = `git show -s --format=%ci HEAD`.strip
+            timestamp = Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
+
+            puts "    ✓ #{repo_name}: #{short_hash} (#{timestamp})"
+
+            {
+              "commit" => short_hash,
+              "timestamp" => timestamp
+            }
+          end
+        end
+      end
+
+      # @rbs (String, Hash[String, Hash[String, String]]) -> void
+      def setup_build_environment(env_name, repos_info)
+        build_path = Picotorokko::Env.get_build_path(env_name)
+
+        # Create build directory if it doesn't exist
+        FileUtils.mkdir_p(build_path)
+
+        # Clone each repository
+        Picotorokko::Env::REPOS.each do |repo_name, repo_url|
+          puts "  Cloning #{repo_name}..."
+          clone_and_checkout_repo(repo_name, repo_url, build_path, repos_info)
+        end
+      end
+
+      # @rbs (String, String, String, Hash[String, Hash[String, String]]) -> void
+      def clone_and_checkout_repo(repo_name, repo_url, build_path, repos_info)
+        target_path = File.join(build_path, repo_name)
+        commit_info = repos_info[repo_name]
+        commit_sha = commit_info["commit"]
+
+        # Skip if already cloned
+        return if Dir.exist?(target_path)
+
+        # Clone repository
+        system("git clone #{Shellwords.escape(repo_url)} #{Shellwords.escape(target_path)} 2>/dev/null")
+
+        # Checkout specific commit (suppress errors silently)
+        system("cd #{Shellwords.escape(target_path)} && git checkout #{Shellwords.escape(commit_sha)} 2>/dev/null")
+
+        puts "    ✓ #{repo_name}: #{commit_sha}"
+      end
 
       # @rbs (String) -> void
       def show_env_not_found(env_name)

@@ -9,7 +9,10 @@ The name "picotorokko" draws inspiration from **torokko** (トロッコ), a simp
 
 ## Features
 
+- **Project Templates**: Auto-generate `.rubocop.yml` and enhanced `CLAUDE.md` with PicoRuby development guides
 - **Environment Management**: Define, list, and manage multiple PicoRuby build environments with version control
+- **Automatic Repository Setup**: `ptrk env latest` auto-clones and checks out repositories to `ptrk_env/`
+- **Smart Build Detection**: Detects `Gemfile` and uses appropriate Rake invocation (bundle exec vs rake)
 - **Centralized Directory Structure**: All environment data stored in `ptrk_env/` for clean project organization
 - **Git Integration**: Clone and manage repositories with automatic submodule handling
 - **Patch Management**: Export, apply, and diff patches across environments
@@ -24,14 +27,17 @@ The name "picotorokko" draws inspiration from **torokko** (トロッコ), a simp
 **Core Components**:
 - Executor abstraction (ProductionExecutor for production, MockExecutor for testing)
 - AST-based template engines supporting Ruby, YAML, and C templates
-- Project initialization with `ptrk init` command (Phase 1-3 complete)
-- Device test framework fully integrated with 199 total tests passing
-- Clean code quality: RuboCop validated, 88.69% line coverage, 66.67% branch coverage
+- Project initialization with `ptrk init` command (Phase 1-5 complete)
+  - Auto-generates `.rubocop.yml` with PicoRuby-specific configuration
+  - Auto-generates enhanced `CLAUDE.md` with mrbgems, I2C/GPIO/RMT APIs, memory optimization guide
+  - Automatic repository cloning and checkout via `ptrk env latest`
+  - Smart Rake command detection (bundle exec vs rake)
+- Full test coverage with 231 total tests passing
+- Clean code quality: RuboCop validated, 86.12% line coverage, 64.59% branch coverage
 
 **Test Suite**:
-- Main suite: 185 tests
-- Device suite: 14 tests
-- Total: 199 tests, all passing ✓
+- All suites: 231 tests, all passing ✓
+- Coverage: 86.12% line, 64.59% branch
 
 **Development Workflow**:
 - Simplified Rake tasks for CI and development use
@@ -110,7 +116,18 @@ Options:
 - `--path /dir` — Create project in specified directory
 - `--with-ci` — Include GitHub Actions workflow
 
-Creates a new PicoRuby project with complete directory structure, default `app` mrbgem, and configuration files.
+Creates a new PicoRuby project with:
+- Complete directory structure and default `app` mrbgem
+- `.rubocop.yml` — PicoRuby-specific linting configuration (stricter method length limits for memory efficiency)
+- `CLAUDE.md` — Comprehensive development guide including:
+  - mrbgems dependency management
+  - Peripheral APIs (I2C, GPIO, RMT) with code examples
+  - Memory optimization techniques
+  - RuboCop configuration
+  - Picotest testing framework
+- `Mrbgemfile` — mrbgems dependency declarations with picoruby-picotest reference
+- `README.md` — Quick start guide with implemented ptrk commands
+- Optional GitHub Actions workflow (with `--with-ci` flag)
 
 #### Environment Management
 

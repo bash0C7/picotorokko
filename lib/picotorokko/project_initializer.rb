@@ -171,6 +171,7 @@ module Picotorokko
     def copy_template_files
       # Copy template files (static files that don't need rendering)
       files_to_copy = [
+        ".rubocop.yml",
         "Mrbgemfile",
         "patch/README.md",
         "storage/home/.gitkeep",

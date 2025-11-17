@@ -539,6 +539,10 @@ class PraCommandsEnvTest < PraTestCase
             assert_equal('ghi9012', env_config['picoruby']['commit'])
             assert_equal('20250103_120000', env_config['picoruby']['timestamp'])
             assert_equal('Auto-generated latest versions', env_config['notes'])
+
+            # build environmentがセットアップされていることを確認
+            assert_match(/Setting up build environment/, output)
+            assert_match(/✓ Build environment setup complete/, output)
           end
         ensure
           Dir.chdir(original_dir)

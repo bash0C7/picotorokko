@@ -1,5 +1,6 @@
 # rbs_inline: enabled
 
+require "shellwords"
 require "thor"
 require "prism"
 
@@ -181,7 +182,7 @@ module Picotorokko
       # Reads Mrbgemfile and applies mrbgems to build_config files
       # @rbs (String) -> void
       def apply_mrbgemfile(_env_name)
-        mrbgemfile_path = File.join(Env.project_root, "Mrbgemfile")
+        mrbgemfile_path = File.join(Picotorokko::Env.project_root, "Mrbgemfile")
         return unless File.exist?(mrbgemfile_path)
 
         mrbgemfile_content = File.read(mrbgemfile_path)
@@ -191,7 +192,7 @@ module Picotorokko
       # Apply mrbgems to all build_config/*.rb files
       # @rbs (String) -> void
       def apply_to_build_configs(mrbgemfile_content)
-        build_config_dir = File.join(Env.project_root, "build_config")
+        build_config_dir = File.join(Picotorokko::Env.project_root, "build_config")
         return unless Dir.exist?(build_config_dir)
 
         Dir.glob(File.join(build_config_dir, "*.rb")).each do |config_file|
@@ -215,7 +216,8 @@ module Picotorokko
 
         puts "Available R2P2-ESP32 tasks for environment: #{actual_env}"
         puts "=" * 60
-        Picotorokko::Env.execute_with_esp_env("rake -T", r2p2_path)
+        rake_cmd = build_rake_command(r2p2_path, "-T")
+        Picotorokko::Env.execute_with_esp_env(rake_cmd, r2p2_path)
       end
 
       # R2P2-ESP32のRakefileにタスクを委譲
@@ -224,8 +226,11 @@ module Picotorokko
         actual_env = resolve_env_name(env_name)
         r2p2_path = validate_and_get_r2p2_path(actual_env)
 
+        # Build appropriate rake command (with or without bundler)
+        rake_cmd = build_rake_command(r2p2_path, command)
+
         # ESP-IDF環境でR2P2-ESP32のrakeタスクを実行
-        Picotorokko::Env.execute_with_esp_env("rake #{command}", r2p2_path)
+        Picotorokko::Env.execute_with_esp_env(rake_cmd, r2p2_path)
       end
 
       # 環境名を解決（currentの場合は実環境名に変換）
@@ -235,7 +240,7 @@ module Picotorokko
 
         current = Picotorokko::Env.get_current_env
         if current.nil?
-          raise "Error: No current environment set. Use 'pra device <command> --env <name>' to specify an environment"
+          raise "Error: No current environment set. Use 'ptrk device <command> --env <name>' to specify an environment"
         end
 
         current
@@ -339,6 +344,15 @@ module Picotorokko
       end
 
       private
+
+      # Build rake command with appropriate prefix (bundle exec or not)
+      # Detects Gemfile in R2P2-ESP32 directory to determine if bundler is needed
+      # @rbs (String, String) -> String
+      def build_rake_command(r2p2_path, task_name)
+        gemfile_path = File.join(r2p2_path, "Gemfile")
+        rake_cmd = File.exist?(gemfile_path) ? "bundle exec rake" : "rake"
+        "cd #{Shellwords.escape(r2p2_path)} && #{rake_cmd} #{task_name}"
+      end
 
       # Standard task definition: task :name or task "name"
       # @rbs (Prism::CallNode) -> void
