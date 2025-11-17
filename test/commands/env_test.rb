@@ -1665,4 +1665,46 @@ class PraCommandsEnvTest < PraTestCase
       end
     end
   end
+
+  sub_test_case "[TODO-ISSUE-6-IMPL] Git command error handling" do
+    test "fetch_repo_info handles git rev-parse failure" do
+      omit "[TODO-ISSUE-6-IMPL]: fetch_repo_info error handling. Test placeholder added; implementation in ISSUE-6 phase."
+    end
+
+    test "fetch_repo_info handles git show failure" do
+      omit "[TODO-ISSUE-6-IMPL]: fetch_repo_info timestamp error. Test placeholder added; implementation in ISSUE-6 phase."
+    end
+  end
+
+  sub_test_case "[TODO-ISSUE-7-IMPL] Clone/checkout state corruption" do
+    test "clone_and_checkout_repo raises error on clone failure" do
+      omit "[TODO-ISSUE-7-IMPL]: clone_and_checkout_repo error handling. Test placeholder added; implementation in ISSUE-7 phase."
+    end
+
+    test "clone_and_checkout_repo raises error on checkout failure" do
+      omit "[TODO-ISSUE-7-IMPL]: clone_and_checkout_repo checkout error. Test placeholder added; implementation in ISSUE-7 phase."
+    end
+
+    test "setup_build_environment rolls back on first failure" do
+      omit "[TODO-ISSUE-9-IMPL]: Atomic transaction for setup_build_environment. Test placeholder added; implementation in ISSUE-9 phase."
+    end
+
+    test "partially cloned repos handled on retry" do
+      omit "[TODO-ISSUE-8-IMPL]: Partial clone recovery. Test placeholder added; implementation in ISSUE-8 phase."
+    end
+  end
+
+  sub_test_case "[TODO-ISSUE-10-13-IMPL] Device command validations" do
+    test "parse_env_from_args rejects empty --env= value" do
+      omit "[TODO-ISSUE-11-IMPL]: Empty --env= validation. Test placeholder added; implementation in ISSUE-11 phase."
+    end
+
+    test "build_rake_command raises on empty task_name" do
+      omit "[TODO-ISSUE-12-IMPL]: Empty task_name validation. Test placeholder added; implementation in ISSUE-12 phase."
+    end
+
+    test "device validates Gemfile existence before bundle exec" do
+      omit "[TODO-ISSUE-13-IMPL]: Gemfile validation. Test placeholder added; implementation in ISSUE-13 phase."
+    end
+  end
 end

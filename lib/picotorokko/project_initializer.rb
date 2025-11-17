@@ -85,9 +85,9 @@ module Picotorokko
 
     # @rbs (String) -> void
     def validate_project_name!(name)
-      return if /\A[a-zA-Z0-9_-]+\z/.match?(name)
+      return if /\A[a-z0-9_-]+\z/.match?(name)
 
-      raise "Invalid project name: #{name}. Use alphanumeric characters, dashes, and underscores."
+      raise "Invalid project name: #{name}. Use lowercase alphanumeric characters, dashes, and underscores."
     end
 
     # @rbs () -> void
@@ -123,10 +123,10 @@ module Picotorokko
 
     # @rbs () -> (String | nil)
     def detect_git_author
-      author = `git config user.name`.strip
+      author = `git -C #{project_root} config user.name 2>/dev/null`.strip
       # Ensure encoding is UTF-8 to avoid ASCII issues
       author.force_encoding("UTF-8") if author.respond_to?(:force_encoding)
-      author
+      author.empty? ? nil : author
     rescue StandardError
       nil
     end

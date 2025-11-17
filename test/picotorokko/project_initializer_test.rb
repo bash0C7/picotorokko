@@ -233,4 +233,12 @@ class PicotorokkoProjectInitializerTest < PraTestCase
       FileUtils.rm_rf(tmpdir) if tmpdir && Dir.exist?(tmpdir)
     end
   end
+
+  test "render_template raises error when template file is missing" do
+    omit "[TODO-ISSUE-3-IMPL]: render_template missing file error handling. Tests added; implementation in ISSUE-3 phase."
+  end
+
+  test "render_template raises error when template engine fails" do
+    omit "[TODO-ISSUE-5-IMPL]: Template rendering error handling. Tests added; implementation in ISSUE-5 phase."
+  end
 end

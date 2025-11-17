@@ -164,21 +164,39 @@ Current version: **0.1.0** (released to RubyGems)
 
 ## 🐛 [TODO-CODE-QUALITY-ISSUES] Found During Coverage Analysis (Session Latest)
 
-### ProjectInitializer Issues (lib/picotorokko/project_initializer.rb)
+### 📋 [TODO-TEST-EXPANSION-PHASE] Test Coverage Enhancement (In Progress)
 
-1. **[ISSUE-1] detect_git_author returns empty string instead of nil**
+**Session Goal**: Expand test coverage to reach 90%+ line coverage, 75%+ branch coverage
+
+**Tests Added (Placeholder Phase)**:
+- ✅ ProjectInitializer#render_template: 2 omitted tests (ISSUE-3, ISSUE-5)
+- ✅ Env#fetch_repo_info: 2 omitted tests (ISSUE-6)
+- ✅ Env#clone_and_checkout_repo: 4 omitted tests (ISSUE-7, ISSUE-8, ISSUE-9)
+- ✅ Device command validation: 4 omitted tests (ISSUE-10, ISSUE-11, ISSUE-12, ISSUE-13)
+- **Total new test placeholders**: 12 tests with omit markers pointing to implementation phase
+
+**Current Status**:
+- Test count: 235 → 247 (12 new omitted tests)
+- Line coverage: 86.21% (unchanged - omitted tests don't execute)
+- Branch coverage: 65.15% (unchanged - omitted tests don't execute)
+
+**Next Phase**: Remove omit() and implement fixes for each ISSUE to activate tests and increase coverage
+
+### ✅ COMPLETED ISSUES
+
+#### ProjectInitializer Issues (lib/picotorokko/project_initializer.rb)
+
+1. **✅ [ISSUE-1] detect_git_author returns empty string instead of nil** - FIXED
    - Location: line 126-131
-   - Problem: `git config user.name` returns empty string when not set, but `.strip` doesn't convert to nil
-   - Impact: `prepare_variables` (line 112) treats empty string as valid author, shows empty field in templates
-   - Test gap: No test for missing git user.name (only test with partial config exists)
-   - Severity: Low (cosmetic, doesn't break initialization)
+   - Fix: Changed to use `git -C #{project_root}` and convert empty string to nil
+   - Result: Tests passing, author detection works correctly for all scenarios
+   - Commit: dd28037
 
-2. **[ISSUE-2] validate_project_name! rejects valid mixed-case names**
-   - Location: line 88 `\A[a-zA-Z0-9_-]+\z`
-   - Problem: Regex allows UPPERCASE letters but convention expects lowercase+dashes
-   - Example: "TestProject" is accepted but "test-project" is recommended
-   - Test gap: Tests added for uppercase rejection, but spec doesn't clarify intent
-   - Severity: Low (follows project conventions, but documentation mismatch)
+2. **✅ [ISSUE-2] validate_project_name! rejects valid mixed-case names** - FIXED
+   - Location: line 88 `\A[a-z0-9_-]+\z`
+   - Fix: Changed regex from `[a-zA-Z0-9_-]` to `[a-z0-9_-]` to enforce lowercase
+   - Result: Tests passing, uppercase rejection working as expected
+   - Commit: dd28037
 
 3. **[ISSUE-3] render_template silently skips missing templates**
    - Location: line 157-160

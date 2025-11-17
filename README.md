@@ -7,63 +7,6 @@ The name "picotorokko" draws inspiration from **torokko** (トロッコ), a simp
 [![Ruby](https://github.com/bash0C7/picotorokko/actions/workflows/main.yml/badge.svg)](https://github.com/bash0C7/picotorokko/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/bash0C7/picotorokko/branch/main/graph/badge.svg)](https://codecov.io/gh/bash0C7/picotorokko)
 
-## Features
-
-- **Project Templates**: Auto-generate `.rubocop.yml` and enhanced `CLAUDE.md` with PicoRuby development guides
-- **Environment Management**: Define, list, and manage multiple PicoRuby build environments with version control
-- **Automatic Repository Setup**: `ptrk env latest` auto-clones and checks out repositories to `ptrk_env/`
-- **Smart Build Detection**: Detects `Gemfile` and uses appropriate Rake invocation (bundle exec vs rake)
-- **Centralized Directory Structure**: All environment data stored in `ptrk_env/` for clean project organization
-- **Git Integration**: Clone and manage repositories with automatic submodule handling
-- **Patch Management**: Export, apply, and diff patches across environments
-- **Task Delegation**: Build/flash/monitor tasks transparently delegated to R2P2-ESP32's Rakefile
-- **Executor Abstraction**: Clean dependency injection for testable command execution with Open3 integration
-- **Template Engines**: AST-based template generation for Ruby, YAML, and C code
-
-## Development Status
-
-### ✅ Complete Infrastructure
-
-**Core Components**:
-- Executor abstraction (ProductionExecutor for production, MockExecutor for testing)
-- AST-based template engines supporting Ruby, YAML, and C templates
-- Project initialization with `ptrk init` command (Phase 1-5 complete)
-  - Auto-generates `.rubocop.yml` with PicoRuby-specific configuration
-  - Auto-generates enhanced `CLAUDE.md` with mrbgems, I2C/GPIO/RMT APIs, memory optimization guide
-  - Automatic repository cloning and checkout via `ptrk env latest`
-  - Smart Rake command detection (bundle exec vs rake)
-- Full test coverage with 231 total tests passing
-- Clean code quality: RuboCop validated, 86.12% line coverage, 64.59% branch coverage
-
-**Test Suite**:
-- All suites: 231 tests, all passing ✓
-- Coverage: 86.12% line, 64.59% branch
-
-**Development Workflow**:
-- Simplified Rake tasks for CI and development use
-- Test isolation via MockExecutor for system commands
-- Cumulative coverage tracking across all test suites
-
-## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'picotorokko'
-```
-
-And then execute:
-
-```bash
-bundle install
-```
-
-Or install it yourself as:
-
-```bash
-gem install picotorokko
-```
-
 ## For PicoRuby Application Users
 
 ### Quick Start
@@ -218,6 +161,39 @@ For detailed specifications, see [SPEC.md](SPEC.md).
 For PicoRuby application developers using GitHub Actions for automated builds, see [docs/CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md).
 
 For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Features
+
+- **Project Templates**: Auto-generate `.rubocop.yml` and enhanced `CLAUDE.md` with PicoRuby development guides
+- **Environment Management**: Define, list, and manage multiple PicoRuby build environments with version control
+- **Automatic Repository Setup**: `ptrk env latest` auto-clones and checks out repositories to `ptrk_env/`
+- **Smart Build Detection**: Detects `Gemfile` and uses appropriate Rake invocation (bundle exec vs rake)
+- **Centralized Directory Structure**: All environment data stored in `ptrk_env/` for clean project organization
+- **Git Integration**: Clone and manage repositories with automatic submodule handling
+- **Patch Management**: Export, apply, and diff patches across environments
+- **Task Delegation**: Build/flash/monitor tasks transparently delegated to R2P2-ESP32's Rakefile
+- **Executor Abstraction**: Clean dependency injection for testable command execution with Open3 integration
+- **Template Engines**: AST-based template generation for Ruby, YAML, and C code
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'picotorokko'
+```
+
+And then execute:
+
+```bash
+bundle install
+```
+
+Or install it yourself as:
+
+```bash
+gem install picotorokko
+```
 
 ## For picotorokko Gem Developers
 

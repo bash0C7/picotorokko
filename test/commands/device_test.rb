@@ -546,4 +546,10 @@ class PraCommandsDeviceTest < PraTestCase
 
     [env_name, r2p2_path]
   end
+
+  sub_test_case "[TODO-ISSUE-10-IMPL] Error output suppression" do
+    test "device error output is properly captured" do
+      omit "[TODO-ISSUE-10-IMPL]: Error output handling. Test placeholder added; implementation in ISSUE-10 phase."
+    end
+  end
 end
