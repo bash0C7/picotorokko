@@ -171,6 +171,7 @@ module Picotorokko
     def copy_template_files
       # Copy template files (static files that don't need rendering)
       files_to_copy = [
+        "Mrbgemfile",
         "patch/README.md",
         "storage/home/.gitkeep",
         "patch/R2P2-ESP32/.gitkeep",
@@ -253,9 +254,10 @@ module Picotorokko
       puts ""
       puts "Next steps:"
       puts "  1. cd #{project_name}" if project_name != File.basename(Dir.pwd)
-      puts "  2. ptrk env set main --commit <hash>"
-      puts "  3. ptrk build setup"
-      puts "  4. cd build/current/R2P2-ESP32 && rake build"
+      puts "  2. ptrk env latest  # Fetch latest repository versions"
+      puts "  3. ptrk device build  # Build firmware for your device"
+      puts "  4. ptrk device flash  # Flash firmware to ESP32"
+      puts "  5. ptrk device monitor  # Monitor serial output"
     end
   end
 end

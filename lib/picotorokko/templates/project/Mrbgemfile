@@ -1,0 +1,15 @@
+MRuby::Toolchain.new(:picotorokko) do |conf|
+  # Configure mrbgems for your PicoRuby application
+  # This file is auto-generated during project initialization
+  # Edit to add custom mrbgems for your application
+
+  # Default PicoRuby gem (always included)
+  conf.gem :core => "mruby-print"
+
+  # Add your custom mrbgems here:
+  # conf.gem "path/to/your/mrbgem"
+  # conf.gem git: "https://github.com/user/your-mrbgem.git"
+
+  # Device-specific mrbgem (auto-generated)
+  conf.gem "mrbgems/app"
+end

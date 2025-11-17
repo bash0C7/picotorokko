@@ -7,7 +7,15 @@ A PicoRuby application for ESP32 development using the `picotorokko` (ptrk) buil
 
 ## Quick Start
 
-### 1. Initialize Environment
+### 1. Setup Environment
+
+First, fetch the latest repository versions automatically:
+
+```bash
+ptrk env latest
+```
+
+Or, create an environment with specific repository commits:
 
 ```bash
 ptrk env set main --commit <R2P2-ESP32-hash>
@@ -22,38 +30,24 @@ ptrk env set main \
   --picoruby-commit <picoruby-hash>
 ```
 
-To fetch latest versions automatically:
+### 2. Build Application
 
 ```bash
-ptrk env latest
+ptrk device build
 ```
 
-### 2. Setup Build Environment
+This clones repositories, applies patches, and builds firmware for your application.
+
+### 3. Flash to Device
 
 ```bash
-ptrk build setup main
+ptrk device flash
 ```
 
-This creates a complete working directory in `build/` with all repositories cloned and patches applied.
-
-### 3. Build Application
+### 4. Monitor Serial Output
 
 ```bash
-cd build/current/R2P2-ESP32
-rake build
-cd ../../..
-```
-
-### 4. Flash to Device
-
-```bash
-ptrk flash
-```
-
-### 5. Monitor Serial Output
-
-```bash
-ptrk monitor
+ptrk device monitor
 ```
 
 ## Project Structure
@@ -89,7 +83,7 @@ ptrk env show main
 After editing files in `build/current/`, export changes:
 
 ```bash
-ptrk patch export
+ptrk env patch_export main
 ```
 
 Then commit:
@@ -101,22 +95,21 @@ git commit -m "Update patches and application code"
 
 ### Switch Between Environments
 
+First, create the new environment:
+
 ```bash
-ptrk env set development
-ptrk build setup
+ptrk env set development --commit <hash>
 ```
 
-### Clean Up Cache
-
-Remove unused cached versions:
+Then, rebuild with the new environment:
 
 ```bash
-ptrk cache prune
+ptrk device build
 ```
 
 ## Troubleshooting
 
-For detailed troubleshooting and advanced usage, see SPEC.md in the `picotorokko` gem.
+For detailed troubleshooting and advanced usage, see the picotorokko gem documentation.
 
 ### Environment Not Found
 
@@ -134,16 +127,16 @@ ptrk env set myenv --commit <hash>
 
 ### Build Fails
 
-Verify the build environment is properly set up:
+Try rebuilding from scratch:
 
 ```bash
-ptrk build list
+ptrk device build
 ```
 
-If missing, setup again:
+If the issue persists, verify the environment is correctly set:
 
 ```bash
-ptrk build setup
+ptrk env show main
 ```
 
 ## Support
