@@ -164,6 +164,24 @@ Current version: **0.1.0** (released to RubyGems)
 
 ## 🐛 [TODO-CODE-QUALITY-ISSUES] Found During Coverage Analysis (Session Latest)
 
+### 📋 [TODO-TEST-EXPANSION-PHASE] Test Coverage Enhancement (In Progress)
+
+**Session Goal**: Expand test coverage to reach 90%+ line coverage, 75%+ branch coverage
+
+**Tests Added (Placeholder Phase)**:
+- ✅ ProjectInitializer#render_template: 2 omitted tests (ISSUE-3, ISSUE-5)
+- ✅ Env#fetch_repo_info: 2 omitted tests (ISSUE-6)
+- ✅ Env#clone_and_checkout_repo: 4 omitted tests (ISSUE-7, ISSUE-8, ISSUE-9)
+- ✅ Device command validation: 4 omitted tests (ISSUE-10, ISSUE-11, ISSUE-12, ISSUE-13)
+- **Total new test placeholders**: 12 tests with omit markers pointing to implementation phase
+
+**Current Status**:
+- Test count: 235 → 247 (12 new omitted tests)
+- Line coverage: 86.21% (unchanged - omitted tests don't execute)
+- Branch coverage: 65.15% (unchanged - omitted tests don't execute)
+
+**Next Phase**: Remove omit() and implement fixes for each ISSUE to activate tests and increase coverage
+
 ### ✅ COMPLETED ISSUES
 
 #### ProjectInitializer Issues (lib/picotorokko/project_initializer.rb)
