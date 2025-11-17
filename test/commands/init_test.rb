@@ -236,8 +236,8 @@ class PraCommandsInitTest < PraTestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          # Initialize with --with-ci option
-          initializer = Picotorokko::ProjectInitializer.new("test-project", { "with_ci" => true })
+          # Initialize with --with-ci option (Thor provides "with-ci" string key)
+          initializer = Picotorokko::ProjectInitializer.new("test-project", { "with-ci" => true })
           initializer.initialize_project
 
           # Check that GitHub Actions workflow is copied
@@ -267,18 +267,18 @@ class PraCommandsInitTest < PraTestCase
   end
 
   sub_test_case "init command with hyphenated option keys (Thor format)" do
-    test "handles with_ci when key is symbol with hyphen" do
+    test "handles with_ci when key is string with hyphen" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          # Test with hyphenated symbol key (:"with-ci") like Thor might use
-          initializer = Picotorokko::ProjectInitializer.new("test-project", { "with-ci": true })
+          # Test with string key "with-ci" as Thor actually provides
+          initializer = Picotorokko::ProjectInitializer.new("test-project", { "with-ci" => true })
           initializer.initialize_project
 
           # Verify workflow file is created
           assert File.exist?("test-project/.github/workflows/esp32-build.yml"),
-                 "Workflow file should be created with :'with-ci' key format"
+                 "Workflow file should be created with 'with-ci' string key"
         ensure
           Dir.chdir(original_dir)
         end

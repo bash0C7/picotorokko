@@ -181,8 +181,8 @@ module Picotorokko
       ]
 
       # Add GitHub Actions workflow if --with-ci is enabled
-      # Thor converts "with-ci" option to both :with_ci and :"with-ci" keys
-      with_ci = options[:with_ci] || options["with_ci"] || options[:"with-ci"] || options["with-ci"]
+      # Thor provides the "with-ci" option as a string key in the options hash
+      with_ci = options["with-ci"]
       files_to_copy << ".github/workflows/esp32-build.yml" if with_ci
 
       files_to_copy.each do |file|
