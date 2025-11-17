@@ -181,7 +181,7 @@ module Picotorokko
       # Reads Mrbgemfile and applies mrbgems to build_config files
       # @rbs (String) -> void
       def apply_mrbgemfile(_env_name)
-        mrbgemfile_path = File.join(Env.project_root, "Mrbgemfile")
+        mrbgemfile_path = File.join(Picotorokko::Env.project_root, "Mrbgemfile")
         return unless File.exist?(mrbgemfile_path)
 
         mrbgemfile_content = File.read(mrbgemfile_path)
@@ -191,7 +191,7 @@ module Picotorokko
       # Apply mrbgems to all build_config/*.rb files
       # @rbs (String) -> void
       def apply_to_build_configs(mrbgemfile_content)
-        build_config_dir = File.join(Env.project_root, "build_config")
+        build_config_dir = File.join(Picotorokko::Env.project_root, "build_config")
         return unless Dir.exist?(build_config_dir)
 
         Dir.glob(File.join(build_config_dir, "*.rb")).each do |config_file|
