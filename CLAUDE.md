@@ -336,6 +336,111 @@ The `ptrk` gem does **NOT** know:
 bundle exec rake ci  # Runs: test → rubocop → coverage_validation
 ```
 
+### Test Execution & Process Management (CRITICAL)
+
+**🚫 ABSOLUTE RULE: Never use fixed `sleep` for process waiting**
+
+Fixed delays waste AI tokens and extend execution time unnecessarily. Always use proper process monitoring.
+
+#### Pattern 1: Foreground Execution (Recommended for most tasks)
+
+```ruby
+# Short-lived tasks (<2 min): Run in foreground, get results directly
+Bash(command: "bundle exec rake test")
+# Results returned immediately in Bash output
+```
+
+**Use foreground when**:
+- Task completion time is predictable (<2 minutes)
+- Results are needed immediately
+- Single task (no parallelism needed)
+- Examples: tests, RuboCop, small builds
+
+#### Pattern 2: Background Execution with Status Polling (For multiple independent tasks)
+
+```ruby
+# Multiple independent tasks: Run in parallel, check status once
+Bash(command: "task1", run_in_background: true, description: "Test runner")
+Bash(command: "task2", run_in_background: true, description: "RuboCop check")
+
+# Single BashOutput call to check all statuses
+BashOutput(bash_id_1)  # status: "running" or "completed"
+BashOutput(bash_id_2)  # status: "running" or "completed"
+
+# Only proceed if status == "completed"
+```
+
+**Use background when**:
+- Multiple independent tasks can run in parallel
+- All tasks are already started
+- Check status once (not in loop)
+
+#### Pattern 3: Sequential Execution (When dependencies exist)
+
+```ruby
+# Tasks with dependencies: Run foreground in order
+Bash(command: "bundle exec rubocop")    # Wait for completion
+Bash(command: "bundle exec rake test")  # Then run this
+```
+
+**Use sequential when**:
+- Later tasks depend on earlier ones
+- Example: linting must pass before tests
+
+#### Forbidden Patterns
+
+❌ **NEVER do this**:
+```ruby
+# 1. Fixed sleep (wastes tokens, slow)
+Bash(command: "task", run_in_background: true)
+sleep 30
+BashOutput(bash_id)
+
+# 2. Polling loop with sleep (even worse)
+loop do
+  output = BashOutput(bash_id)
+  break if output.status == "completed"
+  sleep 5
+end
+
+# 3. Multiple commands with fixed delays
+Bash(command: "task1")
+sleep 10
+Bash(command: "task2")
+sleep 10
+```
+
+✅ **DO this instead**:
+```ruby
+# Single foreground call
+Bash(command: "bundle exec rake test")  # Done, results in output
+
+# Or: multiple background with one status check
+Bash(command: "task1", run_in_background: true)
+Bash(command: "task2", run_in_background: true)
+BashOutput(bash_id_1)
+BashOutput(bash_id_2)
+```
+
+#### Real-World Example: Running CI checks
+
+```ruby
+# ✅ GOOD: Parallel background execution
+Bash(command: "bundle exec rake test", run_in_background: true)
+Bash(command: "bundle exec rubocop", run_in_background: true)
+
+# Single status check
+BashOutput(test_bash_id)
+BashOutput(rubocop_bash_id)
+# Both checks running in parallel, checked once
+
+# ❌ BAD: What NOT to do
+Bash(command: "bundle exec rake test", run_in_background: true)
+sleep 60  # 🚫 FORBIDDEN: wastes time and tokens
+Bash(command: "bundle exec rubocop", run_in_background: true)
+sleep 30  # 🚫 FORBIDDEN: sequential defeats parallelism
+```
+
 ### Detailed Guides
 
 @import .claude/docs/testing-guidelines.md
