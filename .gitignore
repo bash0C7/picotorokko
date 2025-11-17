@@ -72,3 +72,6 @@ manual-test/
 playground/
 !playground/README.md
 !playground/Gemfile
+
+# Claude Code local settings
+.claude/settings.local.json
