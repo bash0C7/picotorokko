@@ -221,12 +221,17 @@ Current version: **0.1.0** (released to RubyGems)
 
 ### Env.rb Issues (lib/picotorokko/commands/env.rb)
 
-6. **[ISSUE-6] fetch_repo_info doesn't handle git command failures**
-   - Location: line 482-484
-   - Problem: `git rev-parse` and `git show` failures not checked, just uses empty/malformed strings
-   - Impact: If Git command fails, timestamp parsing at line 484 may crash with ArgumentError
-   - Test gap: No test for git command failure scenario
-   - Severity: High (can crash ptrk env latest)
+6. **✅ [ISSUE-6] fetch_repo_info doesn't handle git command failures** - FIXED
+   - Location: lib/picotorokko/commands/env.rb:484, 487
+   - Fix: Added error checks for empty git command output
+   - Implementation (Commands version):
+     - Line 484: `raise "Failed to get commit hash from #{repo_name}" if short_hash.empty?`
+     - Line 487: `raise "Failed to get timestamp from #{repo_name}" if timestamp_str.empty?`
+   - Implementation (Module version in lib/picotorokko/env.rb):
+     - Line 290: `raise "Failed to get commit hash from #{repo_url}" if short_hash.empty?`
+     - Line 294: `raise "Failed to get timestamp from #{repo_url}" if timestamp_str.empty?`
+   - Tests: test/commands/env_test.rb:1634-1646 (git rev-parse failure test passing)
+   - Status: Complete with error handling and test coverage
 
 7. **✅ [ISSUE-7] clone_and_checkout_repo ignores system() return value**
    - FIXED: c1b5861 - Added system() return value checks for clone and checkout
