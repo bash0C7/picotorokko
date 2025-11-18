@@ -21,6 +21,12 @@ Rake::TestTask.new(:test) do |t|
   # Ruby warning suppress: method redefinition warnings in test mocks
   # See: test/commands/env_test.rb, test/commands/cache_test.rb
   t.ruby_opts = ["-W1"]
+
+  # Parallel test execution: DISABLED due to getcwd issues with test isolation
+  # Original: t.options = "--parallel --n-workers=4"
+  # Issue: Test isolation via Dir.mktmpdir causes getcwd failures when
+  # working directory is deleted by other worker processes
+  # TODO: Investigate test isolation strategy for safe parallelization
 end
 
 # ============================================================================

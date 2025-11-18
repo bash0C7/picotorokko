@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/bash0C7/reality_marble.git
-  revision: 679a2bee1bf41b1a83442454985f0e2c78a13dca
+  revision: eb173d329c03b830f0ab2e25407e34a747673c6f
   specs:
     reality_marble (1.0.0)
 
@@ -35,11 +35,20 @@ GEM
     docile (1.4.1)
     drb (2.2.3)
     ffi (1.17.2)
+    ffi (1.17.2-aarch64-linux-gnu)
+    ffi (1.17.2-aarch64-linux-musl)
+    ffi (1.17.2-arm-linux-gnu)
+    ffi (1.17.2-arm-linux-musl)
     ffi (1.17.2-arm64-darwin)
+    ffi (1.17.2-x86-linux-gnu)
+    ffi (1.17.2-x86-linux-musl)
+    ffi (1.17.2-x86_64-darwin)
+    ffi (1.17.2-x86_64-linux-gnu)
+    ffi (1.17.2-x86_64-linux-musl)
     fileutils (1.8.0)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
-    json (2.15.2)
+    json (2.16.0)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     listen (3.9.0)
@@ -52,7 +61,7 @@ GEM
     parser (3.3.10.0)
       ast (~> 2.4.1)
       racc
-    power_assert (3.0.0)
+    power_assert (3.0.1)
     prism (1.6.0)
     racc (1.8.1)
     rainbow (3.1.1)
@@ -78,7 +87,7 @@ GEM
       rubocop-ast (>= 1.47.1, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 4.0)
-    rubocop-ast (1.47.1)
+    rubocop-ast (1.48.0)
       parser (>= 3.3.7.2)
       prism (~> 1.4)
     rubocop-performance (1.26.1)
@@ -130,15 +139,24 @@ GEM
     uri (1.1.1)
 
 PLATFORMS
-  arm64-darwin-24
+  aarch64-linux-gnu
+  aarch64-linux-musl
+  arm-linux-gnu
+  arm-linux-musl
+  arm64-darwin
   ruby
+  x86-linux-gnu
+  x86-linux-musl
+  x86_64-darwin
+  x86_64-linux-gnu
+  x86_64-linux-musl
 
 DEPENDENCIES
   picotorokko!
   rake (~> 13.0)
   rbs (~> 3.4)
   rbs-inline (~> 0.11)
-  reality_marble!
+  reality_marble (>= 0.1.0, >= 0)!
   rubocop (~> 1.81)
   rubocop-performance (~> 1.26)
   rubocop-rake (~> 0.7)
@@ -148,4 +166,4 @@ DEPENDENCIES
   test-unit (~> 3.0)
 
 BUNDLED WITH
-   2.6.9
+   2.7.2

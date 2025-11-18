@@ -4,19 +4,26 @@ SimpleCov.start do
   add_filter "/test/"
   add_filter "/vendor/"
   add_filter "/lib/picotorokko/templates/" # ユーザープロジェクト向けテンプレートは除外
-
-  # Dev環境: line coverage のみ (faster)
-  # CI環境 (ENV["CI"]=1): branch coverage も有効 (comprehensive)
+  # NOTE: 段階的にカバレッジ要件を引き上げ
+  # Phase 3.2: 60% 達成
+  # Phase 4.1: line 75%, branch 55% (現実的な基準値)
+  # 将来目標: line 85%, branch 65% (TODO.mdで低優先度タスク化)
+  # 開発環境: ライン単位のカバレッジのみ計測（高速化）
+  # CI環境: ブランチカバレッジも計測
   enable_coverage :branch if ENV["CI"]
 
-  # Minimum coverage thresholds
   minimum_coverage line: 75
   minimum_coverage branch: 55 if ENV["CI"]
 end
 
-# Codecov v4対応: Cobertura XML形式で出力
+# Codecov v4対応: Cobertura XML形式で出力（CI環境のみ）
+# 開発環境ではHTMLFormatter使用で高速化
 require "simplecov-cobertura"
-SimpleCov.formatter = SimpleCov::Formatter::CoberturaFormatter
+SimpleCov.formatter = if ENV["CI"]
+                        SimpleCov::Formatter::CoberturaFormatter
+                      else
+                        SimpleCov::Formatter::HTMLFormatter
+                      end
 
 # NOTE: SystemExit cleanup code removed - device_test.rb is excluded from test suite
 # If device_test.rb is re-enabled in the future, SystemExit handling must be implemented

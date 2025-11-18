@@ -11,6 +11,7 @@ module Picotorokko
     # Note: This command manages environment definitions (metadata only).
     # Actual build environment (filesystem) is managed by 'ptrk build' commands
     # @rbs < Thor
+    # rubocop:disable Metrics/ClassLength
     class Env < Thor
       # @rbs () -> bool
       def self.exit_on_failure?
@@ -648,6 +649,7 @@ module Picotorokko
 
         puts
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
