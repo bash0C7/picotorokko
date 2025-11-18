@@ -198,12 +198,12 @@ Current version: **0.1.0** (released to RubyGems)
    - Result: Tests passing, uppercase rejection working as expected
    - Commit: dd28037
 
-3. **[ISSUE-3] render_template silently skips missing templates**
-   - Location: line 157-160
-   - Problem: When template file doesn't exist, just prints warning and returns without error
-   - Impact: Project created with incomplete files (missing .gitignore, README.md, etc.)
-   - Test gap: No test for missing template file scenario
-   - Severity: High (silent data loss, hard to debug)
+3. **✅ [ISSUE-3] render_template silently skips missing templates** - FIXED
+   - Location: lib/picotorokko/project_initializer.rb:157
+   - Fix: Added error raise when template file doesn't exist
+   - Implementation: `raise Picotorokko::Error, "Template not found: #{template_path}" unless File.exist?(template_path)`
+   - Tests: test/picotorokko/project_initializer_test.rb:238-254
+   - Status: Complete with error handling and test coverage
 
 4. **[ISSUE-4] with_ci option checking is overly complex**
    - Location: line 186
@@ -212,12 +212,12 @@ Current version: **0.1.0** (released to RubyGems)
    - Test gap: Only tests default case, not --with-ci explicitly
    - Severity: Medium (works but maintainability issue)
 
-5. **[ISSUE-5] No error handling for template rendering failures**
-   - Location: line 163 `Picotorokko::Template::Engine.render()`
-   - Problem: If template engine throws exception (invalid syntax, etc), whole init fails
-   - Example: Bad ERB syntax in template causes silent crash
-   - Test gap: No test for render engine failure
-   - Severity: High (can brick initialization)
+5. **✅ [ISSUE-5] No error handling for template rendering failures** - FIXED
+   - Location: lib/picotorokko/project_initializer.rb:165-167
+   - Fix: Added rescue clause to catch and re-raise template rendering errors
+   - Implementation: `rescue StandardError => e; raise Picotorokko::Error, "Template rendering failed for #{template_file}: #{e.message}"`
+   - Tests: test/picotorokko/project_initializer_test.rb:256-288 (with RealityMarble mocking)
+   - Status: Complete with error handling and test coverage
 
 ### Env.rb Issues (lib/picotorokko/commands/env.rb)
 
