@@ -275,19 +275,22 @@ Current version: **0.1.0** (released to RubyGems)
     - Tests: test/commands/env_test.rb:1730-1744 (4 assertions covering both formats)
     - Status: Complete with validation and comprehensive test coverage
 
-12. **[ISSUE-12] build_rake_command vulnerable to empty task_name**
-    - Location: line 354
-    - Problem: If `task_name` is empty string, generates `rake ` which is invalid
-    - Impact: Calling build_rake_command with empty task fails with cryptic rake error
-    - Test gap: No test for empty task_name
-    - Severity: Low (internal use only, but bad defensive programming)
+12. **✅ [ISSUE-12] build_rake_command vulnerable to empty task_name** - FIXED
+    - Location: lib/picotorokko/commands/device.rb:288-289
+    - Fix: Added validation to reject empty task_name
+    - Implementation: `raise "Error: task_name cannot be empty" if task_name.to_s.empty?`
+    - Tests: test/commands/env_test.rb:1746-1758 (2 assertions)
+    - Status: Complete with validation and test coverage
 
-13. **[ISSUE-13] No validation of Gemfile existence before bundle exec**
-    - Location: line 353 `File.exist?(gemfile_path)`
-    - Problem: Checks existence but what if Gemfile is corrupted/unreadable?
-    - Impact: `bundle exec rake` may fail with unclear "Gemfile not found" error
-    - Test gap: No test for corrupted Gemfile case
-    - Severity: Low (rare, user would need to investigate bundle)
+13. **✅ [ISSUE-13] No validation of Gemfile existence before bundle exec** - FIXED
+    - Location: lib/picotorokko/commands/device.rb:291-296
+    - Fix: Comprehensive Gemfile validation before bundle exec
+    - Implementation:
+      - Line 293: Existence check
+      - Line 294: Regular file check (not directory/symlink)
+      - Line 295: Readable check (not corrupted/permission issue)
+    - Tests: test/commands/env_test.rb:1760-1777 (2 assertions)
+    - Status: Complete with comprehensive validation and test coverage
 
 ### Testing/Coverage Gaps Summary
 
