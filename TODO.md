@@ -205,12 +205,15 @@ Current version: **0.1.0** (released to RubyGems)
    - Tests: test/picotorokko/project_initializer_test.rb:238-254
    - Status: Complete with error handling and test coverage
 
-4. **[ISSUE-4] with_ci option checking is overly complex**
-   - Location: line 186
-   - Problem: Checks 4 different keys (`:with_ci`, `"with_ci"`, `:"with-ci"`, `"with-ci"`)
-   - Question: Why? Thor should normalize this to one form. Indicates unclear option handling.
-   - Test gap: Only tests default case, not --with-ci explicitly
-   - Severity: Medium (works but maintainability issue)
+4. **✅ [ISSUE-4] with_ci option checking is overly complex** - FIXED
+   - Location: lib/picotorokko/project_initializer.rb:185-186
+   - Fix: Simplified option checking to use only Thor's normalized "with-ci" string key
+   - Implementation: `with_ci = options["with-ci"]` (single key access, no complex checks)
+   - Tests: test/commands/init_test.rb:233-286 (3 tests covering all scenarios)
+     - Test 1: --with-ci enabled (workflow copied)
+     - Test 2: --with-ci not specified (workflow not copied)
+     - Test 3: Thor format string key handling
+   - Status: Complete with simplified implementation and comprehensive test coverage
 
 5. **✅ [ISSUE-5] No error handling for template rendering failures** - FIXED
    - Location: lib/picotorokko/project_initializer.rb:165-167
