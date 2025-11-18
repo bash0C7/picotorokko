@@ -21,6 +21,11 @@ Rake::TestTask.new(:test) do |t|
   # Ruby warning suppress: method redefinition warnings in test mocks
   # See: test/commands/env_test.rb, test/commands/cache_test.rb
   t.ruby_opts = ["-W1"]
+
+  # Parallel test execution: uses test-unit's multi-worker capability
+  # 4 workers balance between parallelization and system load
+  # Tests use Dir.mktmpdir which is independent per test, low coupling risk
+  t.options = "--max-workers=4"
 end
 
 # ============================================================================
