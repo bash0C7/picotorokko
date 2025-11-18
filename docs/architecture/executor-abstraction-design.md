@@ -30,7 +30,6 @@ Picotorokko::Env.clone_repo()
 ### Impact
 
 - Tests cannot mock system() calls that cross lexical boundaries
-- 3 tests permanently omitted (error handling paths untested)
 - Branch coverage incomplete and unable to improve without refactoring
 - Cannot verify system() error handling behavior
 
@@ -166,17 +165,6 @@ All 3 previously omitted git error handling tests now pass:
 - `test/commands/env_test.rb`: clone_repo raises error when git clone fails ✓
 - `test/commands/env_test.rb`: clone_repo raises error when git checkout fails ✓
 - `test/commands/env_test.rb`: clone_with_submodules raises error when submodule init fails ✓
-
-### Coverage Improvement
-
-| Metric | Phase 0 | Current | Status |
-|--------|---------|---------|--------|
-| Line Coverage | 84.51% | 87.06% | +2.55% ✓ |
-| Branch Coverage | 63.64% | 65.37% | +1.73% ✓ |
-| Omitted Tests | 4 | 1 | -3 ✓ |
-| Main Suite | 151 | 183 | +32 tests |
-| Device Suite | 14 | 14 | stable |
-| **Total Tests** | **165** | **197** | **+32 tests** |
 
 ### Code Quality
 

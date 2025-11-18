@@ -71,7 +71,6 @@ end
 **Implementation**:
 - `lib/pra/template/ruby_engine.rb`
 - Uses Prism::Visitor pattern
-- ~98 lines
 
 ### 2. YamlTemplateEngine (Psych-based)
 
@@ -102,7 +101,6 @@ settings:
 **Implementation**:
 - `lib/pra/template/yaml_engine.rb`
 - Recursive visitor pattern
-- ~65 lines
 
 ### 3. CTemplateEngine (String-based)
 
@@ -129,7 +127,6 @@ const char* VERSION = "1.0.0";
 **Implementation**:
 - `lib/pra/template/c_engine.rb`
 - Uses Regex: `/\{\{(\w+)\}\}/`
-- ~28 lines
 
 ### 4. StringEngine (Fallback)
 
@@ -211,17 +208,6 @@ end
 ```
 
 ## Test Coverage
-
-### Unit Tests
-
-| Engine | Test File | Tests | Coverage |
-|--------|-----------|-------|----------|
-| RubyTemplateEngine | test/template/ruby_engine_test.rb | 42 | 100% |
-| YamlTemplateEngine | test/template/yaml_engine_test.rb | 37 | 100% |
-| CTemplateEngine | test/template/c_engine_test.rb | 24 | 100% |
-| Engine dispatcher | test/template/engine_test.rb | 8 | 100% |
-
-**Total**: 111 template engine tests (all passing)
 
 ### Test Scenarios Covered
 
