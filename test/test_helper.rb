@@ -4,13 +4,14 @@ SimpleCov.start do
   add_filter "/test/"
   add_filter "/vendor/"
   add_filter "/lib/picotorokko/templates/" # ユーザープロジェクト向けテンプレートは除外
-  enable_coverage :branch
-  # NOTE: 段階的にカバレッジ要件を引き上げ
-  # Phase 3.2: 60% 達成
-  # Phase 4.1: line 75%, branch 55% (現実的な基準値)
-  # 将来目標: line 85%, branch 65% (TODO.mdで低優先度タスク化)
-  # TDDサイクルで常にカバレッジチェック（CI環境限定なし）
-  minimum_coverage line: 75, branch: 55
+
+  # Dev環境: line coverage のみ (faster)
+  # CI環境 (ENV["CI"]=1): branch coverage も有効 (comprehensive)
+  enable_coverage :branch if ENV["CI"]
+
+  # Minimum coverage thresholds
+  minimum_coverage line: 75
+  minimum_coverage branch: 55 if ENV["CI"]
 end
 
 # Codecov v4対応: Cobertura XML形式で出力
