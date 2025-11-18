@@ -22,11 +22,11 @@ Rake::TestTask.new(:test) do |t|
   # See: test/commands/env_test.rb, test/commands/cache_test.rb
   t.ruby_opts = ["-W1"]
 
-  # Parallel test execution: uses test-unit's multi-worker capability
-  # --parallel: Enable parallel execution mode
-  # --n-workers=4: Use 4 worker threads (balances parallelization vs system load)
-  # Tests use Dir.mktmpdir which is independent per test, low coupling risk
-  t.options = "--parallel --n-workers=4"
+  # Parallel test execution: DISABLED due to getcwd issues with test isolation
+  # Original: t.options = "--parallel --n-workers=4"
+  # Issue: Test isolation via Dir.mktmpdir causes getcwd failures when
+  # working directory is deleted by other worker processes
+  # TODO: Investigate test isolation strategy for safe parallelization
 end
 
 # ============================================================================
