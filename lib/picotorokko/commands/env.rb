@@ -378,12 +378,6 @@ module Picotorokko
         )
 
         puts "✓ Environment definition '#{env_name}' created successfully in .picoruby-env.yml"
-
-        # Setup build environment
-        puts "\nSetting up build environment..."
-        setup_build_environment(env_name, repos_info)
-
-        puts "✓ Build environment setup complete"
       end
 
       # Fetch latest commit versions from all default repositories
