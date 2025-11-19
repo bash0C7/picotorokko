@@ -528,6 +528,17 @@ module Picotorokko
             clone_and_checkout_repo(repo_name, repo_url, build_path, repos_info)
             cloned_repos << File.join(build_path, repo_name)
           end
+
+          # Copy storage/home/ to R2P2-ESP32 build directory
+          storage_src = File.join(Picotorokko::Env.project_root, "storage", "home")
+          if Dir.exist?(storage_src)
+            r2p2_path = File.join(build_path, "R2P2-ESP32")
+            storage_dst = File.join(r2p2_path, "storage", "home")
+            FileUtils.mkdir_p(File.dirname(storage_dst))
+            FileUtils.rm_rf(storage_dst)
+            FileUtils.cp_r(storage_src, storage_dst)
+            puts "  ✓ Copied storage/home/ to R2P2-ESP32"
+          end
         rescue StandardError
           # Rollback: remove all cloned repos on failure
           cloned_repos.each { |path| FileUtils.rm_rf(path) }
