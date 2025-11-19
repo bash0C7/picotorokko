@@ -539,6 +539,16 @@ module Picotorokko
             FileUtils.cp_r(storage_src, storage_dst)
             puts "  ✓ Copied storage/home/ to R2P2-ESP32"
           end
+
+          # Copy mrbgems/ to R2P2-ESP32 build directory
+          mrbgems_src = File.join(Picotorokko::Env.project_root, "mrbgems")
+          if Dir.exist?(mrbgems_src)
+            r2p2_path = File.join(build_path, "R2P2-ESP32")
+            mrbgems_dst = File.join(r2p2_path, "mrbgems")
+            FileUtils.rm_rf(mrbgems_dst)
+            FileUtils.cp_r(mrbgems_src, mrbgems_dst)
+            puts "  ✓ Copied mrbgems/ to R2P2-ESP32"
+          end
         rescue StandardError
           # Rollback: remove all cloned repos on failure
           cloned_repos.each { |path| FileUtils.rm_rf(path) }
