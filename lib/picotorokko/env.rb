@@ -203,6 +203,22 @@ module Picotorokko
         executor.execute(cmd, dest_path)
       end
 
+      # Clone repository to cache directory with full submodule initialization (3 levels)
+      # Stores immutable copies for use in build environments
+      # @rbs (String, String, String, String) -> String
+      def cache_clone_with_submodules(repo_name, repo_url, commit_sha, timestamp)
+        commit_hash = "#{commit_sha}-#{timestamp}"
+        cache_path = get_cache_path(repo_name, commit_hash)
+
+        # Skip if already cached
+        return cache_path if Dir.exist?(cache_path)
+
+        FileUtils.mkdir_p(File.dirname(cache_path))
+        clone_with_submodules(repo_url, cache_path, commit_sha)
+
+        cache_path
+      end
+
       # Generate commit-hash string from commit reference (short hash + timestamp)
       # @rbs (String, String) -> String
       def get_commit_hash(repo_path, commit)
