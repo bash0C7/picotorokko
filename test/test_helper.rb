@@ -12,8 +12,13 @@ SimpleCov.start do
   # CI環境: ブランチカバレッジも計測
   enable_coverage :branch if ENV["CI"]
 
-  minimum_coverage line: 75
-  minimum_coverage branch: 55 if ENV["CI"]
+  # Minimum coverage validation only in CI environments
+  # Development: coverage is measured but validation is skipped
+  # CI: coverage validation enforced (line 75%, branch 55%)
+  if ENV["CI"]
+    minimum_coverage line: 75
+    minimum_coverage branch: 55
+  end
 end
 
 # Codecov v4対応: Cobertura XML形式で出力（CI環境のみ）
