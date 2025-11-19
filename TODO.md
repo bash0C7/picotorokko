@@ -1,7 +1,14 @@
 # Project Status
 
-## Current Status (Latest - 2025-11-18)
+## Current Status (Latest - 2025-11-19)
 
+**Active Task: Gem-Wide Test Architecture Reorganization**
+- 🚧 **Phase**: Test classification and file reorganization
+- ✅ **Completed**: init_test reorganization (unit/integration/scenario)
+- 🚧 **In Progress**: Classify and reorganize remaining 22 test files
+- Target: Complete test categorization by end of session
+
+**Completed Milestones:**
 - ✅ **All Tests**: Passing (100% success rate)
 - ✅ **Quality**: RuboCop clean (0 violations), coverage targets met
 - ✅ **Error Handling**: All identified code quality issues verified and documented
@@ -14,13 +21,85 @@
 
 ---
 
+## Test Architecture Reorganization (In Progress)
+
+### Goal
+Establish gem-wide test classification system with three layers:
+- **Unit tests** (fast, mocked dependencies): test/unit/**/*_test.rb
+- **Integration tests** (real network/git operations): test/integration/**/*_test.rb
+- **Scenario tests** (complete user workflows): test/scenario/**/*_test.rb
+
+### Analysis: 23 Test Files Classified
+
+**UNIT TESTS (15 files → move to test/unit/)**
+1. test/picotorokko_test.rb → test/unit/picotorokko_test.rb
+2. test/rake_task_extractor_test.rb → test/unit/rake_task_extractor_test.rb
+3. test/rake_task_extractor_no_loadpath.rb → test/unit/rake_task_extractor_no_loadpath.rb
+4. test/reality_marble_integration_test.rb → test/unit/reality_marble_integration_test.rb
+5. test/picotorokko/mrbgems_dsl_test.rb → test/unit/picotorokko/mrbgems_dsl_test.rb
+6. test/picotorokko/executor_test.rb → test/unit/picotorokko/executor_test.rb
+7. test/picotorokko/build_config_applier_test.rb → test/unit/picotorokko/build_config_applier_test.rb
+8. test/picotorokko/project_initializer_test.rb → test/unit/picotorokko/project_initializer_test.rb
+9. test/template/yaml_engine_test.rb → test/unit/template/yaml_engine_test.rb
+10. test/template/ruby_engine_test.rb → test/unit/template/ruby_engine_test.rb
+11. test/template/engine_test.rb → test/unit/template/engine_test.rb
+12. test/template/c_engine_test.rb → test/unit/template/c_engine_test.rb
+13. test/lib/env_constants_test.rb → test/unit/lib/env_constants_test.rb
+14. test/commands/cli_test.rb → test/unit/commands/cli_test.rb
+15. test/commands/rubocop_test.rb → test/unit/commands/rubocop_test.rb
+16. test/commands/mrbgems_test.rb → test/unit/commands/mrbgems_test.rb
+17. test/unit/commands/init_test.rb ✓ (already in place)
+
+**INTEGRATION TESTS (2 files → move to test/integration/)**
+1. test/env_test.rb → test/integration/env_test.rb (module-level Env with real git ops)
+2. test/commands/env_test.rb → test/integration/commands/env_test.rb (Env command with git workflow)
+3. test/integration/commands/init_integration_test.rb ✓ (already in place)
+
+**SCENARIO TESTS (2 files + 1 mixed)**
+1. test/scenario/init_scenario_test.rb ✓ (already in place)
+2. test/commands/device_test.rb → test/scenario/commands/device_test.rb (user workflows)
+
+### Execution Plan
+
+**Phase 1: Move Unit Test Files** (minimize disruption)
+- Create test/unit/ subdirectories matching current structure
+- Move 15 unit test files with adjusted require_relative paths
+- Update Rakefile test:unit task to find files in new location
+
+**Phase 2: Move Integration Test Files**
+- Create test/integration/ subdirectories
+- Move env_test.rb and commands/env_test.rb
+- Update Rakefile test:integration task
+
+**Phase 3: Move Scenario Test Files**
+- Move device_test.rb to test/scenario/commands/
+- Update Rakefile test:scenario task
+
+**Phase 4: Verify and Commit**
+- Run full test suite: bundle exec rake test
+- Run CI checks: bundle exec rake ci
+- Commit reorganization with detailed message
+
+### Rakefile Updates Required
+```ruby
+# Update test task glob patterns to new structure
+test:unit    → FileList["test/unit/**/*_test.rb"].sort
+test:integration → FileList["test/integration/**/*_test.rb"].sort
+test:scenario → FileList["test/scenario/**/*_test.rb"].sort
+test:device_internal → Keep as-is (runs test/scenario/commands/device_test.rb)
+```
+
+---
+
 ## Test Execution
 
 **Quick Reference**:
 ```bash
-bundle exec rake test         # Run all tests
-bundle exec rake ci           # CI checks: tests + RuboCop + coverage validation
-bundle exec rake dev          # Development: RuboCop auto-fix + tests + coverage
+bundle exec rake test         # Run all tests (unit → integration → scenario → others)
+bundle exec rake test:unit    # Unit tests only (fast feedback, ~1.3s)
+bundle exec rake test:scenario # Scenario tests (~0.8s)
+bundle exec rake ci           # CI checks: all tests + RuboCop + coverage validation
+bundle exec rake dev          # Development: RuboCop auto-fix + unit tests
 ```
 
 ---

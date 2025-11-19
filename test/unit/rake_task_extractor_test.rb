@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-require_relative "test_helper"
+require_relative "../test_helper"
 require "picotorokko/commands/device"
 
 # RakeTaskExtractor の単体テスト

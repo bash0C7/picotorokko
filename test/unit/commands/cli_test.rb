@@ -1,4 +1,4 @@
-require_relative "../test_helper"
+require_relative "../../test_helper"
 
 class PraCommandsCliTest < PraTestCase
   def test_env_command_exists

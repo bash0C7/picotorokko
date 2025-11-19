@@ -40,32 +40,21 @@ Rake::TestTask.new("test:integration") do |t|
   t.ruby_opts = ["-W1"]
 end
 
-# Main test task (all tests except device and integration)
-# This is the default test task used in CI
-Rake::TestTask.new(:test) do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  test_files = FileList["test/**/*_test.rb"].sort
-  # NOTE: device_test.rb is excluded from main suite to avoid test registration interference
-  # VERIFIED: If device_test is included with help test enabled, 132+ tests fail to register
-  # - Help test execution breaks test-unit registration globally
-  # - Tests run: 65/197 (132 tests don't register)
-  # See: TODO.md [TODO-INFRASTRUCTURE-DEVICE-TEST]
-  test_files.delete_if { |f| f.include?("device_test.rb") }
-  # Exclude new test type directories from main task (they have their own tasks)
-  test_files.delete_if { |f| f.include?("test/unit/") || f.include?("test/integration/") || f.include?("test/scenario/") }
-
-  t.test_files = test_files
-
-  # Ruby warning suppress: method redefinition warnings in test mocks
-  # See: test/commands/env_test.rb, test/commands/cache_test.rb
-  t.ruby_opts = ["-W1"]
-
-  # Parallel test execution: DISABLED due to getcwd issues with test isolation
-  # Original: t.options = "--parallel --n-workers=4"
-  # Issue: Test isolation via Dir.mktmpdir causes getcwd failures when
-  # working directory is deleted by other worker processes
-  # TODO: Investigate test isolation strategy for safe parallelization
+# Main test task (all tests except device)
+# NOTE: With gem-wide test reorganization, all tests are in:
+# - test/unit/ (fast, mocked)
+# - test/integration/ (real network/git operations)
+# - test/scenario/ (user workflows)
+# Device tests run separately via test:device_internal
+desc "Run all core tests: unit → integration → scenario (excludes device)"
+task test: [:reset_coverage] do
+  puts "Running all core tests (unit → integration → scenario)..."
+  sh "bundle exec rake test:unit"
+  sh "bundle exec rake test:integration"
+  sh "bundle exec rake test:scenario"
+  puts "\n✓ All core tests passed!"
+  puts "  To run device tests: bundle exec rake test:device_internal"
+  puts "  To run full CI suite: bundle exec rake ci"
 end
 
 # ============================================================================
@@ -219,11 +208,13 @@ task default: [:reset_coverage] do
   sh "bundle exec rake test:unit"
   puts "\n✓ Unit tests completed successfully! (~1.3s)"
   puts "\nTest options:"
-  puts "  - rake               : Unit tests (fast feedback, 1.3s) ← you are here"
-  puts "  - rake test:unit     : Unit tests only (same as above)"
-  puts "  - rake test:scenario : Scenario tests (0.8s)"
-  puts "  - rake test          : All core tests except unit/scenario/integration (12s)"
-  puts "  - rake ci            : Full CI suite (all tests + RuboCop + coverage, ~60s)"
+  puts "  - rake               : Unit tests (fast feedback, ~1.3s) ← you are here"
+  puts "  - rake test:unit     : Unit tests only (same as above, ~1.3s)"
+  puts "  - rake test:scenario : Scenario tests (main workflows, ~0.8s)"
+  puts "  - rake test:integration : Integration tests (real git ops, ~30s)"
+  puts "  - rake test          : All core tests: unit → integration → scenario (~35s)"
+  puts "  - rake test:device_internal : Device command tests (~5s)"
+  puts "  - rake ci            : Full CI suite: all tests + RuboCop + coverage (~65s)"
   puts "  - rake dev           : Dev mode (RuboCop auto-fix + unit tests, ~5s)"
   puts "\nBefore pushing, run: rake ci"
 end

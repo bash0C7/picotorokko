@@ -531,8 +531,8 @@ class PraCommandsDeviceTest < PraTestCase
     FileUtils.mkdir_p(r2p2_path)
 
     # テスト用 Rakefile をコピー
-    # NOTE: test/commands/device_test.rb から test/fixtures/ へのパスは ../fixtures
-    mock_rakefile = File.join(File.expand_path("..", __dir__), "fixtures", "R2P2-ESP32", "Rakefile")
+    # NOTE: test/scenario/commands/device_test.rb から test/fixtures/ へのパスは ../../fixtures
+    mock_rakefile = File.join(File.expand_path("../..", __dir__), "fixtures", "R2P2-ESP32", "Rakefile")
     FileUtils.cp(mock_rakefile, File.join(r2p2_path, "Rakefile"))
 
     [env_name, r2p2_path]

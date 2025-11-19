@@ -1,4 +1,4 @@
-require_relative "../test_helper"
+require_relative "../../test_helper"
 require "reality_marble"
 
 class PicotorokkoProjectInitializerTest < PraTestCase

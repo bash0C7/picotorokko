@@ -1,4 +1,4 @@
-require_relative "../test_helper"
+require_relative "../../test_helper"
 
 class EnvConstantsTest < PraTestCase
   def test_env_dir_constant_exists

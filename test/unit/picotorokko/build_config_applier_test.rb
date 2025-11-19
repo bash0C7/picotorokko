@@ -1,4 +1,4 @@
-require_relative "../test_helper"
+require_relative "../../test_helper"
 
 class PicotororkoBuildConfigApplierTest < PraTestCase
   test "insert conf.gem into empty MRuby::Build block" do

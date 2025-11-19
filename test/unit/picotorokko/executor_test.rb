@@ -1,5 +1,5 @@
-require_relative "../test_helper"
-require_relative "../../lib/picotorokko/executor"
+require_relative "../../test_helper"
+require_relative "../../../lib/picotorokko/executor"
 
 module Picotorokko
   class ExecutorTest < Test::Unit::TestCase
