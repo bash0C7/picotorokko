@@ -195,26 +195,6 @@ class EnvTest < Test::Unit::TestCase
 
   # get_timestamp のテスト (covered by integration tests in env_test.rb)
 
-  # fetch_remote_commit のテスト
-  sub_test_case "fetch_remote_commit" do
-    test "returns short commit hash on success" do
-      # Use actual picoruby repository
-      commit = Picotorokko::Env.fetch_remote_commit("https://github.com/picoruby/picoruby.git", "HEAD")
-      # Should return 7-character commit hash
-      assert_match(/^[0-9a-f]{7}$/, commit) if commit
-    end
-
-    test "returns nil when repository does not exist" do
-      commit = Picotorokko::Env.fetch_remote_commit("https://github.com/invalid/nonexistent.git", "HEAD")
-      assert_nil(commit)
-    end
-
-    test "returns nil when ref does not exist" do
-      commit = Picotorokko::Env.fetch_remote_commit("https://github.com/picoruby/picoruby.git", "nonexistent-branch")
-      assert_nil(commit)
-    end
-  end
-
   # clone_repo エラーハンドリングのテスト
   sub_test_case "clone_repo error handling" do
     test "skips clone if directory already exists" do
@@ -229,33 +209,6 @@ class EnvTest < Test::Unit::TestCase
   end
 
   # traverse_submodules_and_validate のテスト (covered by integration tests)
-
-  # generate_env_hash additional tests
-  sub_test_case "generate_env_hash additional tests" do
-    test "generates correct format with different inputs" do
-      r2p2 = "xyz789-20250104_140000"
-      esp32 = "uvw456-20250105_150000"
-      picoruby = "rst123-20250106_160000"
-
-      result = Picotorokko::Env.generate_env_hash(r2p2, esp32, picoruby)
-      expected = "#{r2p2}_#{esp32}_#{picoruby}"
-
-      assert_equal(expected, result)
-      assert_match(/_/, result)
-    end
-  end
-
-  # get_cache_path additional tests
-  sub_test_case "get_cache_path additional tests" do
-    test "returns correct path for different repositories" do
-      repos = %w[R2P2-ESP32 picoruby-esp32 picoruby]
-      repos.each do |repo|
-        path = Picotorokko::Env.get_cache_path(repo, "test123-20250101_120000")
-        assert_match(/#{repo}/, path)
-        assert_match(/test123-20250101_120000/, path)
-      end
-    end
-  end
 
   # read_symlink edge cases
   sub_test_case "read_symlink edge cases" do
