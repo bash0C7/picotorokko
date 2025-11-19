@@ -163,4 +163,64 @@ class PicotorokkoMrbgemsDslTest < PraTestCase
     assert_equal 1, gems.length
     assert_equal "rp2040-gem", gems[0][:source]
   end
+
+  test "unknown source type raises error" do
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem invalid_source: "some-gem"
+      end
+    RUBY
+
+    assert_raise ArgumentError do
+      Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp").gems
+    end
+  end
+
+  test "empty gem specification raises error" do
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem
+      end
+    RUBY
+
+    assert_raise ArgumentError do
+      Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp").gems
+    end
+  end
+
+  test "multiple gems with mixed sources" do
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem github: "gem1", branch: "main"
+        conf.gem core: "sprintf"
+        conf.gem path: "./local-gems/gem3"
+        conf.gem git: "https://git.example.com/gem4.git", ref: "v1.0"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp").gems
+
+    assert_equal 4, gems.length
+    assert_equal :github, gems[0][:source_type]
+    assert_equal "main", gems[0][:branch]
+    assert_equal :core, gems[1][:source_type]
+    assert_equal :path, gems[2][:source_type]
+    assert_equal :git, gems[3][:source_type]
+    assert_equal "v1.0", gems[3][:ref]
+  end
+
+  test "gem with both branch and ref parameters" do
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem github: "multi-param-gem", branch: "develop", ref: "abc1234"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp").gems
+
+    assert_equal 1, gems.length
+    gem = gems[0]
+    assert_equal "develop", gem[:branch]
+    assert_equal "abc1234", gem[:ref]
+  end
 end
