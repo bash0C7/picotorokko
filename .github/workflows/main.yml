@@ -11,19 +11,17 @@ jobs:
   test-matrix:
     runs-on: ubuntu-slim
     name: test (${{ matrix.ruby }})
-    continue-on-error: ${{ matrix.experimental }}
+    continue-on-error: ${{ matrix.optional }}
     strategy:
       fail-fast: false
       matrix:
-        ruby: ['3.4', head]
-        experimental: [false]
         include:
           - ruby: '3.4'
             test_task: ci
-            experimental: false
+            optional: false
           - ruby: head
             test_task: test
-            experimental: true
+            optional: true
 
     steps:
       - uses: actions/checkout@v4
@@ -46,16 +44,3 @@ jobs:
           files: ./coverage/coverage.xml
           fail_ci_if_error: false
         continue-on-error: true
-
-  test:
-    runs-on: ubuntu-slim
-    name: test
-    needs: [test-matrix]
-    if: always()
-    steps:
-      - name: Check test results
-        run: |
-          if [ "${{ needs.test-matrix.result }}" = "failure" ]; then
-            echo "Test matrix job failed"
-            exit 1
-          fi
