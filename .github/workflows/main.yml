@@ -23,8 +23,8 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
           cache-version: 1
-      - name: Run tests with coverage
-        run: bundle exec rake test
+      - name: Run CI: tests + RuboCop + coverage validation
+        run: bundle exec rake ci
       - name: Generate RBS files from annotations
         run: bundle exec rake rbs:generate
       - name: Upload coverage to Codecov
