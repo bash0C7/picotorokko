@@ -41,15 +41,15 @@ require "test-unit"
 require "tmpdir"
 require "securerandom"
 
-# Ptrk as alias for Picotorokko (for tests using Ptrk namespace)
+# Aliases for backward compatibility
 Ptrk = Picotorokko unless defined?(Ptrk)
 
 # テスト用 ptrk_user_root を一時ディレクトリで設定
 # これにより、テスト実行中に gem root に汚染がないようにする
 ENV["PTRK_USER_ROOT"] = Dir.mktmpdir("ptrk_test_")
 
-# テスト用基底クラス
-class PraTestCase < Test::Unit::TestCase
+# Base test class for all picotorokko tests
+class PicotorokkoTestCase < Test::Unit::TestCase
   # setup: 各テスト開始時に初期化
   def setup
     super

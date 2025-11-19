@@ -1,6 +1,6 @@
 require "test_helper"
 
-class PrkTemplateYamlEngineTest < PraTestCase
+class TemplateYamlEngineTest < PicotorokkoTestCase
   # YamlTemplateEngine の単体テスト
 
   test "renders YAML template with single placeholder" do

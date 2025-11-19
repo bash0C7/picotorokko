@@ -3,7 +3,7 @@ require "tmpdir"
 require "fileutils"
 require_relative "../../../lib/picotorokko/commands/init"
 
-class PraUnitCommandsInitTest < PraTestCase
+class UnitCommandsInitTest < PicotorokkoTestCase
   # ptrk init コマンドの単体テスト
   # NOTE: Network operations are mocked out to focus on ProjectInitializer behavior
   # See test/integration/commands/init_integration_test.rb for real git clone tests

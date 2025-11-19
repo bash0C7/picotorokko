@@ -1,6 +1,6 @@
 require "test_helper"
 
-class PrkTemplateRubyEngineTest < PraTestCase
+class TemplateRubyEngineTest < PicotorokkoTestCase
   # RubyTemplateEngine の単体テスト
 
   test "renders template with single placeholder" do

@@ -3,7 +3,7 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
-class PraCommandsMrbgemsTest < PraTestCase
+class CommandsMrbgemsTest < PicotorokkoTestCase
   # 標準出力をキャプチャするヘルパー
   def capture_stdout
     original_stdout = $stdout

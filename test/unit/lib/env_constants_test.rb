@@ -1,6 +1,6 @@
 require_relative "../../test_helper"
 
-class EnvConstantsTest < PraTestCase
+class EnvConstantsTest < PicotorokkoTestCase
   def test_env_dir_constant_exists
     # 2.2: Update lib/ptrk/env.rb constants
     # Red: Verify ENV_DIR constant exists and is "ptrk_env"

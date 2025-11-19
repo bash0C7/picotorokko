@@ -19,7 +19,7 @@ require "stringio"
 
 # SystemCommandMocking is now defined in test_helper.rb
 
-class PraCommandsDeviceTest < PraTestCase
+class CommandsDeviceTest < PicotorokkoTestCase
   include SystemCommandMocking
 
   # NOTE: SystemCommandMocking::SystemRefinement is NOT used in device_test.rb

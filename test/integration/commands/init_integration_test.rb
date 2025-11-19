@@ -3,7 +3,7 @@ require "tmpdir"
 require "fileutils"
 require_relative "../../../lib/picotorokko/commands/init"
 
-class PraIntegrationCommandsInitTest < PraTestCase
+class IntegrationCommandsInitTest < PicotorokkoTestCase
   # ptrk init コマンドの結合テスト
   # NOTE: These tests perform actual network operations (git clone)
   # Network tests are marked as potentially slow and can be skipped in CI if needed

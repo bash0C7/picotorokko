@@ -1,6 +1,6 @@
 require_relative "../../test_helper"
 
-class PicotororkoBuildConfigApplierTest < PraTestCase
+class PicotororkoBuildConfigApplierTest < PicotorokkoTestCase
   test "insert conf.gem into empty MRuby::Build block" do
     content = <<~RUBY
       MRuby::Build.new do |conf|

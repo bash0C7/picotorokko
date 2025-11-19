@@ -1,6 +1,6 @@
 require_relative "../../test_helper"
 
-class PicotorokkoMrbgemsDslTest < PraTestCase
+class PicotorokkoMrbgemsDslTest < PicotorokkoTestCase
   test "parse single github gem" do
     dsl_code = <<-RUBY
       mrbgems do |conf|

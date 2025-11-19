@@ -1377,8 +1377,7 @@ assert_in_delta(expected, actual, delta)       # Float tolerance
 The picotorokko gem uses a **three-layer test classification** to ensure both development velocity and quality:
 
 #### Unit Tests: Fast Development Feedback
-**Location**: `test/unit/**/*_test.rb` (16 test files)
-**Execution Time**: ~1.3 seconds total
+**Location**: `test/unit/**/*_test.rb`
 **Characteristics**:
 - Mocked external dependencies (network, git, file I/O, system commands)
 - Tests single class/module behavior in isolation
@@ -1403,8 +1402,7 @@ bundle exec rake
 ```
 
 #### Integration Tests: Real Operations Verification
-**Location**: `test/integration/**/*_test.rb` (3 test files)
-**Execution Time**: ~30 seconds
+**Location**: `test/integration/**/*_test.rb`
 **Characteristics**:
 - Real git operations (clone, checkout, show, rev-parse)
 - Real network calls to GitHub API
@@ -1426,8 +1424,7 @@ SKIP_NETWORK_TESTS=1 bundle exec rake test:integration
 ```
 
 #### Scenario Tests: Complete User Workflows
-**Location**: `test/scenario/**/*_test.rb` (2 test files)
-**Execution Time**: ~0.8 seconds
+**Location**: `test/scenario/**/*_test.rb`
 **Characteristics**:
 - End-to-end user workflow verification
 - Tests main use cases and features
@@ -1489,23 +1486,11 @@ fi
 
 ### Test Architecture Benefits
 
-1. **Development Speed**: Unit tests run in ~1.3 seconds for rapid TDD cycles
+1. **Development Speed**: Unit tests provide rapid feedback for TDD cycles
 2. **Quality Assurance**: Integration tests verify real git/network behavior
 3. **User Confidence**: Scenario tests validate complete workflows
 4. **CI/CD Integration**: Clear separation enables parallel execution and failure analysis
 5. **Maintainability**: Each test layer has clear responsibility and dependencies
-
-### Test File Statistics
-
-| Layer | Files | Tests | Time | Dependencies |
-|-------|-------|-------|------|---|
-| Unit | 16 | 141 | ~1.3s | Mocked |
-| Integration | 3 | 114 | ~30s | Real git/network |
-| Scenario | 2 | 18 | ~0.8s | Complete workflows |
-| Device | 1 | 18* | ~5s | Device commands |
-| **Total** | **22** | **255** | **~60s** | **Mixed** |
-
-*1 test omitted due to Thor + test-unit registration conflict (non-critical feature)
 
 ---
 

@@ -3,7 +3,7 @@ require_relative "../test_helper"
 require "picotorokko/commands/device"
 
 # RakeTaskExtractor の単体テスト
-class RakeTaskExtractorTest < PraTestCase
+class RakeTaskExtractorTest < PicotorokkoTestCase
   def test_simple_task_definition_with_symbol
     source = "task :build do; end"
     extractor = extract_tasks(source)

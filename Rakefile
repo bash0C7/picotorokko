@@ -65,7 +65,7 @@ end
 Rake::TestTask.new("test:device_internal") do |t|
   t.libs << "test"
   t.libs << "lib"
-  t.test_files = ["test/commands/device_test.rb"]
+  t.test_files = ["test/scenario/commands/device_test.rb"]
   # Ruby warning suppress
   t.ruby_opts = ["-W1"]
 end

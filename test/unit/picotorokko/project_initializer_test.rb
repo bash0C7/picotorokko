@@ -1,7 +1,7 @@
 require_relative "../../test_helper"
 require "reality_marble"
 
-class PicotorokkoProjectInitializerTest < PraTestCase
+class PicotorokkoProjectInitializerTest < PicotorokkoTestCase
   test "ProjectInitializer has setup_default_environment method" do
     tmpdir = Dir.mktmpdir
     project_name = "test_project"

@@ -1,6 +1,6 @@
 require_relative "../../test_helper"
 
-class PraCommandsCliTest < PraTestCase
+class CommandsCliTest < PicotorokkoTestCase
   def test_env_command_exists
     # 2.3: Update lib/ptrk/cli.rb command registration
     # Red: Verify env, device, mrbgem, rubocop commands are registered

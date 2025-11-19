@@ -1,6 +1,6 @@
 require "test_helper"
 
-class PrkTemplateCEngineTest < PraTestCase
+class TemplateCEngineTest < PicotorokkoTestCase
   # CTemplateEngine の単体テスト
 
   test "renders C template with single placeholder" do

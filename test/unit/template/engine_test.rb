@@ -1,6 +1,6 @@
 require "test_helper"
 
-class PrkTemplateEngineTest < PraTestCase
+class TemplateEngineTest < PicotorokkoTestCase
   # Ptrk::Template::Engine インターフェーステスト
 
   test "Engine.render method exists" do

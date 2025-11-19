@@ -3,7 +3,7 @@ require "tmpdir"
 require "fileutils"
 require_relative "../../lib/picotorokko/commands/init"
 
-class PraScenarioInitTest < PraTestCase
+class ScenarioInitTest < PicotorokkoTestCase
   # ptrk init コマンドのシナリオテスト
   # NOTE: Tests the main user workflows and scenarios
   # Network environment setup is skipped to keep tests fast

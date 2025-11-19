@@ -272,7 +272,7 @@ The picotorokko gem uses a **three-layer test classification system** to balance
 
 #### Layer 1: Unit Tests (Fast, Mocked)
 **Location**: `test/unit/**/*_test.rb`
-- Fast execution (~1.3 seconds total)
+- Fast execution with mocked dependencies
 - Mocked external dependencies (network, file I/O, system commands)
 - Focused on single class/module behavior
 - Examples: `test/unit/commands/init_test.rb`, `test/unit/template/yaml_engine_test.rb`
@@ -284,7 +284,6 @@ bundle exec rake test:unit
 
 #### Layer 2: Integration Tests (Real Operations)
 **Location**: `test/integration/**/*_test.rb`
-- Slower execution (~30 seconds)
 - Real git operations (git clone, checkout, show)
 - Real network calls to GitHub API
 - Tests interactions between components
