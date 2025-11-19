@@ -20,7 +20,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test-matrix:
+  test-main-matrix:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-slim
     name: test (${{ matrix.ruby }})
     timeout-minutes: 3
@@ -53,6 +54,43 @@ jobs:
         run: bundle exec rake rbs:generate
       - name: Upload coverage to Codecov
         if: matrix.ruby == '3.4' && always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage.xml
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  test-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-slim
+    name: test (PR - ${{ matrix.ruby }})
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    continue-on-error: ${{ matrix.optional }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ruby: '3.4'
+            test_task: ci
+            optional: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+          cache-version: 1
+      - name: "Run tests (${{ matrix.test_task }})"
+        run: bundle exec rake ${{ matrix.test_task }}
+      - name: Generate RBS files from annotations
+        run: bundle exec rake rbs:generate
+      - name: Upload coverage to Codecov
+        if: always()
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
