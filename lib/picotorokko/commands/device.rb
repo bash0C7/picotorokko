@@ -47,7 +47,7 @@ module Picotorokko
       # Build firmware for ESP32
       # @rbs () -> void
       desc "build", "Build firmware for ESP32"
-      option :env, default: "current", desc: "Environment name"
+      option :env, default: "latest", desc: "Environment name"
       def build
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
