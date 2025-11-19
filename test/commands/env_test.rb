@@ -327,7 +327,7 @@ class PraCommandsEnvTest < PraTestCase
           output = capture_stdout do
             Picotorokko::Commands::Env.start(
               ['set', 'specific', '--R2P2-ESP32', "path:#{r2p2_path}:abc1234",
-               '--picoruby-esp32', "path:#{esp32_path}:def5678", '--picoruby', "path:#{picoruby_path}:ghi9012"]
+               '--picoruby-esp32', "path:#{esp32_path}:def5678", '--picoruby', "path:#{picoruby_path}:fade012"]
             )
           end
 
@@ -336,7 +336,7 @@ class PraCommandsEnvTest < PraTestCase
           # Verify explicit commits are stored
           assert_equal('abc1234', env_config['R2P2-ESP32']['commit'])
           assert_equal('def5678', env_config['picoruby-esp32']['commit'])
-          assert_equal('ghi9012', env_config['picoruby']['commit'])
+          assert_equal('fade012', env_config['picoruby']['commit'])
         ensure
           Dir.chdir(original_dir)
         end
