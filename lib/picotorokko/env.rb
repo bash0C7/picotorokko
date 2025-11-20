@@ -33,22 +33,10 @@ module Picotorokko
       "picoruby-esp32" => "picoruby"
     }.freeze
 
-    # ====== CRITICAL FIX: Cache initial project root ======
-    # PROBLEM: Dynamic methods using Dir.pwd break when tests chdir
-    # - export_repo_changes does Dir.chdir(work_path)
-    # - Inside that, Picotorokko::Env.patch_dir calls Dir.pwd
-    # - Gets wrong path (work_path/ptrk_env/patch instead of original/ptrk_env/patch)
-    # - Test assertion fails: Dir.exist?(patch_dir) returns false
-    #
-    # SOLUTION: Cache the initial project_root once, then use cached value
-    # Only reset in tests via @reset_cached_root call
     @cached_project_root = Dir.pwd.freeze
     @reset_cached_root_enabled = true
 
     class << self
-      # ====== Executor（外部コマンド実行） ======
-      # NOTE: Configurable for testing (MockExecutor) and production (ProductionExecutor)
-
       # Set custom executor for testing (MockExecutor) or production
       # @rbs (Executor) -> void
       def set_executor(executor)
@@ -60,11 +48,6 @@ module Picotorokko
       def executor
         @executor ||= ProductionExecutor.new
       end
-
-      # ====== Dynamic Directory Paths (Cache-based) ======
-      # NOTE: Caches initial project_root to prevent Dir.chdir interference
-      # This ensures patch_dir, cache_dir always point to the original project root
-      # not the current working directory
 
       # Get project root directory (caches initial Dir.pwd)
       # @rbs () -> String
@@ -381,11 +364,6 @@ module Picotorokko
       end
     end
 
-    # 後方互換性のための定数インターフェース
-    # MODULE レベルで定義：モジュール上の定数ルックアップで呼び出される
-    # （既存コードで Picotorokko::Env::PROJECT_ROOT のような参照があった場合）
-    # NOTE: CRITICAL FIX - Use project_root method, not Dir.pwd directly
-    # This ensures const_missing returns cached values, consistent with dynamic methods
     def self.const_missing(name)
       case name
       when :PROJECT_ROOT
