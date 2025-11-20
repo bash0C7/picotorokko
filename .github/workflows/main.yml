@@ -13,25 +13,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # ソースコードの変更があったかを判定するジョブ
-  changes-filter:
-    runs-on: ubuntu-slim
-    outputs:
-      src: ${{ steps.filter.outputs.src }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            src:
-              - 'lib/**'
-              - 'test/**'
-              - 'Rakefile'
-              - 'Gemfile'
-              - 'picotorokko.gemspec'
-              - '.github/workflows/main.yml'
-
   test-main-matrix:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-slim
@@ -48,7 +29,7 @@ jobs:
             test_task: ci
             optional: false
           - ruby: head
-            test_task: test
+            test_task: ci
             optional: true
 
     steps:
@@ -74,38 +55,41 @@ jobs:
         continue-on-error: true
 
   test-pr:
-    # changes-filter ジョブの完了を待つ
-    needs: changes-filter
-    # ソースコードに変更があった場合のみジョブを実行する
-    if: github.event_name == 'pull_request' && needs.changes-filter.outputs.src == 'true'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-slim
-    name: test (${{ matrix.ruby }})
+    name: test
     timeout-minutes: 3
     permissions:
       contents: read
-    continue-on-error: ${{ matrix.optional }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - ruby: '3.4'
-            test_task: ci
-            optional: false
 
     steps:
       - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'lib/**'
+              - 'test/**'
+              - 'Rakefile'
+              - 'Gemfile'
+              - 'picotorokko.gemspec'
+              - '.github/workflows/main.yml'
       - name: Set up Ruby
+        if: steps.filter.outputs.src == 'true'
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ matrix.ruby }}
+          ruby-version: '3.4'
           bundler-cache: true
           cache-version: 1
-      - name: "Run tests (${{ matrix.test_task }})"
-        run: bundle exec rake ${{ matrix.test_task }}
+      - name: "Run tests (ci)"
+        if: steps.filter.outputs.src == 'true'
+        run: bundle exec rake ci
       - name: Generate RBS files from annotations
+        if: steps.filter.outputs.src == 'true'
         run: bundle exec rake rbs:generate
       - name: Upload coverage to Codecov
-        if: always()
+        if: steps.filter.outputs.src == 'true' && always()
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
