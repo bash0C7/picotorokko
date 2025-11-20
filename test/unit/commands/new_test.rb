@@ -1,12 +1,12 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
-require_relative "../../../lib/picotorokko/commands/init"
+require_relative "../../../lib/picotorokko/commands/new"
 
-class UnitCommandsInitTest < PicotorokkoTestCase
-  # ptrk init コマンドの単体テスト
+class UnitCommandsNewTest < PicotorokkoTestCase
+  # ptrk new コマンドの単体テスト
   # NOTE: Network operations are mocked out to focus on ProjectInitializer behavior
-  # See test/integration/commands/init_integration_test.rb for real git clone tests
+  # See test/integration/commands/new_integration_test.rb for real git clone tests
 
   def setup
     super
@@ -20,7 +20,7 @@ class UnitCommandsInitTest < PicotorokkoTestCase
     super
   end
 
-  sub_test_case "init command basic creation" do
+  sub_test_case "new command basic creation" do
     test "creates project directories" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
@@ -244,7 +244,7 @@ class UnitCommandsInitTest < PicotorokkoTestCase
     end
   end
 
-  sub_test_case "init command with --with-ci option" do
+  sub_test_case "new command with --with-ci option" do
     test "copies GitHub Actions workflow when --with-ci is enabled" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
@@ -280,7 +280,7 @@ class UnitCommandsInitTest < PicotorokkoTestCase
     end
   end
 
-  sub_test_case "init command with hyphenated option keys (Thor format)" do
+  sub_test_case "new command with hyphenated option keys (Thor format)" do
     test "handles with_ci when key is string with hyphen" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
@@ -313,6 +313,52 @@ class UnitCommandsInitTest < PicotorokkoTestCase
           assert File.exist?("test-project/mrbgems/app/mrbgem.rake"), "mrbgem.rake should exist"
           assert File.exist?("test-project/mrbgems/app/mrblib/app.rb"), "Ruby template should exist"
           assert File.exist?("test-project/mrbgems/app/src/app.c"), "C template should exist"
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+  end
+
+  sub_test_case "New Thor command class" do
+    test "returns early when project_name is nil" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          # Create a New command instance
+          command = Picotorokko::Commands::New.new
+
+          # Call create with nil - should return without error
+          result = command.create(nil)
+
+          # Verify result is nil (early return)
+          assert_nil result
+
+          # Verify no project directory is created
+          assert !Dir.exist?("test-project")
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "creates project when project_name is provided" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          # Create a New command instance
+          command = Picotorokko::Commands::New.new
+
+          # Call create with project name (should not raise)
+          assert_nothing_raised do
+            command.create("test-new-project")
+          end
+
+          # Verify project was created
+          assert Dir.exist?("test-new-project")
+          assert File.exist?("test-new-project/.picoruby-env.yml")
         ensure
           Dir.chdir(original_dir)
         end

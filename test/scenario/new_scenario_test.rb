@@ -1,10 +1,10 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
-require_relative "../../lib/picotorokko/commands/init"
+require_relative "../../lib/picotorokko/commands/new"
 
-class ScenarioInitTest < PicotorokkoTestCase
-  # ptrk init コマンドのシナリオテスト
+class ScenarioNewTest < PicotorokkoTestCase
+  # ptrk new コマンドのシナリオテスト
   # NOTE: Tests the main user workflows and scenarios
   # Network environment setup is skipped to keep tests fast
   # but core project structure creation is fully tested
@@ -27,7 +27,7 @@ class ScenarioInitTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          # User scenario: ptrk init my-app
+          # User scenario: ptrk new my-app
           initializer = Picotorokko::ProjectInitializer.new("my-app", {})
           initializer.initialize_project
 
@@ -54,7 +54,7 @@ class ScenarioInitTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          # User scenario: ptrk init my-ci-project --with-ci
+          # User scenario: ptrk new my-ci-project --with-ci
           initializer = Picotorokko::ProjectInitializer.new("my-ci-project", { "with-ci" => true })
           initializer.initialize_project
 
@@ -75,7 +75,7 @@ class ScenarioInitTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
         begin
-          # User scenario: mkdir my-project && cd my-project && ptrk init
+          # User scenario: mkdir my-project && cd my-project && ptrk new
           Dir.mkdir("my-project")
           Dir.chdir("my-project")
 

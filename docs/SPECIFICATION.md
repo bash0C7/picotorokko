@@ -174,11 +174,11 @@ environments:
 
 ## CLI Commands Reference
 
-### 🚀 Project Initialization Command
+### 🚀 Project Creation Command
 
-#### `ptrk init [PROJECT_NAME]`
+#### `ptrk new [PROJECT_NAME]`
 
-**Description**: Initialize a new PicoRuby project structure with all necessary directories and configuration files
+**Description**: Create a new PicoRuby project structure with all necessary directories and configuration files
 
 **Arguments**:
 - `PROJECT_NAME` - Name of the project (optional, default: current directory name or `picotorokko-app`)
@@ -256,7 +256,7 @@ environments:
 
 ```bash
 # Basic initialization
-ptrk init my-project
+ptrk new my-project
 # => Creating new PicoRuby project: my-project
 #    Creating directories...
 #    Generating configuration files...
@@ -267,19 +267,19 @@ ptrk init my-project
 #    4. cd build/current/R2P2-ESP32 && rake build
 
 # With custom author and CI setup
-ptrk init my-project --author "John Doe" --with-ci
+ptrk new my-project --author "John Doe" --with-ci
 # => Creating new PicoRuby project: my-project
 #    Copying GitHub Actions workflow...
 #    Done!
 
 # In custom directory with mrbgem
-ptrk init my-iot-app --path /projects --with-mrbgem servo --with-mrbgem pwm
+ptrk new my-iot-app --path /projects --with-mrbgem servo --with-mrbgem pwm
 # => Creating new PicoRuby project: my-iot-app
 #    Initializing mrbgems: servo, pwm
 #    Done!
 
 # Inline project creation
-mkdir my-app && cd my-app && ptrk init
+mkdir my-app && cd my-app && ptrk new
 # => Creating new PicoRuby project: my-app (from current directory)
 #    Done!
 ```
@@ -295,7 +295,7 @@ mkdir my-app && cd my-app && ptrk init
 
 ## Project Initialization
 
-### `ptrk init [PROJECT_NAME]`
+### `ptrk new [PROJECT_NAME]`
 
 **Description**: Initialize a new PicoRuby project with complete directory structure, templates, and configuration files
 
@@ -342,29 +342,29 @@ PROJECT_NAME/
 
 Basic initialization:
 ```bash
-ptrk init my-project
+ptrk new my-project
 cd my-project
 ```
 
 With GitHub Actions CI/CD:
 ```bash
-ptrk init my-project --with-ci
+ptrk new my-project --with-ci
 ```
 
 With multiple mrbgems and author:
 ```bash
-ptrk init my-project --with-mrbgem Sensor --with-mrbgem Motor --author "Alice"
+ptrk new my-project --with-mrbgem Sensor --with-mrbgem Motor --author "Alice"
 ```
 
 Create in specific directory:
 ```bash
-ptrk init --path ~/projects/ my-project
+ptrk new --path ~/projects/ my-project
 ```
 
 Create in current directory (uses current dir name):
 ```bash
 mkdir my-project && cd my-project
-ptrk init
+ptrk new
 ```
 
 **Operation**:
@@ -956,7 +956,7 @@ PicoRuby applications can be tested on actual devices (ESP32) using the Picotest
 
 ```
 Development
-├─ 1. ptrk init my-app          # Generate project with test template
+├─ 1. ptrk new my-app          # Generate project with test template
 ├─ 2. Edit test/app_test.rb     # Write tests using Picotest
 ├─ 3. ptrk device build --test  # Build with test code
 ├─ 4. ptrk device flash         # Flash to ESP32

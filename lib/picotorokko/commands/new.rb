@@ -3,21 +3,21 @@ require_relative "../project_initializer"
 
 module Picotorokko
   module Commands
-    # Project initialization commands
+    # Project creation commands
     # Creates new PicoRuby projects with directory structure, templates, and configuration
     # @rbs < Thor
-    class Init < Thor
+    class New < Thor
       # @rbs () -> bool
       def self.exit_on_failure?
         true
       end
 
-      # Default action - called when just "ptrk init" is used
+      # Default action - called when just "ptrk new" is used
       default_task :create
 
-      # Initialize new PicoRuby project with directory structure and configuration
+      # Create new PicoRuby project with directory structure and configuration
       # @rbs (String | nil) -> void
-      desc "[PROJECT_NAME]", "Initialize a new PicoRuby project"
+      desc "[PROJECT_NAME]", "Create a new PicoRuby project"
       option :path, type: :string, desc: "Create project in specified directory"
       option :author, type: :string, desc: "Set author name"
       option :"with-ci", type: :boolean, desc: "Copy GitHub Actions workflow"
@@ -37,15 +37,15 @@ module Picotorokko
       def warn_missing_project_name
         puts "Error: PROJECT_NAME is required"
         puts ""
-        puts "Usage: ptrk init PROJECT_NAME [OPTIONS]"
+        puts "Usage: ptrk new PROJECT_NAME [OPTIONS]"
         puts ""
         puts "Examples:"
-        puts "  ptrk init my-app"
-        puts "  ptrk init my-app --with-ci"
-        puts "  ptrk init my-app --author 'Your Name' --path /path/to/projects"
+        puts "  ptrk new my-app"
+        puts "  ptrk new my-app --with-ci"
+        puts "  ptrk new my-app --author 'Your Name' --path /path/to/projects"
         puts ""
         puts "To create additional mrbgems, use: ptrk mrbgems generate NAME"
-        puts "For more information: ptrk init help"
+        puts "For more information: ptrk new help"
       end
     end
   end

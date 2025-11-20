@@ -1,6 +1,6 @@
-# PicoRuby Project Initialization Guide
+# PicoRuby Project Creation Guide
 
-This guide walks you through initializing a new PicoRuby ESP32 project using the `ptrk init` command.
+This guide walks you through creating a new PicoRuby ESP32 project using the `ptrk new` command.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ This guide walks you through initializing a new PicoRuby ESP32 project using the
 The fastest way to get started:
 
 ```bash
-ptrk init my-picoruby-app
+ptrk new my-picoruby-app
 cd my-picoruby-app
 ```
 
@@ -32,7 +32,7 @@ This creates a complete project structure ready for development.
 ### Create a New Project
 
 ```bash
-ptrk init my-project
+ptrk new my-project
 cd my-project
 ```
 
@@ -49,7 +49,7 @@ If you've already created a directory:
 ```bash
 mkdir my-project
 cd my-project
-ptrk init
+ptrk new
 ```
 
 The project name will be detected from the directory name.
@@ -57,7 +57,7 @@ The project name will be detected from the directory name.
 ### Create in a Custom Location
 
 ```bash
-ptrk init my-project --path ~/my-projects/
+ptrk new my-project --path ~/my-projects/
 ```
 
 Creates the project in `~/my-projects/my-project/`.
@@ -65,7 +65,7 @@ Creates the project in `~/my-projects/my-project/`.
 ### Set Author Name
 
 ```bash
-ptrk init my-project --author "Alice Developer"
+ptrk new my-project --author "Alice Developer"
 ```
 
 The author name will be embedded in generated files. If not specified, it's auto-detected from `git config user.name`.
@@ -77,7 +77,7 @@ The author name will be embedded in generated files. If not specified, it's auto
 Include a GitHub Actions workflow for automated firmware builds:
 
 ```bash
-ptrk init my-project --with-ci
+ptrk new my-project --with-ci
 cd my-project
 ```
 
@@ -110,7 +110,7 @@ git push origin main
 You can combine multiple options:
 
 ```bash
-ptrk init my-project \
+ptrk new my-project \
   --author "Alice" \
   --with-ci \
   --path ~/projects/
@@ -276,12 +276,12 @@ git push origin main
 
 **Solution**: Use only alphanumeric characters, dashes, and underscores:
 ```bash
-ptrk init my-project         # ✓ OK
-ptrk init my_project         # ✓ OK
-ptrk init MyProject          # ✓ OK
-ptrk init my-project-v1      # ✓ OK
-ptrk init my-project!        # ✗ Invalid
-ptrk init my.project         # ✗ Invalid
+ptrk new my-project         # ✓ OK
+ptrk new my_project         # ✓ OK
+ptrk new MyProject          # ✓ OK
+ptrk new my-project-v1      # ✓ OK
+ptrk new my-project!        # ✗ Invalid
+ptrk new my.project         # ✗ Invalid
 ```
 
 ### Author name not auto-detected
@@ -292,10 +292,10 @@ ptrk init my.project         # ✗ Invalid
 ```bash
 # Option 1: Set git config
 git config user.name "Your Name"
-ptrk init my-project
+ptrk new my-project
 
 # Option 2: Specify author directly
-ptrk init my-project --author "Your Name"
+ptrk new my-project --author "Your Name"
 ```
 
 ### Path doesn't exist
@@ -305,7 +305,7 @@ ptrk init my-project --author "Your Name"
 **Solution**: Create the parent directory first:
 ```bash
 mkdir -p ~/my-projects/
-ptrk init my-project --path ~/my-projects/
+ptrk new my-project --path ~/my-projects/
 ```
 
 ### GitHub Actions workflow fails

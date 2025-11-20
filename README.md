@@ -11,10 +11,10 @@ The name "picotorokko" draws inspiration from **torokko** (トロッコ), a simp
 
 ### Quick Start
 
-#### 1. Initialize a new project
+#### 1. Create a new project
 
 ```bash
-ptrk init my-project
+ptrk new my-project
 cd my-project
 ```
 
@@ -48,10 +48,10 @@ ptrk mrbgems generate MyMotor
 
 ### Commands Reference
 
-#### Project Initialization
+#### Project Creation
 
 ```bash
-ptrk init [PROJECT_NAME]
+ptrk new [PROJECT_NAME]
 ```
 
 Options:

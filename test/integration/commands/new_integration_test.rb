@@ -1,18 +1,18 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
-require_relative "../../../lib/picotorokko/commands/init"
+require_relative "../../../lib/picotorokko/commands/new"
 
-class IntegrationCommandsInitTest < PicotorokkoTestCase
-  # ptrk init コマンドの結合テスト
+class IntegrationCommandsNewTest < PicotorokkoTestCase
+  # ptrk new コマンドの結合テスト
   # NOTE: These tests perform actual network operations (git clone)
   # Network tests are marked as potentially slow and can be skipped in CI if needed
 
-  # Integration tests for init command with real network operations
+  # Integration tests for new command with real network operations
   # These tests are skipped in development but run in CI with SKIP_NETWORK_TESTS flag
   # If network tests are skipped, these test methods return early without assertions
 
-  sub_test_case "init with network environment setup" do
+  sub_test_case "new with network environment setup" do
     test "creates default environment with real repository information" do
       # Skip in development environment
       return if ENV["SKIP_NETWORK_TESTS"]
