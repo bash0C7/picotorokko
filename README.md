@@ -140,7 +140,7 @@ See [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md) for complete documentation.
 
 ### Requirements
 
-- Ruby 3.0 or higher
+- Ruby 3.3 or higher
 - Bundler
 - Git
 - ESP-IDF (for build/flash/monitor tasks)
@@ -166,7 +166,7 @@ For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONT
 
 - **Project Templates**: Auto-generate `.rubocop.yml` and enhanced `CLAUDE.md` with PicoRuby development guides
 - **Environment Management**: Define, list, and manage multiple PicoRuby build environments with version control
-- **Automatic Repository Setup**: `ptrk env latest` auto-clones and checks out repositories to `ptrk_env/`
+- **Environment Metadata Capture**: `ptrk env latest` records the newest repository commits in `ptrk_env/.picoruby-env.yml`
 - **Smart Build Detection**: Detects `Gemfile` and uses appropriate Rake invocation (bundle exec vs rake)
 - **Centralized Directory Structure**: All environment data stored in `ptrk_env/` for clean project organization
 - **Git Integration**: Clone and manage repositories with automatic submodule handling

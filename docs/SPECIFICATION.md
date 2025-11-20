@@ -707,19 +707,20 @@ diff --git a/storage/home/custom.rb (working) vs (patch/)
 
 #### `ptrk device build [--env ENV_NAME]`
 
-**Description**: Setup build environment (`.build/`) from environment definition and build firmware
+**Description**: Setup build environment in `ptrk_env/` from environment definition and build firmware
 
 **Arguments**:
 - `--env ENV_NAME` - Environment name (default: `latest`)
 
 **Operation**:
 1. Load environment definition from `.picoruby-env.yml` (e.g., `latest`)
-2. Create `.build/` directory if not exists
-3. Clone R2P2-ESP32 WITH SUBMODULES to `.build/R2P2-ESP32/` (ensures `components/picoruby-esp32/picoruby/` exists)
-4. Clone picoruby-esp32 and picoruby to respective locations
-5. Apply patches from `patch/` directory
-6. Copy `storage/home/` to build environment
-7. Execute `rake build` in `.build/R2P2-ESP32/`
+2. Prepare build workspace at `ptrk_env/{ENV_NAME}/`
+3. Clone R2P2-ESP32 WITH SUBMODULES using cached copy and place it under `ptrk_env/{ENV_NAME}/R2P2-ESP32/`
+4. Clone picoruby-esp32 and picoruby repositories referenced by the environment definition
+5. Copy `storage/home/` and `mrbgems/` (if present) into the R2P2-ESP32 working directory
+6. Execute `rake build` in `ptrk_env/{ENV_NAME}/R2P2-ESP32/`
+
+**Note**: Apply custom patches with `ptrk env patch_apply` before building if you need to overlay files from `patch/`.
 
 **Example**:
 ```bash
@@ -729,7 +730,6 @@ ptrk device build --env stable # Use 'stable' environment
 #    Cloning R2P2-ESP32 with submodules...
 #    Cloning picoruby-esp32...
 #    Cloning picoruby...
-#    Applying patches...
 #    Copying storage/home/...
 #    Building firmware...
 #    ✓ Build complete

@@ -168,7 +168,7 @@ my-project/
 **`patch/`** — Customizations to R2P2-ESP32 and dependencies
 - Contains diffs of changes you make to framework code
 - Git-managed for reproducible builds
-- Applied automatically during `ptrk env latest`
+- Apply to build environments with `ptrk env patch_apply`
 
 **`.github/workflows/`** — CI/CD configuration (optional, with `--with-ci`)
 - GitHub Actions workflow for automated builds
@@ -208,11 +208,11 @@ my-project/
 ### 1. Fetch Latest Repositories
 
 ```bash
-# Automatically clone and checkout latest repositories
+# Record latest repository commits for the `latest` environment
 ptrk env latest
 ```
 
-This creates a complete build environment in `ptrk_env/latest/` with all necessary repositories.
+This stores the newest commit metadata in `ptrk_env/.picoruby-env.yml`. Clone repositories and build firmware with `ptrk device build`.
 
 Alternatively, define a specific version:
 
