@@ -31,12 +31,39 @@
 - `ptrk env latest` → save environment definition only
 - `ptrk device build` → setup `.build/` and build firmware
 
-### Phase 3: Simplify ptrk env latest
-- [ ] **TDD RED**: Write test for `ptrk env latest` without setup_build_environment call
-- [ ] **TDD GREEN**: Remove setup_build_environment from latest command
+### Phase 3: Remove env creation from ptrk new
+- [ ] **TDD RED**: Write test for `ptrk new` without environment creation
+- [ ] **TDD GREEN**: Remove `setup_default_environment` from ProjectInitializer
 - [ ] **TDD RUBOCOP**: Auto-fix style
 - [ ] **TDD REFACTOR**: Clean up any dead code
-- [ ] **COMMIT**: "refactor: simplify ptrk env latest to save definition only"
+- [ ] **COMMIT**: "refactor: remove automatic environment creation from ptrk new"
+
+### Phase 3b: Rename ptrk env latest to ptrk env set --latest
+- [ ] **TDD RED**: Write test for `ptrk env set --latest` with timestamp env name (YYYYMMDD_HHMMSS format)
+- [ ] **TDD GREEN**: Rename latest command to be `ptrk env set --latest`
+- [ ] **TDD GREEN**: Auto-set currentenv if .picoruby-env.yml is empty/missing
+- [ ] **TDD RUBOCOP**: Auto-fix style
+- [ ] **TDD REFACTOR**: Extract timestamp generation logic
+- [ ] **COMMIT**: "refactor: rename ptrk env latest to ptrk env set --latest"
+
+### Phase 3c: Implement current environment tracking
+- [ ] **TDD RED**: Write test for `ptrk env current ENV_NAME` command
+- [ ] **TDD GREEN**: Implement `ptrk env current` to set/get current environment
+- [ ] **TDD RUBOCOP**: Auto-fix style
+- [ ] **COMMIT**: "feat: add ptrk env current command for environment selection"
+
+### Phase 3d: Support ENV_NAME omission with current fallback
+- [ ] **TDD RED**: Write tests for optional ENV_NAME on patch_diff, patch_export, reset, show
+- [ ] **TDD GREEN**: Make ENV_NAME optional, default to current environment
+- [ ] **TDD RUBOCOP**: Auto-fix style
+- [ ] **TDD REFACTOR**: Clean up argument handling
+- [ ] **COMMIT**: "feat: make ENV_NAME optional for env commands (default to current)"
+
+### Phase 3e: Remove ptrk env patch_apply
+- [ ] **TDD RED**: Write test verifying patch_apply is no longer available
+- [ ] **TDD GREEN**: Remove patch_apply command (patches applied during device build)
+- [ ] **TDD RUBOCOP**: Auto-fix style
+- [ ] **COMMIT**: "refactor: remove patch_apply command (patches applied during build)"
 
 ### Phase 4: Implement .build Setup in ptrk device build
 - [ ] **TDD RED**: Write test for `.build/` directory creation with submodules
