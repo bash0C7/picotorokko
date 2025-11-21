@@ -34,10 +34,12 @@
 ### Phase 3a: Directory naming consistency (ptrk_env → .ptrk_env)
 - [ ] **TDD RED**: Write tests for `.ptrk_env/` directory usage
 - [ ] **TDD GREEN**: Update `ENV_DIR` constant from `ptrk_env` to `.ptrk_env`
+- [ ] **TDD GREEN**: Update `ENV_NAME_PATTERN` to `/^\d+_\d+$/` (YYYYMMDD_HHMMSS format only)
+- [ ] **TDD GREEN**: Update `validate_env_name!` for new pattern
 - [ ] **TDD GREEN**: Update all `get_build_path`, `get_environment`, file operations to use `.ptrk_env/`
 - [ ] **TDD GREEN**: Update test fixtures and test setup
 - [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **COMMIT**: "refactor: rename ptrk_env to .ptrk_env for consistency and visibility control"
+- [ ] **COMMIT**: "refactor: rename ptrk_env to .ptrk_env and validate env names as YYYYMMDD_HHMMSS"
 
 ### Phase 3: Remove env creation from ptrk new
 - [ ] **TDD RED**: Write test for `ptrk new` without environment creation
@@ -55,21 +57,55 @@
 - Generate env-name from local timestamp (YYYYMMDD_HHMMSS format)
 
 #### Phase 3b-submodule: Implement submodule rewriting
+
+**Git Operations Flow**:
+```bash
+# 1. Clone R2P2-ESP32 with minimal object fetch
+git clone --filter=blob:none {R2P2_URL} .ptrk_env/{env_name}/
+cd .ptrk_env/{env_name}
+git checkout {R2P2_commit}
+
+# 2. Initialize and fetch all nested submodules recursively
+git submodule update --init --recursive --jobs 4
+
+# 3. Checkout picoruby-esp32 to specified commit
+cd components/picoruby-esp32
+git checkout {esp32_commit}
+
+# 4. Checkout nested picoruby submodule
+cd picoruby
+git checkout {picoruby_commit}
+
+# 5. Stage and commit submodule changes
+cd ../..  # Return to .ptrk_env/{env_name}
+git add components/picoruby-esp32
+git commit --amend -m "ptrk env: {YYYYMMDD_HHMMSS}"
+
+# 6. Disable push on all repos
+git remote set-url --push origin no_push
+cd components/picoruby-esp32 && git remote set-url --push origin no_push
+cd picoruby && git remote set-url --push origin no_push
+```
+
+**Implementation Tasks**:
 - [ ] **TDD RED**: Write test for `ptrk env set --latest` with submodule rewriting
-- [ ] **TDD GREEN**: Clone R2P2-ESP32 at specified commit to `.ptrk_env/{env_name}/`
+- [ ] **TDD GREEN**: Generate env-name from local timestamp (YYYYMMDD_HHMMSS using `Time.now.strftime`)
+- [ ] **TDD GREEN**: Clone R2P2-ESP32 with `--filter=blob:none` to `.ptrk_env/{env_name}/`
+- [ ] **TDD GREEN**: Handle git clone failures (fatal error, no retry)
+- [ ] **TDD GREEN**: Checkout R2P2-ESP32 to specified commit
+- [ ] **TDD GREEN**: Initialize submodules: `git submodule update --init --recursive --jobs 4`
 - [ ] **TDD GREEN**: Extract picoruby-esp32 & picoruby commit refs from env definition
-- [ ] **TDD GREEN**: Initialize submodules: `git submodule update --init --recursive`
-- [ ] **TDD GREEN**: Checkout each submodule to specified commit:
-  - `cd .ptrk_env/{env}/components/picoruby-esp32 && git checkout <commit>`
-  - `cd picoruby && git checkout <commit>` (nested submodule)
+- [ ] **TDD GREEN**: Checkout picoruby-esp32 to specified commit
+- [ ] **TDD GREEN**: Checkout picoruby (nested submodule) to specified commit
 - [ ] **TDD GREEN**: Stage submodule changes: `git add components/picoruby-esp32`
-- [ ] **TDD GREEN**: Commit: `git commit --amend -m "..."` with timestamp env-name
-- [ ] **TDD GREEN**: Disable push on all repos via `git remote set-url --push origin no_push`
-- [ ] **TDD GREEN**: Generate env-name from local timestamp (YYYYMMDD_HHMMSS)
+- [ ] **TDD GREEN**: Amend commit with env-name: `git commit --amend -m "ptrk env: {env_name}"`
+- [ ] **TDD GREEN**: Disable push on main repo: `git remote set-url --push origin no_push`
+- [ ] **TDD GREEN**: Disable push on picoruby-esp32 submodule
+- [ ] **TDD GREEN**: Disable push on picoruby nested submodule
 - [ ] **TDD GREEN**: Record R2P2-ESP32, picoruby-esp32, picoruby commit hashes in .picoruby-env.yml
 - [ ] **TDD GREEN**: Auto-set current env if .picoruby-env.yml is empty/missing
 - [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **TDD REFACTOR**: Extract git submodule operations into helper methods
+- [ ] **TDD REFACTOR**: Extract git operations into helper methods (clone_with_submodules_at_commits, disable_repo_push, etc.)
 - [ ] **COMMIT**: "feat: implement ptrk env set --latest with submodule rewriting"
 
 #### Phase 3b-cleanup: Remove ptrk env latest command
@@ -83,20 +119,58 @@
 
 **Design**: Extract RBS files directly from env's picoruby repository
 - Source: `.ptrk_env/{env}/picoruby/mrbgems/picoruby-*/sig/*.rbs`
-- Parse RBS files using `rbs` gem (not markdown)
+- Parse RBS using `RBS::Parser.parse_signature` (reference: picoruby.github.io/lib/rbs_doc/class_formatter.rb)
+- Extract methods from `RBS::AST::Members::MethodDefinition` nodes
 - Compare with CRuby core class methods
 - Store env-specific JSON databases
 
+**RBS Parsing Pattern** (from picoruby.github.io):
+```ruby
+sig = RBS::Parser.parse_signature(File.read(path))
+sig[2].each do |dec|
+  case dec
+  when RBS::AST::Declarations::Class, RBS::AST::Declarations::Module
+    methods = {instance: [], singleton: []}
+    dec.members.each do |member|
+      case member
+      when RBS::AST::Members::MethodDefinition
+        next if member.comment&.string&.include?("@ignore")
+        methods[member.kind] << member.name.to_s  # kind: :instance or :singleton
+      end
+    end
+  end
+end
+```
+
+**JSON Output Format**:
+```json
+{
+  "Array": {"instance": ["each", "map", "select"], "singleton": ["new"]},
+  "String": {"instance": ["upcase", "downcase"], "singleton": ["new"]}
+}
+```
+
+**Implementation Tasks**:
 - [ ] **TDD RED**: Write test for RuboCop setup during `ptrk env set --latest`
 - [ ] **TDD GREEN**: Generate `.ptrk_env/{env}/rubocop/data/` directory during env creation
-- [ ] **TDD GREEN**: Locate RBS files in `.ptrk_env/{env}/picoruby/mrbgems/picoruby-*/sig/*.rbs`
-- [ ] **TDD GREEN**: Parse RBS using `rbs` gem and extract method definitions
+- [ ] **TDD GREEN**: Locate RBS files: `Dir.glob(".ptrk_env/{env}/picoruby/mrbgems/picoruby-*/sig/*.rbs")`
+- [ ] **TDD GREEN**: Create RBSMethodExtractor class for RBS parsing
+- [ ] **TDD GREEN**: Parse RBS files using `RBS::Parser.parse_signature(File.read(path))`
+- [ ] **TDD GREEN**: Walk AST: iterate `RBS::AST::Declarations::Class/Module` nodes
+- [ ] **TDD GREEN**: Extract methods: filter `RBS::AST::Members::MethodDefinition` nodes
+- [ ] **TDD GREEN**: Handle RBS parse errors: skip file with warning output (don't halt)
+- [ ] **TDD GREEN**: Classify methods by `member.kind` (`:instance` vs `:singleton`)
+- [ ] **TDD GREEN**: Filter `@ignore` annotations: `next if member.comment&.string&.include?("@ignore")`
 - [ ] **TDD GREEN**: Extract CRuby core class methods (Array, String, Hash, Integer, Float, Symbol, Regexp, Range, Enumerable, Numeric, Kernel, File, Dir)
-- [ ] **TDD GREEN**: Calculate unsupported methods (CRuby - PicoRuby)
-- [ ] **TDD GREEN**: Generate `picoruby_supported_methods.json` and `picoruby_unsupported_methods.json`
+  - Use: `klass.instance_methods(false).map(&:to_s)` for instance methods
+  - Use: `klass.methods(false).map(&:to_s)` for singleton methods
+- [ ] **TDD GREEN**: Calculate unsupported methods: `cruby_methods - picoruby_methods`
+- [ ] **TDD GREEN**: Generate `picoruby_supported_methods.json` in `.ptrk_env/{env}/rubocop/data/`
+- [ ] **TDD GREEN**: Generate `picoruby_unsupported_methods.json` in `.ptrk_env/{env}/rubocop/data/`
 - [ ] **TDD GREEN**: Copy custom Cop files to `.ptrk_env/{env}/rubocop/lib/`
 - [ ] **TDD GREEN**: Generate env-specific `.rubocop-picoruby.yml` in `.ptrk_env/{env}/rubocop/`
 - [ ] **TDD RUBOCOP**: Auto-fix style
+- [ ] **TDD REFACTOR**: Extract RBS parsing into reusable RBSMethodExtractor class
 - [ ] **COMMIT**: "feat: generate env-specific RuboCop configuration in ptrk env set"
 
 ### Phase 3c: Implement current environment tracking
@@ -179,6 +253,92 @@
 - [ ] Confirm `.ptrk_build/20251121_060114/R2P2-ESP32/` is copy of .ptrk_env with patches and storage/home applied
 - [ ] Verify push is disabled on all repos: `git remote -v` shows no push URL
 - [ ] Verify `.ptrk_env/` repos cannot be accidentally modified
+
+---
+
+## Implementation Notes
+
+### Dependencies to Add
+
+Add to `Gemfile`:
+```ruby
+gem "rbs", "~> 3.0"  # For RBS file parsing in Phase 3b-rubocop
+gem "steep", "~> 1.5"  # For Steepfile configuration access (if needed)
+```
+
+### Key Design Decisions
+
+#### 1. Environment Name Format: YYYYMMDD_HHMMSS
+- **Pattern**: `^\d+_\d+$` (numbers_numbers only, no hyphens)
+- **Generation**: `Time.now.strftime("%Y%m%d_%H%M%S")`
+- **Validation**: All commands validate against this pattern
+- **Current tracking**: `.picoruby-env.yml` stores which env is current
+
+#### 2. Git Clone Failures
+- **No retry**: Fatal error, terminate immediately
+- **Reason**: Indicates network/permission issues that won't resolve with retry
+- **User guidance**: Error message should direct to diagnostics
+
+#### 3. RBS Parse Errors
+- **Skip with warning**: Parse errors don't halt the entire env creation
+- **Warning output**: Log warning to stderr for each failed RBS file
+- **Reason**: A single malformed RBS file shouldn't break the entire env setup
+- **Impact**: Missing methods from failed files won't be in JSON databases
+
+#### 4. Git Submodule Structure
+- **Three-level**: R2P2-ESP32 → components/picoruby-esp32 → picoruby
+- **Initialization**: Use `--recursive --jobs 4` for parallel submodule fetching
+- **Commit checkout**: Each level must be checked out independently
+- **Push safety**: Disable push on all three levels via `git remote set-url --push origin no_push`
+
+#### 5. Directory Separation
+- **`.ptrk_env/{env}/`**: Read-only cache from git clones with submodules
+- **`.ptrk_build/{env}/`**: Working directory for patching and building
+- **Why separate**: Enables cache reuse, prevents accidental env modification
+
+#### 6. RBS Method Extraction Pattern
+- **Source**: picoruby.github.io/lib/rbs_doc/class_formatter.rb
+- **Parser**: `RBS::Parser.parse_signature(File.read(path))`
+- **AST nodes**: `RBS::AST::Declarations::Class/Module` and `RBS::AST::Members::MethodDefinition`
+- **Filtering**: Skip methods with `@ignore` annotation or `@private` comment
+- **Classification**: Use `member.kind` to separate `:instance` and `:singleton` methods
+
+#### 7. JSON Database Structure
+```json
+{
+  "ClassName": {
+    "instance": ["method1", "method2"],
+    "singleton": ["class_method1", "class_method2"]
+  }
+}
+```
+- **Sorted**: Method names alphabetically within each category
+- **Used by**: RuboCop custom cop UnsupportedMethod detection
+
+#### 8. Backwards Compatibility
+- **ptrk rubocop command**: Complete removal (Phase 3f), no deprecation needed
+- **Existing YAML**: Auto-migration handled by default env setter
+- **Test impact**: All tests must use new `.ptrk_env` directory name
+
+### Testing Strategy
+
+#### MockExecutor for Git Operations
+- Stub all system() calls in tests
+- Return successful exit codes by default
+- Override specific calls for failure scenarios
+- Never actually clone/checkout in unit tests
+
+#### Integration Tests for Submodules
+- Use real git operations (git clone, submodule init/update)
+- Test with temporary directories
+- Verify submodule structure after clone
+- Confirm push is disabled on all levels
+
+#### RBS Parsing Tests
+- Use fixture RBS files (simple class/method definitions)
+- Test parse errors with malformed RBS
+- Verify warning output when parse fails
+- Test @ignore annotation filtering
 
 ---
 
