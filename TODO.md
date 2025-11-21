@@ -2,21 +2,24 @@
 
 ## Current Status (Latest - 2025-11-21)
 
-**✅ COMPLETED: Phase 3a - Directory Naming Consistency**
-- ✅ **Phase 3a**: Complete - renamed `ptrk_env` to `.ptrk_env`, updated ENV_NAME_PATTERN to YYYYMMDD_HHMMSS
-- ✅ **Tests**: All unit tests (153) and integration tests (70) passing with 83.29% line coverage
+**✅ COMPLETED: Phase 3 & Phase 3b-submodule (Part 1)**
+- ✅ **Phase 3**: Complete - removed automatic environment creation from ptrk new
+- ✅ **Phase 3b (Part 1)**: Complete - added `--latest` option to `ptrk env set` command
+- ✅ **Tests**: All unit tests (152) and integration tests (72) passing with 83.35% line coverage
 - ✅ **Quality**: RuboCop clean (0 violations)
-- 🚀 **Next**: Phase 3 removal tasks, Phase 3b submodule rewriting
+- 🚀 **Next**: Phase 3b git clone/submodule operations
 
 **Completed Milestones:**
-- ✅ **All Tests**: Passing (223 unit + integration tests, 100% success rate)
-- ✅ **Quality**: RuboCop clean (0 violations), 83.29% line coverage
+- ✅ **All Tests**: Passing (224 unit + integration tests, 100% success rate)
+- ✅ **Quality**: RuboCop clean (0 violations), 83.35% line coverage
+- ✅ **Phase 3**: Removed automatic environment creation from ptrk new
+- ✅ **Phase 3b (Part 1)**: Added `ptrk env set --latest` with timestamp-based env names
 - ✅ **Phase 3a**: Directory naming consistency - `.ptrk_env` + YYYYMMDD_HHMMSS format
 - ✅ **Error Handling**: All identified code quality issues verified and documented
 - ✅ **ptrk init Command**: Complete with PicoRuby templates (.rubocop.yml, CLAUDE.md)
 - ✅ **Mrbgemfile DSL**: Complete with template generation
 - ✅ **Type System Integration**: Complete (rbs-inline + Steep)
-- ✅ **Build Environment Setup**: Automatic git clone/checkout for `ptrk env latest`
+- ✅ **Build Environment Setup**: Automatic git clone/checkout for `ptrk env set --latest`
 - ✅ **Rake Command Polymorphism**: Smart detection for bundle exec vs rake
 - ✅ **PicoRuby Development Templates**: Enhanced CLAUDE.md with mrbgems, I2C/GPIO/RMT, memory optimization
 
@@ -43,11 +46,11 @@
 - [x] **COMMIT**: "refactor: rename ptrk_env to .ptrk_env and validate env names as YYYYMMDD_HHMMSS"
 
 ### Phase 3: Remove env creation from ptrk new
-- [ ] **TDD RED**: Write test for `ptrk new` without environment creation
-- [ ] **TDD GREEN**: Remove `setup_default_environment` from ProjectInitializer
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **TDD REFACTOR**: Clean up any dead code
-- [ ] **COMMIT**: "refactor: remove automatic environment creation from ptrk new"
+- [x] **TDD RED**: Write test for `ptrk new` without environment creation
+- [x] **TDD GREEN**: Remove `setup_default_environment` from ProjectInitializer
+- [x] **TDD RUBOCOP**: Auto-fix style
+- [x] **TDD REFACTOR**: Clean up any dead code
+- [x] **COMMIT**: "refactor: remove automatic environment creation from ptrk new"
 
 ### Phase 3b: Rename ptrk env latest to ptrk env set --latest
 
@@ -89,8 +92,8 @@ cd picoruby && git remote set-url --push origin no_push
 ```
 
 **Implementation Tasks**:
-- [ ] **TDD RED**: Write test for `ptrk env set --latest` with submodule rewriting
-- [ ] **TDD GREEN**: Generate env-name from local timestamp (YYYYMMDD_HHMMSS using `Time.now.strftime`)
+- [x] **TDD RED**: Write test for `ptrk env set --latest` with submodule rewriting
+- [x] **TDD GREEN**: Generate env-name from local timestamp (YYYYMMDD_HHMMSS using `Time.now.strftime`)
 - [ ] **TDD GREEN**: Clone R2P2-ESP32 with `--filter=blob:none` to `.ptrk_env/{env_name}/`
 - [ ] **TDD GREEN**: Handle git clone failures (fatal error, no retry)
 - [ ] **TDD GREEN**: Checkout R2P2-ESP32 to specified commit

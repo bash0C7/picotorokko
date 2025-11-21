@@ -175,8 +175,8 @@ my-project/
 - Runs on push, pull requests, and manual trigger
 - Produces downloadable firmware artifacts
 
-**`ptrk_env/`** — Environment metadata (git-ignored)
-- Created by `ptrk env set` and `ptrk env latest` commands
+**`.ptrk_env/`** — Environment metadata (git-ignored)
+- Created by `ptrk env set` and `ptrk env set --latest` commands
 - Contains version information, repository paths, timestamps
 - Never manually edited
 
@@ -209,7 +209,7 @@ my-project/
 
 ```bash
 # Record latest repository commits for the `latest` environment
-ptrk env latest
+ptrk env set --latest
 ```
 
 This stores the newest commit metadata in `ptrk_env/.picoruby-env.yml`. Clone repositories and build firmware with `ptrk device build`.
@@ -317,7 +317,7 @@ ptrk new my-project --path ~/my-projects/
 2. Click the failed workflow run for detailed logs
 3. Common causes:
    - Environment not defined: Run `ptrk env set main --commit <hash>` and commit `ptrk_env/`
-   - Latest environment not set: Run `ptrk env latest` and commit `ptrk_env/`
+   - Latest environment not set: Run `ptrk env set --latest` and commit `ptrk_env/`
    - Patches not applying: Check `patch/` directory has correct structure
 
 ---

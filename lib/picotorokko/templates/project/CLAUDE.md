@@ -230,7 +230,7 @@ conf.gem github: 'picoruby/picoruby-gpio'    # GPIO control
 - ✅ GitHub repos are auto-fetched during build
 - ✅ Branches and commits can be specified
 - ✅ Local mrbgems: use relative paths like `../path/to/gem`
-- ✅ Always run `ptrk env latest` to ensure latest versions
+- ✅ Always run `ptrk env set --latest` to ensure latest versions
 
 ### Peripheral APIs: I2C, GPIO, RMT
 

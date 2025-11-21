@@ -5,15 +5,15 @@
 #   cp .picoruby-env.yml.example .picoruby-env.yml
 #
 # Usage:
-#   ptrk env show              - Display current environment
-#   ptrk env set ENV_NAME      - Switch to specified environment
-#   ptrk env latest            - Fetch latest versions and switch to them
-#   ptrk cache fetch ENV_NAME  - Fetch environment from GitHub
+#   ptrk env list              - List all environments
+#   ptrk env show ENV_NAME     - Display environment details
+#   ptrk env set --latest      - Fetch latest versions with timestamp name
+#   ptrk env set ENV_NAME      - Create environment with specified name
 
-current: stable-2024-11
+current: 20241105_143022
 
 environments:
-  stable-2024-11:
+  20241105_143022:
     R2P2-ESP32:
       commit: f500652
       timestamp: "20241105_143022"
@@ -26,7 +26,7 @@ environments:
     created_at: "2024-11-05 14:30:22"
     notes: "Stable version"
 
-  development:
+  20241104_120000:
     R2P2-ESP32:
       commit: 34a1c23
       timestamp: "20241104_120000"

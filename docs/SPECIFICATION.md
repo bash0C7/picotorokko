@@ -624,16 +624,17 @@ ptrk env set specific \
 
 ---
 
-#### `ptrk env latest`
+#### `ptrk env set --latest`
 
-**Description**: Fetch latest versions and save environment definition
+**Description**: Fetch latest versions and save environment definition with timestamp name
 
 **Operation**:
 1. Fetch HEAD commits from each repo via GitHub API or `git ls-remote`
-2. Create environment definition named `latest` in `.picoruby-env.yml`
-3. Store commit hashes and timestamps for later build setup
+2. Generate environment name from current timestamp (YYYYMMDD_HHMMSS)
+3. Create environment definition in `.picoruby-env.yml`
+4. Store commit hashes and timestamps for later build setup
 
-**Note**: Actual build environment (`.build/`) is created by `ptrk device build`
+**Note**: Actual build environment (`.ptrk_build/`) is created by `ptrk device build`
 
 ---
 
@@ -793,7 +794,7 @@ ptrk monitor
 
 ```bash
 # 1. Fetch latest version
-ptrk env latest
+ptrk env set --latest
 # => Fetching latest from GitHub...
 #    Created environment: latest-20241105-143500
 #    Setting up environment...

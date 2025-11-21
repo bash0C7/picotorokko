@@ -27,7 +27,7 @@ cd my-project
 
 ```bash
 # Fetch latest repository versions
-ptrk env latest
+ptrk env set --latest
 
 # Build firmware
 ptrk device build
@@ -75,7 +75,7 @@ Creates a new PicoRuby project with:
 #### Environment Management
 
 ```bash
-ptrk env latest                 # Fetch latest versions and create 'latest' environment
+ptrk env set --latest           # Fetch latest versions with timestamp name
 ptrk env list                   # List all environments
 ptrk env set <NAME>             # Create/update environment
 ptrk env show <NAME>            # Display environment details
@@ -166,9 +166,9 @@ For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONT
 
 - **Project Templates**: Auto-generate `.rubocop.yml` and enhanced `CLAUDE.md` with PicoRuby development guides
 - **Environment Management**: Define, list, and manage multiple PicoRuby build environments with version control
-- **Environment Metadata Capture**: `ptrk env latest` records the newest repository commits in `ptrk_env/.picoruby-env.yml`
+- **Environment Metadata Capture**: `ptrk env set --latest` records the newest repository commits in `.picoruby-env.yml`
 - **Smart Build Detection**: Detects `Gemfile` and uses appropriate Rake invocation (bundle exec vs rake)
-- **Centralized Directory Structure**: All environment data stored in `ptrk_env/` for clean project organization
+- **Centralized Directory Structure**: All environment data stored in `.ptrk_env/` for clean project organization
 - **Git Integration**: Clone and manage repositories with automatic submodule handling
 - **Patch Management**: Export, apply, and diff patches across environments
 - **Task Delegation**: Build/flash/monitor tasks transparently delegated to R2P2-ESP32's Rakefile

@@ -12,7 +12,7 @@ A PicoRuby application for ESP32 development using the `picotorokko` (ptrk) buil
 First, fetch the latest repository versions automatically:
 
 ```bash
-ptrk env latest
+ptrk env set --latest
 ```
 
 Or, create an environment with specific repository commits:

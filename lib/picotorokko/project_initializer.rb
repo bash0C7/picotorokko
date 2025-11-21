@@ -229,7 +229,7 @@ module Picotorokko
       puts ""
       puts "Next steps:"
       puts "  1. cd #{project_name}" if project_name != File.basename(Dir.pwd)
-      puts "  2. ptrk env latest  # Fetch latest repository versions"
+      puts "  2. ptrk env set --latest  # Fetch latest repository versions"
       puts "  3. ptrk device build  # Build firmware for your device"
       puts "  4. ptrk device flash  # Flash firmware to ESP32"
       puts "  5. ptrk device monitor  # Monitor serial output"
