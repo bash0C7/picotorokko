@@ -525,14 +525,20 @@ class CommandsDeviceTest < PicotorokkoTestCase
 
     Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
 
-    # Phase 4: get_build_path uses env_name, not env_hash
+    # Phase 4a: Create .ptrk_env directory (source for setup_build_environment)
+    env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
+    env_r2p2_path = File.join(env_path, "R2P2-ESP32")
+    FileUtils.mkdir_p(env_r2p2_path)
+
+    # Phase 4: Create .ptrk_build directory (simulates setup_build_environment result)
     build_path = Picotorokko::Env.get_build_path(env_name)
     r2p2_path = File.join(build_path, "R2P2-ESP32")
     FileUtils.mkdir_p(r2p2_path)
 
-    # テスト用 Rakefile をコピー
+    # テスト用 Rakefile をコピー (to both .ptrk_env and .ptrk_build)
     # NOTE: test/scenario/commands/device_test.rb から test/fixtures/ へのパスは ../../fixtures
     mock_rakefile = File.join(File.expand_path("../..", __dir__), "fixtures", "R2P2-ESP32", "Rakefile")
+    FileUtils.cp(mock_rakefile, File.join(env_r2p2_path, "Rakefile"))
     FileUtils.cp(mock_rakefile, File.join(r2p2_path, "Rakefile"))
 
     [env_name, r2p2_path]
