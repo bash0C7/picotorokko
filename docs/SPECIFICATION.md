@@ -8,18 +8,18 @@ A build system for ESP32 + PicoRuby development that manages multiple versions o
 
 ## Design Principles
 
-### 1. Immutable Cache
+### 1. Immutable Environment Cache
 
-- Repositories saved in `.cache/` are **never modified**
-- Uniquely identified by commit hash + timestamp
+- Repositories saved in `.ptrk_env/` are **never modified**
+- Uniquely identified by timestamp (YYYYMMDD_HHMMSS format)
 - New cache is always created when versions change
-- Old caches can be removed via `ptrk cache prune` when no longer needed
+- Old environments can be removed manually when no longer needed
 
-### 2. Environment Isolation
+### 2. Build Isolation
 
-- `build/{env-hash}/` is a complete working directory for each environment
+- `.ptrk_build/{env_name}/` is a complete working directory for each environment
 - Multiple environments can coexist simultaneously
-- `build/current` is a symlink pointing to the current working environment
+- Built from `.ptrk_env/` source with patches and storage/home applied
 
 ### 3. Patch Persistence
 
@@ -42,87 +42,67 @@ Project Root/
 │
 ├── storage/home/           # 🔴 Device application code
 │   │                         # Git-managed
-│   ├── imu.rb
-│   ├── led_ext.rb
+│   ├── app.rb
 │   └── ...
+│
+├── mrbgems/                # 🔴 Custom mrbgems
+│   │                         # Git-managed
+│   └── app/
+│       ├── mrbgem.rake
+│       └── mrblib/
 │
 ├── patch/                  # 🔴 Patch files
 │   │                         # Git-managed
 │   ├── README.md
-│   ├── R2P2-ESP32/          # Directory hierarchy structure
-│   │   └── storage/
-│   │       └── home/
-│   │           └── custom.rb
-│   ├── picoruby-esp32/
-│   │   └── (if changed)
-│   └── picoruby/
-│       └── (if changed)
-│
-├── .cache/                 # 🔵 Immutable version cache
-│   │                         # Git-ignored (.gitignore)
 │   ├── R2P2-ESP32/
-│   │   ├── f500652-20241105_143022/    # commit-timestamp format
-│   │   ├── 34a1c23-20241104_120000/
-│   │   └── ...
 │   ├── picoruby-esp32/
-│   │   ├── 6a6da3a-20241105_142015/
-│   │   └── ...
 │   └── picoruby/
-│       ├── e57c370-20241105_141030/
-│       └── ...
 │
-├── build/                  # 🟢 Build working directory
+├── .ptrk_env/              # 🔵 Immutable environment cache
 │   │                         # Git-ignored (.gitignore)
-│   ├── current -> f500652-20241105_143022_6a6da3a-..._e57c370-.../
-│   │              🔗 symlink (switched during env change)
-│   │
-│   └── f500652-20241105_143022_6a6da3a-20241105_142015_e57c370-20241105_141030/
-│       │
-│       └── R2P2-ESP32/         # Build execution here
-│           ├── components/
-│           │   ├── picoruby-esp32/
-│           │   │   └── picoruby/
-│           │   └── main/
-│           ├── storage/home/   # Application code copied here
-│           ├── Rakefile
-│           ├── build/
-│           └── ...
+│   └── 20251122_103000/      # YYYYMMDD_HHMMSS format
+│       ├── R2P2-ESP32/       # Complete git working copy with submodules
+│       │   └── components/
+│       │       └── picoruby-esp32/
+│       │           └── picoruby/
+│       └── rubocop/          # Auto-generated RuboCop config
+│           └── data/
 │
-├── SPEC.md                 # 🟡 This file (specification)
+├── .ptrk_build/            # 🟢 Build working directory
+│   │                         # Git-ignored (.gitignore)
+│   └── 20251122_103000/      # Copied from .ptrk_env with patches applied
+│       └── R2P2-ESP32/       # Build execution here
+│           ├── components/
+│           │   └── picoruby-esp32/
+│           │       └── picoruby/
+│           ├── storage/home/ # Application code copied here
+│           ├── mrbgems/      # Custom mrbgems copied here
+│           └── Rakefile
+│
 ├── .picoruby-env.yml       # Environment configuration file
-└── .gitignore              # Added .cache/, build/
+├── .rubocop.yml            # Project RuboCop config (links to current env)
+├── Mrbgemfile              # mrbgems dependencies
+└── .gitignore              # Excludes .ptrk_env/, .ptrk_build/
 ```
 
 ---
 
 ## Naming Conventions
 
-### commit-hash Format
+### Environment Name Format
 
 ```
-{7-digit commit hash}-{YYYYMMDD_HHMMSS}
+YYYYMMDD_HHMMSS
 
 Examples:
-  f500652-20241105_143022
-  6a6da3a-20241105_142015
-  e57c370-20241105_141030
+  20251122_103000
+  20251121_143022
+  20251120_120000
 ```
 
-- Commit hash: obtained via `git rev-parse --short=7 {ref}`
-- Timestamp: extracted from `git show -s --format=%ci {commit}`
-- Recorded in local timezone
-
-### env-hash Format
-
-```
-{R2P2-hash}_{esp32-hash}_{picoruby-hash}
-
-Example:
-  f500652-20241105_143022_6a6da3a-20241105_142015_e57c370-20241105_141030
-```
-
-- Three commit-hashes concatenated with `_`
-- Order: R2P2-ESP32 → picoruby-esp32 → picoruby
+- Generated from local timestamp: `Time.now.strftime("%Y%m%d_%H%M%S")`
+- Unique identifier for each environment
+- Pattern validation: `/^\d+_\d+$/`
 
 ---
 
@@ -130,45 +110,39 @@ Example:
 
 ```yaml
 # PicoRuby development environment configuration file
-# Each environment is immutable, uniquely identified by commit hash + timestamp
+# Each environment is immutable, uniquely identified by YYYYMMDD_HHMMSS timestamp
 
-current: stable-2024-11
+current: "20251122_103000"
 
 environments:
-  stable-2024-11:
+  "20251122_103000":
     R2P2-ESP32:
       commit: f500652
-      timestamp: "20241105_143022"
+      timestamp: "20251122_103000"
     picoruby-esp32:
       commit: 6a6da3a
-      timestamp: "20241105_142015"
+      timestamp: "20251122_102015"
     picoruby:
       commit: e57c370
-      timestamp: "20241105_141030"
-    created_at: "2024-11-05 14:30:22"
-    notes: "Stable version"
+      timestamp: "20251122_101030"
 
-  development:
+  "20251121_143022":
     R2P2-ESP32:
       commit: 34a1c23
-      timestamp: "20241104_120000"
+      timestamp: "20251121_143022"
     picoruby-esp32:
       commit: f331744
-      timestamp: "20241104_115500"
+      timestamp: "20251121_142500"
     picoruby:
       commit: df21508
-      timestamp: "20241104_115000"
-    created_at: "2024-11-04 12:00:00"
-    notes: "Under development"
+      timestamp: "20251121_142000"
 ```
 
 **Field Descriptions:**
 
-- `current` - Current working environment name (symlink `build/current` points to)
+- `current` - Current working environment name (YYYYMMDD_HHMMSS format)
 - `environments` - Environment definition map
 - Each environment's `R2P2-ESP32/picoruby-esp32/picoruby` - Commit and timestamp
-- `created_at` - Environment creation timestamp (reference)
-- `notes` - Environment description (free text)
 
 ---
 
@@ -202,9 +176,8 @@ environments:
 │   ├── picoruby-esp32/
 │   └── picoruby/
 │
-├── .cache/                 # Version cache (git-ignored)
-├── build/                  # Build working directory (git-ignored)
-├── ..ptrk_env/               # Environment metadata (git-ignored)
+├── .ptrk_env/              # Environment cache (git-ignored)
+├── .ptrk_build/            # Build working directory (git-ignored)
 │
 ├── .picoruby-env.yml       # Environment configuration file
 ├── .gitignore              # Standard gitignore for ptrk projects
@@ -217,19 +190,19 @@ environments:
 
 **Generated Files**:
 
-1. **`.gitignore`** - Excludes `.cache/`, `build/`, `..ptrk_env/*/` from version control
+1. **`.gitignore`** - Excludes `.ptrk_env/`, `.ptrk_build/` from version control
 2. **`.picoruby-env.yml`** - Initial environment configuration (empty, ready for `ptrk env set`)
 3. **`.rubocop.yml`** - PicoRuby-specific linting configuration:
    - TargetRubyVersion: 3.3 for microcontroller development
    - Stricter Metrics/MethodLength (20 max) for memory efficiency
-   - Excludes ..ptrk_env/, .cache/, patch/, vendor/ from linting
+   - Excludes .ptrk_env/, .ptrk_build/, patch/, vendor/ from linting
    - Allows Japanese comments for device documentation
 4. **`Mrbgemfile`** - mrbgems dependency declarations:
    - Pre-configured with picoruby-picotest reference
    - Platform-specific mrbgem support
    - GitHub repository references
 5. **`Gemfile`** - Contains `picotorokko` gem dependency (when available in gems)
-6. **`..ptrk_env/.gitkeep`** - Preserves directory in git
+6. **`.ptrk_env/.gitkeep`** - Preserves directory in git
 7. **`README.md`** - Template-generated with project name and author, includes ptrk command references
 8. **`CLAUDE.md`** - Comprehensive PicoRuby development guide including:
    - mrbgems dependency management
@@ -287,9 +260,9 @@ mkdir my-app && cd my-app && ptrk new
 **Success Criteria**:
 - All directories created with `.gitkeep` files where needed
 - All template files rendered without errors
-- `.gitignore` correctly excludes `.cache/`, `build/`, `..ptrk_env/*/`
+- `.gitignore` correctly excludes `.ptrk_env/`, `.ptrk_build/`
 - `.picoruby-env.yml` contains empty environments map ready for `ptrk env set`
-- Project is immediately usable with `ptrk env set` and `ptrk build setup`
+- Project is immediately usable with `ptrk env set --latest` and `ptrk device build`
 
 ---
 
@@ -319,8 +292,9 @@ PROJECT_NAME/
 │   ├── R2P2-ESP32/        # R2P2-ESP32 patches
 │   ├── picoruby-esp32/    # picoruby-esp32 patches
 │   └── picoruby/          # picoruby patches
-├── ..ptrk_env/              # Environment metadata (git-ignored)
+├── .ptrk_env/              # Environment cache (git-ignored)
 │   └── .gitkeep
+├── .ptrk_build/            # Build working directory (git-ignored)
 ├── mrbgems/               # Custom mrbgems (if --with-mrbgem specified)
 │   └── NAME/
 │       ├── mrbgem.rake
@@ -372,7 +346,7 @@ ptrk new
 2. Create directory structure with `.gitkeep` files
 3. Render template files with project variables:
    - `.picoruby-env.yml` - Empty YAML structure ready for environments
-   - `.gitignore` - Excludes `.cache/`, `build/`, `..ptrk_env/*/`
+   - `.gitignore` - Excludes `.ptrk_env/`, `.ptrk_build/`
    - `Gemfile` - References picotorokko gem from rubygems.org
    - `README.md` - Project overview and quick start instructions
    - `CLAUDE.md` - PicoRuby development guidelines
@@ -388,9 +362,10 @@ ptrk new
 **Next Steps** (printed to console):
 ```
 1. cd my-project
-2. ptrk env set main --commit <hash>
-3. ptrk build setup
-4. cd build/current/R2P2-ESP32 && rake build
+2. ptrk env set --latest  # Fetch latest repository versions
+3. ptrk device build      # Build firmware for your device
+4. ptrk device flash      # Flash firmware to ESP32
+5. ptrk device monitor    # Monitor serial output
 ```
 
 ---
@@ -668,21 +643,6 @@ ptrk patch export
 
 ---
 
-#### `ptrk patch apply [ENV_NAME]`
-
-**Description**: Apply `patch/` to `build/{env}/`
-
-**Arguments**:
-- `ENV_NAME` - Environment name (default: `current`)
-
-**Operation**:
-1. Read all files under `patch/R2P2-ESP32/`
-2. Copy to corresponding paths in `build/{env}/R2P2-ESP32/`
-3. Create directory structure if different
-4. Same process for `components/picoruby-esp32/` and `picoruby/`
-
----
-
 #### `ptrk patch diff [ENV_NAME]`
 
 **Description**: Display diff between current changes in `build/{env}/` and existing patches
@@ -708,32 +668,32 @@ diff --git a/storage/home/custom.rb (working) vs (patch/)
 
 #### `ptrk device build [--env ENV_NAME]`
 
-**Description**: Setup build environment in `..ptrk_env/` from environment definition and build firmware
+**Description**: Setup build environment in `.ptrk_build/` from environment cache and build firmware
 
 **Arguments**:
-- `--env ENV_NAME` - Environment name (default: `latest`)
+- `--env ENV_NAME` - Environment name (default: current environment)
 
 **Operation**:
-1. Load environment definition from `.picoruby-env.yml` (e.g., `latest`)
-2. Prepare build workspace at `..ptrk_env/{ENV_NAME}/`
-3. Clone R2P2-ESP32 WITH SUBMODULES using cached copy and place it under `..ptrk_env/{ENV_NAME}/R2P2-ESP32/`
-4. Clone picoruby-esp32 and picoruby repositories referenced by the environment definition
-5. Copy `storage/home/` and `mrbgems/` (if present) into the R2P2-ESP32 working directory
-6. Execute `rake build` in `..ptrk_env/{ENV_NAME}/R2P2-ESP32/`
+1. Load environment definition from `.picoruby-env.yml`
+2. Verify `.ptrk_env/{ENV_NAME}/` exists (readonly cache)
+3. Copy `.ptrk_env/{ENV_NAME}/` to `.ptrk_build/{ENV_NAME}/`
+4. Copy `storage/home/` to `.ptrk_build/{ENV_NAME}/R2P2-ESP32/storage/home/`
+5. Copy `mrbgems/` to `.ptrk_build/{ENV_NAME}/R2P2-ESP32/mrbgems/`
+6. Apply patches from `patch/` directory automatically
+7. Execute `rake build` in `.ptrk_build/{ENV_NAME}/R2P2-ESP32/`
 
-**Note**: Apply custom patches with `ptrk env patch_apply` before building if you need to overlay files from `patch/`.
+**Note**: Patches are applied automatically during build. Use `ptrk env patch_export` to save changes.
 
 **Example**:
 ```bash
-ptrk device build              # Uses default 'latest' environment
-ptrk device build --env stable # Use 'stable' environment
-# => Setting up build environment from 'latest'...
-#    Cloning R2P2-ESP32 with submodules...
-#    Cloning picoruby-esp32...
-#    Cloning picoruby...
+ptrk device build              # Uses current environment
+ptrk device build --env 20251122_103000 # Use specific environment
+# => Building: 20251122_103000
+#    Copying environment to build directory...
+#    ✓ Environment copied to .ptrk_build/20251122_103000
 #    Copying storage/home/...
-#    Building firmware...
-#    ✓ Build complete
+#    Applying patches...
+#    ✓ Build completed
 ```
 
 ---
@@ -772,20 +732,25 @@ ptrk device build --env stable # Use 'stable' environment
 
 ## Workflow Examples
 
-### Scenario 1: Build and Run with Stable Version
+### Scenario 1: Initial Setup and Build
 
 ```bash
-# 1. Check environment
-ptrk env show
+# 1. Fetch latest repository versions
+ptrk env set --latest
+# => Fetching latest from GitHub...
+#    Created environment: 20251122_103000
 
-# 2. Build (via R2P2-ESP32's Rakefile directly)
-cd build/current/R2P2-ESP32
-rake build
-cd ../../..
+# 2. Set as current environment
+ptrk env current 20251122_103000
 
-# 3. Flash and monitor
-ptrk flash
-ptrk monitor
+# 3. Build firmware
+ptrk device build
+
+# 4. Flash to device
+ptrk device flash
+
+# 5. Monitor serial output
+ptrk device monitor
 
 # Ctrl+C to exit
 ```
@@ -796,77 +761,70 @@ ptrk monitor
 # 1. Fetch latest version
 ptrk env set --latest
 # => Fetching latest from GitHub...
-#    Created environment: latest-20241105-143500
-#    Setting up environment...
-#    Switched to: latest-20241105-143500
+#    Created environment: 20251122_143500
 
-# 2. Build
-cd build/current/R2P2-ESP32
-rake build
-cd ../../..
+# 2. Set as current and build
+ptrk env current 20251122_143500
+ptrk device build
 
-# 3. If issues found, revert to stable
-ptrk env set stable-2024-11
-cd build/current/R2P2-ESP32
-rake build
-cd ../../..
+# 3. If issues found, revert to previous environment
+ptrk env current 20251121_103000
+ptrk device build
 ```
 
 ### Scenario 3: Patch Management
 
 ```bash
-# 1. Make changes in build/current/
+# 1. Make changes in .ptrk_build/{env}/R2P2-ESP32/
 # (edit files)
 
 # 2. Export changes to patch
-ptrk patch export
+ptrk env patch_export
 
 # 3. Git commit
 git add patch/ storage/home/
 git commit -m "Update patches and storage"
 
 # 4. Test application in another environment
-ptrk env set development
-ptrk build setup  # patches auto-applied
-cd build/current/R2P2-ESP32
-rake build
-cd ../../..
+ptrk env current 20251121_103000
+ptrk device build  # patches auto-applied
 ```
 
 ---
 
 ## Troubleshooting
 
-### Cannot Fetch Cache
+### Cannot Fetch Environment
 
 ```bash
 # Check GitHub connectivity
 git ls-remote https://github.com/picoruby/R2P2-ESP32.git HEAD
 
-# Clean cache and re-fetch
-ptrk cache clean R2P2-ESP32
-ptrk cache fetch latest
+# Re-fetch latest
+ptrk env set --latest
 ```
 
 ### Build Environment Missing
 
 ```bash
-# Check cache
-ptrk cache list
+# List available environments
+ptrk env list
 
-# Setup environment
-ptrk build setup ENV_NAME
+# Verify environment exists
+ptrk env show 20251122_103000
+
+# Rebuild
+ptrk device build --env 20251122_103000
 ```
 
 ### Patches Not Applied
 
 ```bash
 # Check diff
-ptrk patch diff
+ptrk env patch_diff
 
-# Re-apply
-ptrk build clean
-ptrk build setup ENV_NAME
+# Rebuild (patches auto-applied)
+ptrk device build
 ```
 
 ---
