@@ -497,6 +497,40 @@ class CommandsEnvTest < PicotorokkoTestCase
         end
       end
     end
+
+    test "generates .rubocop.yml with inherit_from when setting current environment" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Create test environment
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+
+          Picotorokko::Env.set_environment("20251122_120000", r2p2_info, esp32_info, picoruby_info)
+
+          # Create rubocop config in env directory
+          rubocop_dir = File.join(Picotorokko::Env::ENV_DIR, "20251122_120000", "rubocop")
+          FileUtils.mkdir_p(rubocop_dir)
+          File.write(File.join(rubocop_dir, ".rubocop-picoruby.yml"), "# test")
+
+          # Set current environment
+          capture_stdout do
+            Picotorokko::Commands::Env.start(["current", "20251122_120000"])
+          end
+
+          # Verify .rubocop.yml was created in project root
+          rubocop_yml = File.join(tmpdir, ".rubocop.yml")
+          assert File.exist?(rubocop_yml), "Should create .rubocop.yml in project root"
+
+          # Verify inherit_from references the env's rubocop config
+          content = File.read(rubocop_yml)
+          assert_match(/inherit_from:/, content)
+          assert_match(%r{\.ptrk_env/20251122_120000/rubocop/\.rubocop-picoruby\.yml}, content)
+        end
+      end
+    end
   end
 
   private

@@ -52,6 +52,7 @@ module Picotorokko
           raise "Environment '#{env_name}' not found" if env_config.nil?
 
           Picotorokko::Env.set_current_env(env_name)
+          sync_project_rubocop_yml(env_name)
           puts "✓ Current environment set to: #{env_name}"
         else
           # Show current environment
@@ -314,6 +315,23 @@ module Picotorokko
             # Data files location: #{data_path}
           YAML
           File.write(yml_path, content)
+        end
+
+        # Sync project .rubocop.yml with current environment
+        # @rbs (String) -> void
+        def sync_project_rubocop_yml(env_name)
+          env_rubocop_path = File.join(Picotorokko::Env::ENV_DIR, env_name, "rubocop", ".rubocop-picoruby.yml")
+          return unless File.exist?(env_rubocop_path)
+
+          project_rubocop = ".rubocop.yml"
+          content = <<~YAML
+            # Project RuboCop configuration
+            # Linked to current PicoRuby environment: #{env_name}
+
+            inherit_from:
+              - #{env_rubocop_path}
+          YAML
+          File.write(project_rubocop, content)
         end
 
         # Parse RBS file and extract method definitions
