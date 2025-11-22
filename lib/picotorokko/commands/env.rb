@@ -198,6 +198,10 @@ module Picotorokko
           checkout_cmd = "cd #{Shellwords.escape(env_path)} && git checkout #{Shellwords.escape(r2p2_commit)}"
           raise "Checkout failed: R2P2-ESP32 to commit #{r2p2_commit}" unless system(checkout_cmd)
 
+          # Initialize and fetch all nested submodules recursively
+          submodule_cmd = "cd #{Shellwords.escape(env_path)} && git submodule update --init --recursive --jobs 4"
+          raise "Submodule update failed for R2P2-ESP32" unless system(submodule_cmd)
+
           puts "  ✓ R2P2-ESP32 cloned and checked out to #{r2p2_commit}"
         end
 

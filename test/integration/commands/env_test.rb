@@ -1419,6 +1419,12 @@ class CommandsEnvTest < PicotorokkoTestCase
             # Verify git checkout was executed with correct commit
             checkout_cmd = executed_commands.find { |c| c.include?("git checkout") && c.include?("abc1234") }
             assert_not_nil checkout_cmd, "Should execute git checkout with commit abc1234"
+
+            # Verify git submodule update was executed
+            submodule_cmd = executed_commands.find { |c| c.include?("git submodule update") }
+            assert_not_nil submodule_cmd, "Should execute git submodule update"
+            assert_match(/--init/, submodule_cmd, "Should use --init flag")
+            assert_match(/--recursive/, submodule_cmd, "Should use --recursive flag")
           ensure
             Time.define_singleton_method(:now, original_now)
             Picotorokko::Commands::Env.class_eval do
