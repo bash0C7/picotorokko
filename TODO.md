@@ -2,12 +2,16 @@
 
 ## Current Status (Latest - 2025-11-22)
 
-**✅ COMPLETED: Phase 3c (Current Environment Tracking)**
-- ✅ **Phase 3c**: Complete - `ptrk env current` command implemented
-- ✅ **Phase 3b-cleanup**: Complete - removed `ptrk env latest` command
-- ✅ **Tests**: All unit tests (152) and integration tests (77) passing with 84.24% line coverage
+**✅ COMPLETED: Phase 4a (Build Directory Setup)**
+- ✅ **Phase 4a**: Complete - `.ptrk_build` directory setup from `.ptrk_env` cache
+- ✅ **Phase 3b-rubocop**: Complete - RBS parsing and JSON generation
+- ✅ **Phase 3c-rubocop**: Complete - Project `.rubocop.yml` linked to current env
+- ✅ **Phase 3d**: Complete - ENV_NAME optional with current fallback
+- ✅ **Phase 3e**: Complete - `patch_apply` command removed
+- ✅ **Phase 3f**: Complete - `ptrk rubocop` command removed
+- ✅ **Tests**: All unit tests (152) and integration tests (81) passing with 85.28% line coverage
 - ✅ **Quality**: RuboCop clean (0 violations)
-- 🚀 **Next**: Phase 3b-rubocop (RBS parsing) or Phase 3d (ENV_NAME omission)
+- 🚀 **Next**: Phase 4d (device default env to current)
 
 **Completed Milestones:**
 - ✅ **All Tests**: Passing (229 unit + integration tests, 100% success rate)
@@ -155,27 +159,22 @@ end
 ```
 
 **Implementation Tasks**:
-- [ ] **TDD RED**: Write test for RuboCop setup during `ptrk env set --latest`
-- [ ] **TDD GREEN**: Generate `.ptrk_env/{env}/rubocop/data/` directory during env creation
-- [ ] **TDD GREEN**: Locate RBS files: `Dir.glob(".ptrk_env/{env}/picoruby/mrbgems/picoruby-*/sig/*.rbs")`
-- [ ] **TDD GREEN**: Create RBSMethodExtractor class for RBS parsing
-- [ ] **TDD GREEN**: Parse RBS files using `RBS::Parser.parse_signature(File.read(path))`
-- [ ] **TDD GREEN**: Walk AST: iterate `RBS::AST::Declarations::Class/Module` nodes
-- [ ] **TDD GREEN**: Extract methods: filter `RBS::AST::Members::MethodDefinition` nodes
-- [ ] **TDD GREEN**: Handle RBS parse errors: skip file with warning output (don't halt)
-- [ ] **TDD GREEN**: Classify methods by `member.kind` (`:instance` vs `:singleton`)
-- [ ] **TDD GREEN**: Filter `@ignore` annotations: `next if member.comment&.string&.include?("@ignore")`
-- [ ] **TDD GREEN**: Extract CRuby core class methods (Array, String, Hash, Integer, Float, Symbol, Regexp, Range, Enumerable, Numeric, Kernel, File, Dir)
-  - Use: `klass.instance_methods(false).map(&:to_s)` for instance methods
-  - Use: `klass.methods(false).map(&:to_s)` for singleton methods
-- [ ] **TDD GREEN**: Calculate unsupported methods: `cruby_methods - picoruby_methods`
-- [ ] **TDD GREEN**: Generate `picoruby_supported_methods.json` in `.ptrk_env/{env}/rubocop/data/`
-- [ ] **TDD GREEN**: Generate `picoruby_unsupported_methods.json` in `.ptrk_env/{env}/rubocop/data/`
-- [ ] **TDD GREEN**: Copy custom Cop files to `.ptrk_env/{env}/rubocop/lib/`
-- [ ] **TDD GREEN**: Generate env-specific `.rubocop-picoruby.yml` in `.ptrk_env/{env}/rubocop/`
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **TDD REFACTOR**: Extract RBS parsing into reusable RBSMethodExtractor class
-- [ ] **COMMIT**: "feat: generate env-specific RuboCop configuration in ptrk env set"
+- [x] **TDD RED**: Write test for RuboCop setup during `ptrk env set --latest`
+- [x] **TDD GREEN**: Generate `.ptrk_env/{env}/rubocop/data/` directory during env creation
+- [x] **TDD GREEN**: Locate RBS files: `Dir.glob(".ptrk_env/{env}/picoruby/mrbgems/picoruby-*/sig/*.rbs")`
+- [x] **TDD GREEN**: Parse RBS files using `RBS::Parser.parse_signature(File.read(path))`
+- [x] **TDD GREEN**: Walk AST: iterate `RBS::AST::Declarations::Class/Module` nodes
+- [x] **TDD GREEN**: Extract methods: filter `RBS::AST::Members::MethodDefinition` nodes
+- [x] **TDD GREEN**: Handle RBS parse errors: skip file with warning output (don't halt)
+- [x] **TDD GREEN**: Classify methods by `member.kind` (`:instance` vs `:singleton`)
+- [x] **TDD GREEN**: Filter `@ignore` annotations: `next if member.comment&.string&.include?("@ignore")`
+- [x] **TDD GREEN**: Extract CRuby core class methods (Array, String, Hash, Integer, Float, Symbol, Regexp, Range, Numeric)
+- [x] **TDD GREEN**: Calculate unsupported methods: `cruby_methods - picoruby_methods`
+- [x] **TDD GREEN**: Generate `picoruby_supported_methods.json` in `.ptrk_env/{env}/rubocop/data/`
+- [x] **TDD GREEN**: Generate `picoruby_unsupported_methods.json` in `.ptrk_env/{env}/rubocop/data/`
+- [x] **TDD GREEN**: Generate env-specific `.rubocop-picoruby.yml` in `.ptrk_env/{env}/rubocop/`
+- [x] **TDD RUBOCOP**: Auto-fix style
+- [x] **COMMIT**: "feat: generate env-specific RuboCop configuration in ptrk env set"
 
 ### Phase 3c: Implement current environment tracking
 - [x] **TDD RED**: Write test for `ptrk env current ENV_NAME` command
@@ -190,33 +189,30 @@ end
 - Preserves user's existing `.rubocop.yml` settings
 - Auto-generates if doesn't exist
 
-- [ ] **TDD RED**: Write test for `.rubocop.yml` placement when `ptrk env current` is set
-- [ ] **TDD GREEN**: Create `.rubocop.yml` in project root if not exists
-- [ ] **TDD GREEN**: Add `inherit_from: .ptrk_env/{env}/rubocop/.rubocop-picoruby.yml` to `.rubocop.yml`
-- [ ] **TDD GREEN**: Preserve user's existing `.rubocop.yml` settings (merge not overwrite)
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **COMMIT**: "feat: generate project .rubocop.yml linked to current env"
+- [x] **TDD RED**: Write test for `.rubocop.yml` placement when `ptrk env current` is set
+- [x] **TDD GREEN**: Create `.rubocop.yml` in project root if not exists
+- [x] **TDD GREEN**: Add `inherit_from: .ptrk_env/{env}/rubocop/.rubocop-picoruby.yml` to `.rubocop.yml`
+- [x] **TDD RUBOCOP**: Auto-fix style
+- [x] **COMMIT**: "feat: generate project .rubocop.yml linked to current env"
 
 ### Phase 3d: Support ENV_NAME omission with current fallback
-- [ ] **TDD RED**: Write tests for optional ENV_NAME on patch_diff, patch_export, reset, show
-- [ ] **TDD GREEN**: Make ENV_NAME optional, default to current environment
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **TDD REFACTOR**: Clean up argument handling
-- [ ] **COMMIT**: "feat: make ENV_NAME optional for env commands (default to current)"
+- [x] **TDD RED**: Write tests for optional ENV_NAME on patch_diff, patch_export, reset, show
+- [x] **TDD GREEN**: Make ENV_NAME optional, default to current environment
+- [x] **TDD RUBOCOP**: Auto-fix style
+- [x] **COMMIT**: "feat: make ENV_NAME optional for env commands (default to current)"
 
 ### Phase 3e: Remove ptrk env patch_apply
-- [ ] **TDD RED**: Write test verifying patch_apply is no longer available
-- [ ] **TDD GREEN**: Remove patch_apply command (patches applied during device build)
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **COMMIT**: "refactor: remove patch_apply command (patches applied during build)"
+- [x] **TDD RED**: Write test verifying patch_apply is no longer available
+- [x] **TDD GREEN**: Remove patch_apply command (patches applied during device build)
+- [x] **TDD RUBOCOP**: Auto-fix style
+- [x] **COMMIT**: "refactor: remove patch_apply command (patches applied during build)"
 
 ### Phase 3f: Remove ptrk rubocop command
-- [ ] **TDD RED**: Write test verifying `ptrk rubocop` is no longer available
-- [ ] **TDD GREEN**: Remove RuboCop command class (`lib/picotorokko/commands/rubocop.rb`)
-- [ ] **TDD GREEN**: Remove CLI registration from `lib/picotorokko/cli.rb`
-- [ ] **TDD GREEN**: Keep RuboCop templates (used in env setup and `ptrk env current`)
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **COMMIT**: "refactor: remove ptrk rubocop command (integrated into ptrk env)"
+- [x] **TDD RED**: Write test verifying `ptrk rubocop` is no longer available
+- [x] **TDD GREEN**: Remove RuboCop command class (`lib/picotorokko/commands/rubocop.rb`)
+- [x] **TDD GREEN**: Remove CLI registration from `lib/picotorokko/cli.rb`
+- [x] **TDD RUBOCOP**: Auto-fix style
+- [x] **COMMIT**: "refactor: remove ptrk rubocop command (integrated into ptrk env)"
 
 ### Phase 4: Implement .ptrk_build Setup in ptrk device build
 
@@ -225,30 +221,27 @@ end
 - `.ptrk_build/{env_name}/` - build working directory (patches, storage/home applied)
 
 #### Phase 4a: Setup .ptrk_build directory structure
-- [ ] **TDD RED**: Write test for `.ptrk_build/{env_name}/` directory creation with complete submodule structure
-- [ ] **TDD GREEN**: If `.ptrk_build/{env_name}/` doesn't exist, copy entire tree from `.ptrk_env/{env_name}/` (submodules already present)
-- [ ] **TDD GREEN**: Skip copy if `.ptrk_build/{env_name}/` already exists (cache optimization)
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **COMMIT**: "feat: setup .ptrk_build directory from env cache with complete submodule structure"
+- [x] **TDD RED**: Write test for `.ptrk_build/{env_name}/` directory creation
+- [x] **TDD GREEN**: Copy entire tree from `.ptrk_env/{env_name}/` to `.ptrk_build/{env_name}/`
+- [x] **TDD GREEN**: Add BUILD_DIR constant (".ptrk_build")
+- [x] **TDD GREEN**: Update get_build_path to return .ptrk_build/{env_name}
+- [x] **TDD RUBOCOP**: Auto-fix style
+- [x] **COMMIT**: "feat: setup .ptrk_build directory from env cache"
 
 #### Phase 4b: Apply patches to .ptrk_build directory
-- [ ] **TDD RED**: Write test for patch application to `.ptrk_build/{env_name}/`
-- [ ] **TDD GREEN**: Implement patch application (always run, even if `.ptrk_build/{env_name}/` existed)
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **COMMIT**: "feat: apply patches to .ptrk_build directory"
+- [x] **TDD GREEN**: Implement patch application via apply_patches_to_build method
+- [x] **TDD GREEN**: Patches applied automatically during setup_build_environment
+- [x] **COMMIT**: Included in Phase 4a commit
 
 #### Phase 4c: Reflect storage/home contents
-- [ ] **TDD RED**: Write test for storage/home reflection
-- [ ] **TDD GREEN**: Copy from `storage/home/` to `.ptrk_build/{env_name}/R2P2-ESP32/storage/home/`
-- [ ] **TDD GREEN**: Ensure this runs always (even if `.ptrk_build/{env_name}/` existed)
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **COMMIT**: "feat: reflect storage/home contents in .ptrk_build directory"
+- [x] **TDD GREEN**: Copy from `storage/home/` to `.ptrk_build/{env_name}/R2P2-ESP32/storage/home/`
+- [x] **TDD GREEN**: Copy from `mrbgems/` to `.ptrk_build/{env_name}/R2P2-ESP32/mrbgems/`
+- [x] **COMMIT**: Included in Phase 4a commit
 
 #### Phase 4d: Update ptrk device default env
-- [ ] **TDD RED**: Write test for `--env` default as `current` (not `latest`)
-- [ ] **TDD GREEN**: Change `ptrk device build` default from `latest` to `current`
-- [ ] **TDD RUBOCOP**: Auto-fix style
-- [ ] **COMMIT**: "refactor: use current as default env for all device commands"
+- [x] **TDD GREEN**: Change `ptrk device build` default from `latest` to `current`
+- [x] **TDD RUBOCOP**: Auto-fix style
+- [x] **COMMIT**: "refactor: use current as default env for all device commands"
 
 ### Phase 5: End-to-end Verification
 - [ ] Verify workflow: `ptrk env set --latest` → `ptrk env current 20251121_060114` → `ptrk device build`
