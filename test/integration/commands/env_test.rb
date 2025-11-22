@@ -457,6 +457,52 @@ class CommandsEnvTest < PicotorokkoTestCase
     end
   end
 
+  # Phase 4: .ptrk_build directory setup
+  sub_test_case "ptrk_build directory setup" do
+    test "setup_build_environment copies from .ptrk_env to .ptrk_build" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+
+          # Create test environment
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+
+          Picotorokko::Env.set_environment("20251122_160000", r2p2_info, esp32_info, picoruby_info)
+
+          # Create .ptrk_env/{env_name}/ with test content
+          env_path = File.join(Picotorokko::Env::ENV_DIR, "20251122_160000")
+          r2p2_path = File.join(env_path, "R2P2-ESP32")
+          FileUtils.mkdir_p(r2p2_path)
+          File.write(File.join(r2p2_path, "test.txt"), "test content")
+
+          # Call setup_build_environment
+          repos_info = {
+            "R2P2-ESP32" => r2p2_info,
+            "picoruby-esp32" => esp32_info,
+            "picoruby" => picoruby_info
+          }
+
+          env_cmd = Picotorokko::Commands::Env.new
+          capture_stdout do
+            env_cmd.send(:setup_build_environment, "20251122_160000", repos_info)
+          end
+
+          # Verify .ptrk_build/{env_name}/ was created
+          build_path = File.join(".ptrk_build", "20251122_160000")
+          assert Dir.exist?(build_path), "Should create .ptrk_build/20251122_160000/ directory"
+
+          # Verify content was copied
+          copied_file = File.join(build_path, "R2P2-ESP32", "test.txt")
+          assert File.exist?(copied_file), "Should copy content from .ptrk_env to .ptrk_build"
+          assert_equal "test content", File.read(copied_file)
+        end
+      end
+    end
+  end
+
   # env current コマンドのテスト
   sub_test_case "env current command" do
     test "sets current environment when ENV_NAME is provided" do

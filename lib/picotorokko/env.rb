@@ -17,6 +17,8 @@ module Picotorokko
   module Env
     # ptrk env directory name (hidden directory)
     ENV_DIR = ".ptrk_env".freeze
+    # ptrk build directory name (hidden directory)
+    BUILD_DIR = ".ptrk_build".freeze
     # ptrk env name pattern validation (YYYYMMDD_HHMMSS format only)
     ENV_NAME_PATTERN = /^\d+_\d+$/
 
@@ -338,9 +340,9 @@ module Picotorokko
       # Get build environment path (working directory for environment)
       # @rbs (String) -> String
       def get_build_path(env_name)
-        # Phase 4: Build path uses env_name instead of env_hash
-        # Pattern: ptrk_env/{env_name} instead of build/{env_hash}
-        File.join(project_root, ENV_DIR, env_name)
+        # Phase 4: Build path uses .ptrk_build/{env_name}
+        # Separate from readonly .ptrk_env/{env_name}
+        File.join(project_root, BUILD_DIR, env_name)
       end
 
       # Create symbolic link (replace if exists)

@@ -702,64 +702,71 @@ module Picotorokko
       end
 
       # @rbs (String, Hash[String, Hash[String, String]]) -> void
-      def setup_build_environment(env_name, repos_info)
+      def setup_build_environment(env_name, _repos_info)
+        env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
         build_path = Picotorokko::Env.get_build_path(env_name)
 
-        # Create build directory if it doesn't exist
-        FileUtils.mkdir_p(build_path)
+        # Verify .ptrk_env/{env_name}/ exists
+        raise "Error: Environment directory not found: #{env_path}" unless Dir.exist?(env_path)
 
-        # Track cloned repos for rollback on failure
-        cloned_repos = []
+        # Copy entire .ptrk_env/{env_name}/ to .ptrk_build/{env_name}/
+        puts "  Copying environment to build directory..."
+        FileUtils.mkdir_p(File.dirname(build_path))
+        FileUtils.rm_rf(build_path)
+        FileUtils.cp_r(env_path, build_path)
+        puts "  ✓ Environment copied to #{build_path}"
 
-        begin
-          # Clone R2P2-ESP32 WITH SUBMODULES to cache first
-          r2p2_name = "R2P2-ESP32"
-          r2p2_url = Picotorokko::Env::REPOS[r2p2_name]
-          r2p2_info = repos_info[r2p2_name]
-          r2p2_commit = r2p2_info["commit"]
-          r2p2_timestamp = r2p2_info["timestamp"]
-
-          puts "  Cloning #{r2p2_name} WITH SUBMODULES..."
-          cache_path = Picotorokko::Env.cache_clone_with_submodules(r2p2_name, r2p2_url, r2p2_commit, r2p2_timestamp)
-          target_path = File.join(build_path, r2p2_name)
-          FileUtils.rm_rf(target_path)
-          FileUtils.cp_r(cache_path, target_path)
-          cloned_repos << target_path
-          puts "    ✓ #{r2p2_name} with submodules: #{r2p2_commit}"
-
-          # Clone other repositories normally
-          ["picoruby-esp32", "picoruby"].each do |repo_name|
-            repo_url = Picotorokko::Env::REPOS[repo_name]
-            puts "  Cloning #{repo_name}..."
-            clone_and_checkout_repo(repo_name, repo_url, build_path, repos_info)
-            cloned_repos << File.join(build_path, repo_name)
-          end
-
-          # Copy storage/home/ to R2P2-ESP32 build directory
-          storage_src = File.join(Picotorokko::Env.project_root, "storage", "home")
-          if Dir.exist?(storage_src)
-            r2p2_path = File.join(build_path, "R2P2-ESP32")
-            storage_dst = File.join(r2p2_path, "storage", "home")
-            FileUtils.mkdir_p(File.dirname(storage_dst))
-            FileUtils.rm_rf(storage_dst)
-            FileUtils.cp_r(storage_src, storage_dst)
-            puts "  ✓ Copied storage/home/ to R2P2-ESP32"
-          end
-
-          # Copy mrbgems/ to R2P2-ESP32 build directory
-          mrbgems_src = File.join(Picotorokko::Env.project_root, "mrbgems")
-          if Dir.exist?(mrbgems_src)
-            r2p2_path = File.join(build_path, "R2P2-ESP32")
-            mrbgems_dst = File.join(r2p2_path, "mrbgems")
-            FileUtils.rm_rf(mrbgems_dst)
-            FileUtils.cp_r(mrbgems_src, mrbgems_dst)
-            puts "  ✓ Copied mrbgems/ to R2P2-ESP32"
-          end
-        rescue StandardError
-          # Rollback: remove all cloned repos on failure
-          cloned_repos.each { |path| FileUtils.rm_rf(path) }
-          raise
+        # Copy storage/home/ to R2P2-ESP32 build directory
+        storage_src = File.join(Picotorokko::Env.project_root, "storage", "home")
+        if Dir.exist?(storage_src)
+          r2p2_path = File.join(build_path, "R2P2-ESP32")
+          storage_dst = File.join(r2p2_path, "storage", "home")
+          FileUtils.mkdir_p(File.dirname(storage_dst))
+          FileUtils.rm_rf(storage_dst)
+          FileUtils.cp_r(storage_src, storage_dst)
+          puts "  ✓ Copied storage/home/ to R2P2-ESP32"
         end
+
+        # Copy mrbgems/ to R2P2-ESP32 build directory
+        mrbgems_src = File.join(Picotorokko::Env.project_root, "mrbgems")
+        if Dir.exist?(mrbgems_src)
+          r2p2_path = File.join(build_path, "R2P2-ESP32")
+          mrbgems_dst = File.join(r2p2_path, "mrbgems")
+          FileUtils.rm_rf(mrbgems_dst)
+          FileUtils.cp_r(mrbgems_src, mrbgems_dst)
+          puts "  ✓ Copied mrbgems/ to R2P2-ESP32"
+        end
+
+        # Apply patches
+        apply_patches_to_build(build_path)
+      end
+
+      # Apply stored patches to build environment
+      # @rbs (String) -> void
+      def apply_patches_to_build(build_path)
+        puts "  Applying patches..."
+
+        %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
+          patch_repo_dir = File.join(Picotorokko::Env.patch_dir, repo)
+          next unless Dir.exist?(patch_repo_dir)
+
+          case repo
+          when "R2P2-ESP32"
+            work_path = File.join(build_path, "R2P2-ESP32")
+          when "picoruby-esp32"
+            work_path = File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32")
+          when "picoruby"
+            work_path = File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32", "picoruby")
+          end
+
+          next unless Dir.exist?(work_path)
+
+          # Apply patches
+          Picotorokko::PatchApplier.apply_patches_to_directory(patch_repo_dir, work_path)
+          puts "    Applied #{repo}"
+        end
+
+        puts "  ✓ Patches applied"
       end
 
       # @rbs (String, String, String, Hash[String, Hash[String, String]]) -> void
