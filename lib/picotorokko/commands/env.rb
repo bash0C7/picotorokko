@@ -185,8 +185,7 @@ module Picotorokko
         def clone_env_repository(env_name, repos_info)
           env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
           r2p2_url = Picotorokko::Env::REPOS["R2P2-ESP32"]
-          # r2p2_commit will be used for checkout in next implementation step
-          _ = repos_info["R2P2-ESP32"]["commit"]
+          r2p2_commit = repos_info["R2P2-ESP32"]["commit"]
 
           puts "\nCloning R2P2-ESP32 to #{env_path}..."
 
@@ -195,7 +194,11 @@ module Picotorokko
                       "#{Shellwords.escape(env_path)} 2>/dev/null"
           raise "Clone failed: R2P2-ESP32 from #{r2p2_url}" unless system(clone_cmd)
 
-          puts "  ✓ R2P2-ESP32 cloned to #{env_path}"
+          # Checkout to specified commit
+          checkout_cmd = "cd #{Shellwords.escape(env_path)} && git checkout #{Shellwords.escape(r2p2_commit)}"
+          raise "Checkout failed: R2P2-ESP32 to commit #{r2p2_commit}" unless system(checkout_cmd)
+
+          puts "  ✓ R2P2-ESP32 cloned and checked out to #{r2p2_commit}"
         end
 
         # Route source specification to appropriate handler (GitHub or local path)

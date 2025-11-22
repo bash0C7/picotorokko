@@ -1367,5 +1367,72 @@ class CommandsEnvTest < PicotorokkoTestCase
         end
       end
     end
+
+    test "set --latest checks out R2P2-ESP32 to specified commit" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Mock Time.now
+          frozen_time = Time.new(2025, 11, 21, 18, 0, 0)
+          original_now = Time.method(:now)
+          Time.define_singleton_method(:now) { frozen_time }
+
+          begin
+            # Mock fetch_latest_repos
+            Picotorokko::Commands::Env.class_eval do
+              no_commands do
+                alias_method :original_fetch_latest_repos, :fetch_latest_repos
+                define_method(:fetch_latest_repos) do
+                  {
+                    "R2P2-ESP32" => { "commit" => "abc1234", "timestamp" => "20251121_180000" },
+                    "picoruby-esp32" => { "commit" => "def5678", "timestamp" => "20251121_180000" },
+                    "picoruby" => { "commit" => "ghi9012", "timestamp" => "20251121_180000" }
+                  }
+                end
+              end
+            end
+
+            # Track executed commands
+            executed_commands = []
+
+            # Mock Kernel#system
+            original_system = Kernel.instance_method(:system)
+            Kernel.module_eval do
+              define_method(:system) do |cmd, *_args|
+                executed_commands << cmd.to_s
+                # Create directory for clone
+                if cmd.to_s.include?("git clone") && cmd =~ /git clone.*\s(\S+)\s+2>/
+                  target = Regexp.last_match(1)
+                  FileUtils.mkdir_p(target)
+                  FileUtils.mkdir_p(File.join(target, ".git"))
+                end
+                true
+              end
+            end
+
+            # Call set with --latest option
+            capture_stdout do
+              Picotorokko::Commands::Env.start(%w[set --latest])
+            end
+
+            # Verify git checkout was executed with correct commit
+            checkout_cmd = executed_commands.find { |c| c.include?("git checkout") && c.include?("abc1234") }
+            assert_not_nil checkout_cmd, "Should execute git checkout with commit abc1234"
+          ensure
+            Time.define_singleton_method(:now, original_now)
+            Picotorokko::Commands::Env.class_eval do
+              no_commands do
+                alias_method :fetch_latest_repos, :original_fetch_latest_repos
+                remove_method :original_fetch_latest_repos
+              end
+            end
+            Kernel.module_eval do
+              define_method(:system, original_system)
+            end
+          end
+        end
+      end
+    end
   end
 end
