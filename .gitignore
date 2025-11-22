@@ -76,3 +76,4 @@ playground/
 
 # Claude Code local settings
 .claude/settings.local.json
+.ptrk_build/
