@@ -476,7 +476,6 @@ All features must pass:
 2. **C Linting**: No C linting tools currently in templates (could add clang-format in v0.2.0)
 3. **Cache Management**: Not implemented (considered for v0.2.0+)
 4. **mrbgems Generation**: Basic support only; full workflow in v0.2.0
-5. **Test Segfault**: `Object.define_singleton_method(:system)` causes segfault in CI (test omitted)
 
 ---
 
