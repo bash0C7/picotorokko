@@ -139,16 +139,19 @@ module Picotorokko
         save_env_file(data)
       end
 
-      # Get current environment (deprecated - always returns nil)
-      # @rbs () -> nil
+      # Get current environment name from config
+      # @rbs () -> String?
       def get_current_env
-        nil
+        data = load_env_file
+        data["current"]
       end
 
-      # Set current environment (deprecated - no-op for backward compatibility)
+      # Set current environment name in config
       # @rbs (String) -> void
-      def set_current_env(_env_name)
-        # No-op: current environment logic removed in Phase 4.1
+      def set_current_env(env_name)
+        data = load_env_file
+        data["current"] = env_name
+        save_env_file(data)
       end
 
       # ====== Git Operations ======

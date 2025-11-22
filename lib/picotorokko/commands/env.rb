@@ -40,6 +40,29 @@ module Picotorokko
         end
       end
 
+      # Get or set current environment
+      # @rbs (String?) -> void
+      desc "current [ENV_NAME]", "Get or set current environment"
+      def current(env_name = nil)
+        if env_name
+          # Set current environment
+          env_config = Picotorokko::Env.get_environment(env_name)
+          raise "Environment '#{env_name}' not found" if env_config.nil?
+
+          Picotorokko::Env.set_current_env(env_name)
+          puts "✓ Current environment set to: #{env_name}"
+        else
+          # Show current environment
+          current_env = Picotorokko::Env.get_current_env
+          if current_env
+            puts "Current environment: #{current_env}"
+          else
+            puts "No current environment set."
+            puts "Use 'ptrk env current ENV_NAME' to set one."
+          end
+        end
+      end
+
       # Display environment definition from .picoruby-env.yml
       # @rbs (String) -> void
       desc "show ENV_NAME", "Display environment definition from .picoruby-env.yml"
@@ -175,6 +198,64 @@ module Picotorokko
           )
 
           puts "✓ Environment definition '#{env_name}' created successfully in .picoruby-env.yml"
+
+          # Clone R2P2-ESP32 to .ptrk_env/{env_name}/
+          clone_env_repository(env_name, repos_info)
+        end
+
+        # Clone R2P2-ESP32 repository to .ptrk_env/{env_name}/
+        # @rbs (String, Hash[String, Hash[String, String]]) -> void
+        def clone_env_repository(env_name, repos_info)
+          env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
+          r2p2_url = Picotorokko::Env::REPOS["R2P2-ESP32"]
+          r2p2_commit = repos_info["R2P2-ESP32"]["commit"]
+
+          puts "\nCloning R2P2-ESP32 to #{env_path}..."
+
+          # Clone with --filter=blob:none for partial clone (faster)
+          clone_cmd = "git clone --filter=blob:none #{Shellwords.escape(r2p2_url)} " \
+                      "#{Shellwords.escape(env_path)} 2>/dev/null"
+          raise "Clone failed: R2P2-ESP32 from #{r2p2_url}" unless system(clone_cmd)
+
+          # Checkout to specified commit
+          checkout_cmd = "cd #{Shellwords.escape(env_path)} && git checkout #{Shellwords.escape(r2p2_commit)}"
+          raise "Checkout failed: R2P2-ESP32 to commit #{r2p2_commit}" unless system(checkout_cmd)
+
+          # Initialize and fetch all nested submodules recursively
+          submodule_cmd = "cd #{Shellwords.escape(env_path)} && git submodule update --init --recursive --jobs 4"
+          raise "Submodule update failed for R2P2-ESP32" unless system(submodule_cmd)
+
+          # Checkout picoruby-esp32 to specified commit
+          esp32_commit = repos_info["picoruby-esp32"]["commit"]
+          esp32_path = File.join(env_path, "components", "picoruby-esp32")
+          esp32_checkout = "cd #{Shellwords.escape(esp32_path)} && git checkout #{Shellwords.escape(esp32_commit)}"
+          raise "Checkout failed: picoruby-esp32 to commit #{esp32_commit}" unless system(esp32_checkout)
+
+          # Checkout picoruby (nested submodule) to specified commit
+          picoruby_commit = repos_info["picoruby"]["commit"]
+          picoruby_path = File.join(esp32_path, "picoruby")
+          picoruby_checkout = "cd #{Shellwords.escape(picoruby_path)} && git checkout #{Shellwords.escape(picoruby_commit)}"
+          raise "Checkout failed: picoruby to commit #{picoruby_commit}" unless system(picoruby_checkout)
+
+          # Stage submodule changes
+          git_add = "cd #{Shellwords.escape(env_path)} && git add components/picoruby-esp32"
+          raise "Failed to stage submodule changes" unless system(git_add)
+
+          # Amend commit with env-name
+          git_amend = "cd #{Shellwords.escape(env_path)} && " \
+                      "git commit --amend -m #{Shellwords.escape("ptrk env: #{env_name}")}"
+          raise "Failed to amend commit" unless system(git_amend)
+
+          # Disable push on all repos
+          disable_push = "git remote set-url --push origin no_push"
+          system("cd #{Shellwords.escape(env_path)} && #{disable_push}")
+          system("cd #{Shellwords.escape(esp32_path)} && #{disable_push}")
+          system("cd #{Shellwords.escape(picoruby_path)} && #{disable_push}")
+
+          puts "  ✓ R2P2-ESP32 cloned and checked out to #{r2p2_commit}"
+          puts "  ✓ picoruby-esp32 checked out to #{esp32_commit}"
+          puts "  ✓ picoruby checked out to #{picoruby_commit}"
+          puts "  ✓ Push disabled on all repositories"
         end
 
         # Route source specification to appropriate handler (GitHub or local path)
@@ -386,28 +467,6 @@ module Picotorokko
 
           show_repo_diff(repo, patch_repo_dir, work_path)
         end
-      end
-
-      # Fetch latest commit versions from GitHub and create environment definition
-      # @rbs () -> void
-      desc "latest", "Fetch latest commit versions and create environment definition"
-      def latest
-        puts "Fetching latest commits from GitHub..."
-        repos_info = fetch_latest_repos
-
-        # latest環境として保存
-        env_name = "latest"
-        puts "\nSaving as environment definition '#{env_name}' in .picoruby-env.yml..."
-
-        Picotorokko::Env.set_environment(
-          env_name,
-          repos_info["R2P2-ESP32"],
-          repos_info["picoruby-esp32"],
-          repos_info["picoruby"],
-          notes: "Auto-generated latest versions"
-        )
-
-        puts "✓ Environment definition '#{env_name}' created successfully in .picoruby-env.yml"
       end
 
       # Fetch latest commit versions from all default repositories

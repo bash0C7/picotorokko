@@ -22,6 +22,30 @@ picoruby:       e57c370 (2024-11-05 14:10:30)
 
 ---
 
+### `ptrk env current [ENV_NAME]`
+
+**Description**: Get or set current environment
+
+**Arguments**:
+- `ENV_NAME` (optional) - Environment name to set as current
+
+**Operation**:
+- Without argument: Show current environment name
+- With argument: Set specified environment as current (must exist in `.picoruby-env.yml`)
+
+**Example**:
+```bash
+# Show current environment
+ptrk env current
+# => Current environment: 20251121_150000
+
+# Set current environment
+ptrk env current 20251121_180000
+# => ✓ Current environment set to: 20251121_180000
+```
+
+---
+
 ### `ptrk env set ENV_NAME`
 
 **Description**: Switch to specified environment
@@ -44,16 +68,40 @@ ptrk env set development
 
 ---
 
-### `ptrk env latest`
+### `ptrk env set --latest`
 
-**Description**: Fetch latest versions and switch to them
+**Description**: Fetch latest versions and clone with submodule rewriting
 
 **Operation**:
-1. Fetch HEAD commits from each repo via GitHub API or `git ls-remote`
-2. Generate new environment name (e.g., `latest-20241105-143500`)
-3. Save to `.cache` via `ptrk cache fetch`
-4. Setup environment via `ptrk build setup`
-5. Switch via `ptrk env set`
+1. Fetch HEAD commits from R2P2-ESP32, picoruby-esp32, picoruby via `git ls-remote`
+2. Generate env-name from timestamp (`YYYYMMDD_HHMMSS` format)
+3. Save environment definition to `.picoruby-env.yml`
+4. Clone R2P2-ESP32 with `--filter=blob:none` to `.ptrk_env/{env_name}/`
+5. Checkout to specified R2P2-ESP32 commit
+6. Initialize submodules: `git submodule update --init --recursive --jobs 4`
+7. Checkout picoruby-esp32 to specified commit
+8. Checkout picoruby (nested submodule) to specified commit
+9. Stage submodule changes: `git add components/picoruby-esp32`
+10. Amend commit: `git commit --amend -m "ptrk env: {env_name}"`
+11. Disable push on all repos: `git remote set-url --push origin no_push`
+
+**Example**:
+```bash
+ptrk env set --latest
+# => Fetching latest commits from GitHub...
+#      Checking R2P2-ESP32...
+#      Checking picoruby-esp32...
+#      Checking picoruby...
+#
+#    Saving as environment definition '20251121_143045' in .picoruby-env.yml...
+#    ✓ Environment definition '20251121_143045' created successfully
+#
+#    Cloning R2P2-ESP32 to .ptrk_env/20251121_143045/...
+#      ✓ R2P2-ESP32 cloned and checked out to abc1234
+#      ✓ picoruby-esp32 checked out to def5678
+#      ✓ picoruby checked out to ghi9012
+#      ✓ Push disabled on all repositories
+```
 
 ---
 
@@ -158,23 +206,20 @@ pra monitor
 ### Scenario 2: Validate Latest Version
 
 ```bash
-# 1. Fetch latest version
-ptrk env latest
+# 1. Fetch latest version and create environment
+ptrk env set --latest
 # => Fetching latest from GitHub...
-#    Created environment: latest-20241105-143500
-#    Setting up environment...
-#    Switched to: latest-20241105-143500
+#    Created environment: 20251121_150000
+#    Cloning R2P2-ESP32 with submodules...
+#    ✓ Environment '20251121_150000' created successfully
 
-# 2. Build
-cd build/current/R2P2-ESP32
-rake build
-cd ../../..
+# 2. Set as current and build
+ptrk env current 20251121_150000
+ptrk device build
 
-# 3. If issues found, revert to stable
-ptrk env set stable-2024-11
-cd build/current/R2P2-ESP32
-rake build
-cd ../../..
+# 3. If issues found, revert to previous
+ptrk env current 20251120_120000
+ptrk device build
 ```
 
 ### Scenario 3: Patch Management
