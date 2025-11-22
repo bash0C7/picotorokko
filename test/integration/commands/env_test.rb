@@ -1578,6 +1578,10 @@ class CommandsEnvTest < PicotorokkoTestCase
             unsupported_json = File.join(rubocop_data_path, "picoruby_unsupported_methods.json")
             assert File.exist?(supported_json), "Should generate picoruby_supported_methods.json"
             assert File.exist?(unsupported_json), "Should generate picoruby_unsupported_methods.json"
+
+            # Verify .rubocop-picoruby.yml is generated
+            rubocop_yml = File.join(Picotorokko::Env::ENV_DIR, expected_env_name, "rubocop", ".rubocop-picoruby.yml")
+            assert File.exist?(rubocop_yml), "Should generate .rubocop-picoruby.yml"
           ensure
             Time.define_singleton_method(:now, original_now)
             Picotorokko::Commands::Env.class_eval do
