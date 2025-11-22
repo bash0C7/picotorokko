@@ -421,6 +421,84 @@ class CommandsEnvTest < PicotorokkoTestCase
     end
   end
 
+  # env current コマンドのテスト
+  sub_test_case "env current command" do
+    test "sets current environment when ENV_NAME is provided" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Create test environment
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+
+          Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info)
+
+          # Set current environment
+          output = capture_stdout do
+            Picotorokko::Commands::Env.start(["current", "20251121_120000"])
+          end
+
+          # Verify current environment is set
+          assert_equal "20251121_120000", Picotorokko::Env.get_current_env
+          assert_match(/20251121_120000/, output)
+        end
+      end
+    end
+
+    test "shows current environment when no ENV_NAME is provided" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Create and set current environment
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+
+          Picotorokko::Env.set_environment("20251121_150000", r2p2_info, esp32_info, picoruby_info)
+          Picotorokko::Env.set_current_env("20251121_150000")
+
+          # Show current environment
+          output = capture_stdout do
+            Picotorokko::Commands::Env.start(["current"])
+          end
+
+          assert_match(/20251121_150000/, output)
+        end
+      end
+    end
+
+    test "raises error when setting non-existent environment as current" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Picotorokko::Commands::Env.start(["current", "99999999_999999"])
+            end
+          end
+        end
+      end
+    end
+
+    test "shows message when no current environment is set" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          output = capture_stdout do
+            Picotorokko::Commands::Env.start(["current"])
+          end
+
+          assert_match(/No current environment set/i, output)
+        end
+      end
+    end
+  end
+
   private
 
   # 標準出力をキャプチャするヘルパーメソッド

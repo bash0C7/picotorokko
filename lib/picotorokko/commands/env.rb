@@ -40,6 +40,29 @@ module Picotorokko
         end
       end
 
+      # Get or set current environment
+      # @rbs (String?) -> void
+      desc "current [ENV_NAME]", "Get or set current environment"
+      def current(env_name = nil)
+        if env_name
+          # Set current environment
+          env_config = Picotorokko::Env.get_environment(env_name)
+          raise "Environment '#{env_name}' not found" if env_config.nil?
+
+          Picotorokko::Env.set_current_env(env_name)
+          puts "✓ Current environment set to: #{env_name}"
+        else
+          # Show current environment
+          current_env = Picotorokko::Env.get_current_env
+          if current_env
+            puts "Current environment: #{current_env}"
+          else
+            puts "No current environment set."
+            puts "Use 'ptrk env current ENV_NAME' to set one."
+          end
+        end
+      end
+
       # Display environment definition from .picoruby-env.yml
       # @rbs (String) -> void
       desc "show ENV_NAME", "Display environment definition from .picoruby-env.yml"
