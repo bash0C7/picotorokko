@@ -76,11 +76,14 @@ Creates a new PicoRuby project with:
 
 ```bash
 ptrk env set --latest           # Fetch latest versions with timestamp name
+ptrk env current [NAME]         # Get or set current environment
 ptrk env list                   # List all environments
 ptrk env set <NAME>             # Create/update environment
-ptrk env show <NAME>            # Display environment details
-ptrk env reset <NAME>           # Reset environment
+ptrk env show [NAME]            # Display environment details (default: current)
+ptrk env reset [NAME]           # Reset environment (default: current)
 ```
+
+**Note**: Commands that accept `[NAME]` use the current environment when omitted.
 
 **`ptrk env set --latest` workflow**:
 
@@ -98,20 +101,23 @@ This command fetches the latest commits from all PicoRuby repositories and clone
 #### Patch Management
 
 ```bash
-ptrk env patch_apply <NAME>     # Apply patches to environment
-ptrk env patch_export <NAME>    # Export changes to patches
-ptrk env patch_diff <NAME>      # Show diff between working changes and patches
+ptrk env patch_export [NAME]    # Export changes to patches (default: current)
+ptrk env patch_diff [NAME]      # Show diff between working changes and patches
 ```
+
+**Note**: Patches are automatically applied during `ptrk device build`.
 
 #### Device Operations
 
 ```bash
-ptrk device build               # Build firmware
+ptrk device build               # Build firmware (uses current env)
 ptrk device flash               # Flash to device
 ptrk device monitor             # Monitor serial output
 ptrk device setup_esp32         # Setup ESP32 environment
 ptrk device tasks               # Show R2P2-ESP32 available tasks
 ```
+
+All device commands use the current environment by default. Use `--env NAME` to specify a different environment.
 
 #### mrbgem Management
 
@@ -160,10 +166,16 @@ See [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md) for complete documentation.
 
 ### Configuration
 
-Environment metadata is stored in `ptrk_env/.picoruby-env.yml`. Each environment definition includes:
-- Environment name (lowercase alphanumeric, hyphens, underscores: `/^[a-z0-9_-]+$/`)
-- Repository paths for R2P2-ESP32, picoruby-esp32, and picoruby
-- Optional: Commit SHA and branch information
+Environment metadata is stored in `.picoruby-env.yml`. The system uses two directories:
+- `.ptrk_env/{YYYYMMDD_HHMMSS}/` — Readonly environment cache (git working copies)
+- `.ptrk_build/{YYYYMMDD_HHMMSS}/` — Build working directory (patches applied)
+
+Environment names follow the format `YYYYMMDD_HHMMSS` (e.g., `20251122_103000`).
+
+Each environment definition includes:
+- Repository commit SHAs for R2P2-ESP32, picoruby-esp32, and picoruby
+- Timestamps for each repository
+- Current environment tracking
 
 ### Documentation
 
@@ -179,11 +191,13 @@ For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONT
 
 - **Project Templates**: Auto-generate `.rubocop.yml` and enhanced `CLAUDE.md` with PicoRuby development guides
 - **Environment Management**: Define, list, and manage multiple PicoRuby build environments with version control
+- **Current Environment Tracking**: `ptrk env current` sets the active environment for all device commands
 - **Environment Metadata Capture**: `ptrk env set --latest` records the newest repository commits in `.picoruby-env.yml`
+- **RuboCop Configuration Generation**: Auto-generates PicoRuby-specific RuboCop config from RBS files
 - **Smart Build Detection**: Detects `Gemfile` and uses appropriate Rake invocation (bundle exec vs rake)
-- **Centralized Directory Structure**: All environment data stored in `.ptrk_env/` for clean project organization
+- **Centralized Directory Structure**: Readonly `.ptrk_env/` cache and mutable `.ptrk_build/` working directory
 - **Git Integration**: Clone and manage repositories with automatic submodule handling
-- **Patch Management**: Export, apply, and diff patches across environments
+- **Automatic Patch Application**: Patches applied automatically during `ptrk device build`
 - **Task Delegation**: Build/flash/monitor tasks transparently delegated to R2P2-ESP32's Rakefile
 - **Executor Abstraction**: Clean dependency injection for testable command execution with Open3 integration
 - **Template Engines**: AST-based template generation for Ruby, YAML, and C code

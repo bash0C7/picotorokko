@@ -95,7 +95,7 @@ class EnvTest < Test::Unit::TestCase
       # Phase 4.1: Build path uses env_name instead of env_hash
       env_name = "20251121_120000"
       result = Picotorokko::Env.get_build_path(env_name)
-      expected = File.join(Picotorokko::Env::PROJECT_ROOT, Picotorokko::Env::ENV_DIR, env_name)
+      expected = File.join(Picotorokko::Env::PROJECT_ROOT, Picotorokko::Env::BUILD_DIR, env_name)
 
       assert_equal(expected, result)
     end

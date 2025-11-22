@@ -24,10 +24,10 @@ class CommandsCliTest < PicotorokkoTestCase
                     "mrbgems command should be registered"
   end
 
-  def test_rubocop_command_exists
+  def test_rubocop_command_does_not_exist
     cli_class = Picotorokko::CLI
-    assert_includes cli_class.commands.keys, "rubocop",
-                    "rubocop command should be registered"
+    assert_not_includes cli_class.commands.keys, "rubocop",
+                        "rubocop command should NOT be registered (integrated into ptrk env)"
   end
 
   def test_old_commands_do_not_exist

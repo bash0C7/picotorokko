@@ -7,11 +7,9 @@ require_relative "commands/env"
 require_relative "commands/device"
 require_relative "commands/new"
 require_relative "commands/mrbgems"
-require_relative "commands/rubocop"
-
 module Picotorokko
   # PicoRuby/mRuby ESP32 development tool CLI entry point
-  # Handles subcommand routing for environment, device, mrbgems, and RuboCop operations
+  # Handles subcommand routing for environment, device, and mrbgems operations
   # @rbs < Thor
   class CLI < Thor
     # @rbs () -> bool
@@ -38,11 +36,6 @@ module Picotorokko
     # Handles device flashing, monitoring, building, and other device-specific operations
     desc "device SUBCOMMAND ...ARGS", "ESP32 device operation commands"
     subcommand "device", Picotorokko::Commands::Device
-
-    # RuboCop configuration for PicoRuby development
-    # Provides setup and validation for RuboCop configurations in PicoRuby projects
-    desc "rubocop SUBCOMMAND ...ARGS", "RuboCop configuration for PicoRuby development"
-    subcommand "rubocop", Picotorokko::Commands::Rubocop
 
     # Display picotorokko version
     # @rbs () -> void

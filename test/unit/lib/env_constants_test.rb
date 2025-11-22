@@ -60,9 +60,9 @@ class EnvConstantsTest < PicotorokkoTestCase
     env_name = "20251121_060114"
     build_path = Picotorokko::Env.get_build_path(env_name)
 
-    expected_path = File.join(Picotorokko::Env::PROJECT_ROOT, ".ptrk_env", env_name)
+    expected_path = File.join(Picotorokko::Env::PROJECT_ROOT, ".ptrk_build", env_name)
     assert_equal expected_path, build_path,
-                 "Build path should be .ptrk_env/{env_name}"
+                 "Build path should be .ptrk_build/{env_name}"
   end
 
   def test_no_current_symlink_logic
