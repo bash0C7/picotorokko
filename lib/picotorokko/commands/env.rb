@@ -67,9 +67,12 @@ module Picotorokko
       end
 
       # Display environment definition from .picoruby-env.yml
-      # @rbs (String) -> void
-      desc "show ENV_NAME", "Display environment definition from .picoruby-env.yml"
-      def show(env_name)
+      # @rbs (String?) -> void
+      desc "show [ENV_NAME]", "Display environment definition from .picoruby-env.yml"
+      def show(env_name = nil)
+        env_name ||= Picotorokko::Env.get_current_env
+        raise "No environment specified and no current environment set" if env_name.nil?
+
         env_config = Picotorokko::Env.get_environment(env_name)
         return show_env_not_found(env_name) if env_config.nil?
 
@@ -508,8 +511,11 @@ module Picotorokko
 
       # Remove and recreate environment definition with new timestamps
       # @rbs (String) -> void
-      desc "reset ENV_NAME", "Remove and recreate environment definition"
-      def reset(env_name)
+      desc "reset [ENV_NAME]", "Remove and recreate environment definition"
+      def reset(env_name = nil)
+        env_name ||= Picotorokko::Env.get_current_env
+        raise "No environment specified and no current environment set" if env_name.nil?
+
         Picotorokko::Env.validate_env_name!(env_name)
 
         # Check if environment exists
@@ -532,8 +538,11 @@ module Picotorokko
 
       # Export working changes from build environment to patch directory
       # @rbs (String) -> void
-      desc "patch_export ENV_NAME", "Export changes from build environment to patch directory"
-      def patch_export(env_name)
+      desc "patch_export [ENV_NAME]", "Export changes from build environment to patch directory"
+      def patch_export(env_name = nil)
+        env_name ||= Picotorokko::Env.get_current_env
+        raise "No environment specified and no current environment set" if env_name.nil?
+
         env_config = Picotorokko::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
@@ -591,8 +600,11 @@ module Picotorokko
 
       # Display differences between working changes and stored patches
       # @rbs (String) -> void
-      desc "patch_diff ENV_NAME", "Display differences between working changes and stored patches"
-      def patch_diff(env_name)
+      desc "patch_diff [ENV_NAME]", "Display differences between working changes and stored patches"
+      def patch_diff(env_name = nil)
+        env_name ||= Picotorokko::Env.get_current_env
+        raise "No environment specified and no current environment set" if env_name.nil?
+
         env_config = Picotorokko::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 

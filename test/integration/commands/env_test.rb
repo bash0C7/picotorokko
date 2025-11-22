@@ -149,6 +149,32 @@ class CommandsEnvTest < PicotorokkoTestCase
         end
       end
     end
+
+    test "shows current environment when ENV_NAME is omitted" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Create and set current environment
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+
+          Picotorokko::Env.set_environment("20251122_140000", r2p2_info, esp32_info, picoruby_info,
+                                           notes: "Current env")
+          Picotorokko::Env.set_current_env("20251122_140000")
+
+          # Call show without ENV_NAME
+          output = capture_stdout do
+            Picotorokko::Commands::Env.start(["show"])
+          end
+
+          # Verify current environment details are shown
+          assert_match(/Environment: 20251122_140000/, output)
+          assert_match(/abc1234/, output)
+        end
+      end
+    end
   end
 
   # env set コマンドのテスト（新仕様：org/repo + path://対応）
