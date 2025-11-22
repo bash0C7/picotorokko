@@ -44,16 +44,40 @@ ptrk env set development
 
 ---
 
-### `ptrk env latest`
+### `ptrk env set --latest`
 
-**Description**: Fetch latest versions and switch to them
+**Description**: Fetch latest versions and clone with submodule rewriting
 
 **Operation**:
-1. Fetch HEAD commits from each repo via GitHub API or `git ls-remote`
-2. Generate new environment name (e.g., `latest-20241105-143500`)
-3. Save to `.cache` via `ptrk cache fetch`
-4. Setup environment via `ptrk build setup`
-5. Switch via `ptrk env set`
+1. Fetch HEAD commits from R2P2-ESP32, picoruby-esp32, picoruby via `git ls-remote`
+2. Generate env-name from timestamp (`YYYYMMDD_HHMMSS` format)
+3. Save environment definition to `.picoruby-env.yml`
+4. Clone R2P2-ESP32 with `--filter=blob:none` to `.ptrk_env/{env_name}/`
+5. Checkout to specified R2P2-ESP32 commit
+6. Initialize submodules: `git submodule update --init --recursive --jobs 4`
+7. Checkout picoruby-esp32 to specified commit
+8. Checkout picoruby (nested submodule) to specified commit
+9. Stage submodule changes: `git add components/picoruby-esp32`
+10. Amend commit: `git commit --amend -m "ptrk env: {env_name}"`
+11. Disable push on all repos: `git remote set-url --push origin no_push`
+
+**Example**:
+```bash
+ptrk env set --latest
+# => Fetching latest commits from GitHub...
+#      Checking R2P2-ESP32...
+#      Checking picoruby-esp32...
+#      Checking picoruby...
+#
+#    Saving as environment definition '20251121_143045' in .picoruby-env.yml...
+#    ✓ Environment definition '20251121_143045' created successfully
+#
+#    Cloning R2P2-ESP32 to .ptrk_env/20251121_143045/...
+#      ✓ R2P2-ESP32 cloned and checked out to abc1234
+#      ✓ picoruby-esp32 checked out to def5678
+#      ✓ picoruby checked out to ghi9012
+#      ✓ Push disabled on all repositories
+```
 
 ---
 

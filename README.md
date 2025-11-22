@@ -82,6 +82,19 @@ ptrk env show <NAME>            # Display environment details
 ptrk env reset <NAME>           # Reset environment
 ```
 
+**`ptrk env set --latest` workflow**:
+
+This command fetches the latest commits from all PicoRuby repositories and clones them to `.ptrk_env/{YYYYMMDD_HHMMSS}/`:
+
+1. Fetches latest commit SHAs from R2P2-ESP32, picoruby-esp32, and picoruby
+2. Creates environment definition in `.picoruby-env.yml`
+3. Clones R2P2-ESP32 with `--filter=blob:none` for faster download
+4. Checks out to specified commit
+5. Initializes submodules recursively (`git submodule update --init --recursive`)
+6. Checks out picoruby-esp32 and picoruby to specified commits
+7. Stages and amends commit with environment name
+8. Disables push on all repositories to prevent accidental pushes
+
 #### Patch Management
 
 ```bash
