@@ -253,6 +253,27 @@ end
 
 ---
 
+## Code Quality: AGENTS.md Rule Compliance
+
+### [TODO-QUALITY-1] Remove rubocop:disable from lib/picotorokko/commands/env.rb
+
+**Issue**: AGENTS.md prohibits `# rubocop:disable` comments. Refactor instead.
+
+**Violations Found**:
+- `lib/picotorokko/commands/env.rb:16` — `# rubocop:disable Metrics/ClassLength`
+- `lib/picotorokko/commands/env.rb:187` — `# rubocop:disable Metrics/BlockLength`
+
+**Refactoring Tasks** (behavior must not change):
+- [ ] **Extract helper modules**: Move related methods into separate modules (e.g., `EnvSetup`, `EnvValidation`, `RubocopSetup`)
+- [ ] **Split no_commands block**: Break large `no_commands` block into smaller logical groups
+- [ ] **TDD verification**: Ensure all existing tests pass after refactoring
+- [ ] **RuboCop clean**: Verify 0 violations without disable comments
+- [ ] **COMMIT**: "refactor: extract helper modules to eliminate rubocop:disable in env.rb"
+
+**Estimated effort**: Medium (class is ~800 lines, needs careful extraction)
+
+---
+
 ## Implementation Notes
 
 ### Dependencies to Add
