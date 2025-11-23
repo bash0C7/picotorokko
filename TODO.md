@@ -61,6 +61,38 @@ r2p2_path = build_path  # R2P2-ESP32 content is already copied here
 
 ---
 
+### [TODO-BUG-2] ptrk env set --latest does not auto-set current environment
+
+**Status**: 🔍 DISCOVERED DURING MANUAL TESTING
+
+**Issue**: `ptrk env set --latest` creates environment but does not set it as current
+
+**Root Cause**:
+- `set_latest` method only calls `Picotorokko::Env.set_environment()` and `clone_env_repository()`
+- Missing call to `Picotorokko::Env.set_current_env()` to make the new env current
+
+**Error Location**: `lib/picotorokko/commands/env.rb:190-210`
+
+**Fix Approach**:
+- When `current` is nil (unset), automatically set the newly created environment as current
+- When `current` is already set, do nothing (respect user's explicit choice)
+- Improves UX for first-time users without breaking existing workflows
+
+**Implementation**:
+After line 206 in `set_latest`, add:
+```ruby
+# Auto-set current if not already set
+if Picotorokko::Env.get_current_env.nil?
+  Picotorokko::Env.set_current_env(env_name)
+  sync_project_rubocop_yml(env_name)
+  puts "✓ Current environment set to: #{env_name}"
+end
+```
+
+**Impact**: Unblocks manual E2E verification flow by eliminating need for separate `ptrk env current` command
+
+---
+
 ## Code Quality: AGENTS.md Rule Compliance
 
 ### [TODO-QUALITY-1] Remove rubocop:disable from lib/picotorokko/commands/env.rb

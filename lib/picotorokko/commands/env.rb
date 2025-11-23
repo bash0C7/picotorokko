@@ -207,6 +207,13 @@ module Picotorokko
 
           # Clone R2P2-ESP32 to .ptrk_env/{env_name}/
           clone_env_repository(env_name, repos_info)
+
+          # Auto-set current if not already set
+          return unless Picotorokko::Env.get_current_env.nil?
+
+          Picotorokko::Env.set_current_env(env_name)
+          sync_project_rubocop_yml(env_name)
+          puts "✓ Current environment set to: #{env_name}"
         end
 
         # Clone R2P2-ESP32 repository to .ptrk_env/{env_name}/
