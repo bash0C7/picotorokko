@@ -31,6 +31,29 @@
 
 **Estimated effort**: Medium (class is ~800 lines, needs careful extraction)
 
+### [TODO-QUALITY-2] Fix RBS parsing encoding error in env.rb
+
+**Issue**: RBS parsing fails with `invalid byte sequence in US-ASCII` when parsing picoruby RBS files containing non-ASCII characters.
+
+**Error Location**: `lib/picotorokko/commands/env.rb:344:in 'parse_rbs_file'`
+
+**Solution**: Specify UTF-8 encoding when reading RBS files:
+```ruby
+# Current (problematic)
+File.read(path)
+
+# Fix
+File.read(path, encoding: 'UTF-8')
+```
+
+**Tasks**:
+- [ ] Update `parse_rbs_file` method to read files with UTF-8 encoding
+- [ ] Add test for RBS files containing non-ASCII characters
+- [ ] TDD verification: Ensure all existing tests pass
+- [ ] COMMIT: "fix: use UTF-8 encoding when parsing RBS files"
+
+**Estimated effort**: Low
+
 ---
 
 ## Implementation Notes
