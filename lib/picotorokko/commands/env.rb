@@ -247,9 +247,9 @@ module Picotorokko
           git_add = "cd #{Shellwords.escape(env_path)} && git add components/picoruby-esp32"
           raise "Failed to stage submodule changes" unless system(git_add)
 
-          # Amend commit with env-name
+          # Amend commit with env-name (skip gpg signing to avoid signing server issues)
           git_amend = "cd #{Shellwords.escape(env_path)} && " \
-                      "git commit --amend -m #{Shellwords.escape("ptrk env: #{env_name}")}"
+                      "git commit --amend --no-gpg-sign -m #{Shellwords.escape("ptrk env: #{env_name}")}"
           raise "Failed to amend commit" unless system(git_amend)
 
           # Disable push on all repos
