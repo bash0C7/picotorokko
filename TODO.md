@@ -228,6 +228,17 @@ bundle exec rake ci           # CI checks: all tests + RuboCop + coverage valida
 bundle exec rake dev          # Development: RuboCop auto-fix + unit tests
 ```
 
+**Step Execution for Scenario Tests** (using debug gem):
+```bash
+# Set breakpoint at specific line
+rdbg -c -b "test/scenario/phase5_e2e_test.rb:30" -- bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
+
+# Interactive mode
+RUBY_DEBUG_OPEN=true bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
+
+# Debug commands: step, next, continue, info locals, pp <var>
+```
+
 ---
 
 ## Completed Features (v0.1.0)
@@ -279,6 +290,15 @@ bundle exec rake dev          # Development: RuboCop auto-fix + unit tests
 - **Status**: Planned
 - **Objective**: Enhanced GitHub Actions workflow templates
 - **Estimated**: v0.3.0+
+
+### Priority 99: Prism AST Debug Injection (LOWEST PRIORITY)
+
+**⚠️ REQUIRES SPECIAL INSTRUCTION FROM USER TO PROCEED**
+
+- **Status**: Idea only
+- **Objective**: Use Prism to dynamically inject debug breakpoints into test AST without modifying source
+- **Approach**: Parse test files, inject `binding.break` at strategic points (assertions, command calls), execute transformed code
+- **Note**: Current approach using `rdbg` command-line breakpoints is sufficient for scenario test stepping
 
 ---
 
