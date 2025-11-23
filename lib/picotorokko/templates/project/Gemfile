@@ -8,4 +8,6 @@ gem "picotorokko"
 group :development do
   # Ruby code quality checker configured for PicoRuby
   gem "rubocop", "~> 1.81", require: false
+  # RBS type signatures for PicoRuby method analysis
+  gem "rbs", "~> 3.0", require: false
 end
