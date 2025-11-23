@@ -808,6 +808,62 @@ class CommandsEnvTest < PicotorokkoTestCase
       end
     end
 
+    test "exports patches with submodule-like paths" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+
+          # Create test environment
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+
+          Picotorokko::Env.set_environment("20251121_130000", r2p2_info, esp32_info, picoruby_info)
+
+          # Create build directory with git repository
+          build_path = Picotorokko::Env.get_build_path("20251121_130000")
+
+          # Initialize git repository with submodule-like path
+          r2p2_work = File.join(build_path, "R2P2-ESP32")
+          FileUtils.mkdir_p(r2p2_work)
+          Dir.chdir(r2p2_work) do
+            system("git init -b main > /dev/null 2>&1")
+            system('git config user.email "test@example.com" > /dev/null 2>&1')
+            system('git config user.name "Test User" > /dev/null 2>&1')
+            system("git config commit.gpgsign false > /dev/null 2>&1")
+
+            # Create file in submodule-like path
+            FileUtils.mkdir_p("components/picoruby-esp32")
+            File.write("components/picoruby-esp32/test.c", "initial content")
+            system("git add . > /dev/null 2>&1")
+            system('git commit -m "initial" > /dev/null 2>&1')
+
+            # Modify file in submodule-like path
+            File.write("components/picoruby-esp32/test.c", "modified content")
+          end
+
+          output = capture_stdout do
+            Picotorokko::Commands::Env.start(["patch_export", "20251121_130000"])
+          end
+
+          # Verify output
+          assert_match(/Exporting patches from: 20251121_130000/, output)
+          assert_match(/✓ Patches exported/, output)
+
+          # Verify patch file was created with correct path structure
+          patch_file = File.join(Picotorokko::Env::PATCH_DIR, "R2P2-ESP32",
+                                 "components", "picoruby-esp32", "test.c")
+          assert_true(File.exist?(patch_file), "Patch file should be created at #{patch_file}")
+
+          # Verify patch content
+          patch_content = File.read(patch_file)
+          assert_match(/-initial content/, patch_content)
+          assert_match(/\+modified content/, patch_content)
+        end
+      end
+    end
+
     test "shows patch differences with patch_diff command" do
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do

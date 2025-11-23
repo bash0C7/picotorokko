@@ -836,6 +836,12 @@ module Picotorokko
       # @rbs (String, String) -> void
       def export_repo_changes(repo, work_path)
         Dir.chdir(work_path) do
+          # Skip if not a git repository
+          unless Dir.exist?(".git")
+            puts "  #{repo}: (not a git repository)"
+            return
+          end
+
           changed_files = `git diff --name-only 2>/dev/null`.split("\n")
 
           if changed_files.empty?
@@ -852,7 +858,7 @@ module Picotorokko
             file_dir = File.dirname(file)
             FileUtils.mkdir_p(File.join(patch_dir, file_dir)) unless file_dir == "."
 
-            diff_output = `git diff #{Shellwords.escape(file)}`
+            diff_output = `git diff -- #{Shellwords.escape(file)}`
             patch_file = File.join(patch_dir, file)
 
             if diff_output.strip.empty?
