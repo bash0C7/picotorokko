@@ -376,15 +376,32 @@ module Picotorokko
               "ln -s /path/to/esp-idf ~/esp/esp-idf"
       end
 
+      # Detect Homebrew OpenSSL installation and return export commands
+      # Returns export commands for LDFLAGS, CPPFLAGS, PKG_CONFIG_PATH if available
+      # @rbs () -> String
+      def detect_openssl_flags
+        openssl_path_output, = executor.execute("brew --prefix openssl@3")
+        openssl_path = openssl_path_output.strip
+
+        return "" if openssl_path.empty?
+
+        "export LDFLAGS=-L#{openssl_path}/lib && " \
+          "export CPPFLAGS=-I#{openssl_path}/include && " \
+          "export PKG_CONFIG_PATH=#{openssl_path}/lib/pkgconfig && "
+      rescue StandardError
+        ""
+      end
+
       # Execute command via R2P2-ESP32 Rakefile with ESP-IDF environment
       # Automatically sources ESP-IDF export.sh and sets ESPBAUD=115200
       # working_dir: build workspace directory (e.g., .ptrk_build/{env_name}/R2P2-ESP32)
       # @rbs (String, String | nil) -> [String, String]
       def execute_with_esp_env(command, working_dir = nil)
         idf_export_script = get_idf_export_script
+        openssl_setup = detect_openssl_flags
 
         # Prepare shell command with ESP-IDF environment setup
-        esp_env_command = ". #{Shellwords.escape(idf_export_script)} && " \
+        esp_env_command = "#{openssl_setup}. #{Shellwords.escape(idf_export_script)} && " \
                           "export ESPBAUD=115200 && #{command}"
 
         executor.execute(esp_env_command, working_dir)

@@ -282,15 +282,19 @@ class EnvTest < Test::Unit::TestCase
       mock_executor = Picotorokko::MockExecutor.new
       Picotorokko::Env.set_executor(mock_executor)
 
+      # Mock brew command to fail (return no OpenSSL)
+      mock_executor.set_result("brew --prefix openssl@3", stdout: "", stderr: "", fail: false)
+
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
       # Mock executor expects full command with ESP-IDF setup
       mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && touch marker.txt", stdout: "", stderr: "")
 
       Picotorokko::Env.execute_with_esp_env("touch marker.txt", work_dir)
 
-      # Verify working_dir was passed to executor
-      assert_equal(1, mock_executor.calls.count)
-      assert_equal(work_dir, mock_executor.calls[0][:working_dir])
+      # Verify working_dir was passed to executor on the actual command (second call)
+      assert_equal(2, mock_executor.calls.count)
+      # Second call should have the working_dir
+      assert_equal(work_dir, mock_executor.calls[1][:working_dir])
 
       # Reset to production executor
       Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
@@ -311,6 +315,71 @@ class EnvTest < Test::Unit::TestCase
       assert_raise(RuntimeError) do
         Picotorokko::Env.execute_with_esp_env("false", work_dir)
       end
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
+    end
+
+    test "sets OpenSSL flags when brew openssl is available" do
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      # Mock brew --prefix openssl@3 to return a path
+      openssl_path = "/usr/local/opt/openssl@3"
+      mock_executor.set_result("brew --prefix openssl@3", stdout: "#{openssl_path}\n", stderr: "")
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # Verify command includes OpenSSL environment variables
+      expected_command = "export LDFLAGS=-L#{openssl_path}/lib && " \
+                         "export CPPFLAGS=-I#{openssl_path}/include && " \
+                         "export PKG_CONFIG_PATH=#{openssl_path}/lib/pkgconfig && " \
+                         ". #{idf_export} && export ESPBAUD=115200 && test_command"
+      mock_executor.set_result(expected_command, stdout: "", stderr: "")
+
+      assert_nothing_raised do
+        Picotorokko::Env.execute_with_esp_env("test_command")
+      end
+
+      # Verify both calls were made: brew command and then ESP env command
+      assert_equal(2, mock_executor.calls.count)
+      # First call should be brew --prefix openssl@3
+      assert_equal("brew --prefix openssl@3", mock_executor.calls[0][:command])
+      # Second call should have OpenSSL flags
+      actual_command = mock_executor.calls[1][:command]
+      assert_match(/LDFLAGS=.*openssl/, actual_command)
+      assert_match(/CPPFLAGS=.*openssl/, actual_command)
+      assert_match(/PKG_CONFIG_PATH=.*openssl/, actual_command)
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
+    end
+
+    test "skips OpenSSL setup when brew is not available" do
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      # Mock brew --prefix openssl@3 to fail (raise error)
+      mock_executor.set_result("brew --prefix openssl@3", stdout: "", stderr: "Error: openssl@3 not found", fail: true)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # Command should work without OpenSSL flags
+      expected_command = ". #{idf_export} && export ESPBAUD=115200 && test_command"
+      mock_executor.set_result(expected_command, stdout: "", stderr: "")
+
+      assert_nothing_raised do
+        Picotorokko::Env.execute_with_esp_env("test_command")
+      end
+
+      # Verify both calls were made: brew command (which fails) and then ESP env command
+      assert_equal(2, mock_executor.calls.count)
+      # First call should be brew --prefix openssl@3
+      assert_equal("brew --prefix openssl@3", mock_executor.calls[0][:command])
+      # Second call should NOT have OpenSSL flags
+      actual_command = mock_executor.calls[1][:command]
+      assert_not_match(/LDFLAGS/, actual_command)
+      assert_not_match(/CPPFLAGS/, actual_command)
 
       # Reset to production executor
       Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
