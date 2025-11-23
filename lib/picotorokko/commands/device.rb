@@ -53,18 +53,22 @@ module Picotorokko
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
 
+        # Check if setup is needed BEFORE resetting build environment
+        # This allows us to detect first build before setup_build_environment_for_device wipes it
+        build_path = Picotorokko::Env.get_build_path(actual_env)
+        r2p2_full_path = File.join(build_path, "R2P2-ESP32")
+        setup_marker = File.join(r2p2_full_path, "build/repos/esp32")
+        setup_required = !File.exist?(setup_marker)
+
         # Setup build environment (.build/ directory) from environment definition
         puts "Setting up build environment: #{actual_env}"
         setup_build_environment_for_device(actual_env)
 
-        # Validate R2P2-ESP32 path after setup
-        r2p2_path = validate_and_get_r2p2_path(actual_env)
+        # Validate R2P2-ESP32 path after setup (raises error if invalid)
+        validate_and_get_r2p2_path(actual_env)
 
         # Apply Mrbgemfile if it exists
         apply_mrbgemfile(actual_env)
-
-        # Check if this is first build (build/repos/esp32 doesn't exist)
-        setup_required = setup_needed?(r2p2_path)
 
         if setup_required
           puts "First build detected, running setup_esp32..."
@@ -175,14 +179,6 @@ module Picotorokko
       end
 
       private
-
-      # Check if setup_esp32 is needed (first build detection)
-      # Returns true if build/repos/esp32 directory doesn't exist
-      # @rbs (String) -> bool
-      def setup_needed?(r2p2_path)
-        setup_marker = File.join(r2p2_path, "build/repos/esp32")
-        !File.exist?(setup_marker)
-      end
 
       # @rbs (String) -> String
       def validate_env_value(value)
