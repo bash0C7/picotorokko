@@ -17,6 +17,50 @@
 
 ---
 
+## Manual E2E Verification Results
+
+### [TODO-BUG-1] R2P2-ESP32 Path Inconsistency in device build
+
+**Status**: 🔍 DISCOVERED DURING MANUAL TESTING
+
+**Issue**: `ptrk device build` fails with "R2P2-ESP32 not found in build environment"
+
+**Root Cause**:
+- `clone_env_repository` clones R2P2-ESP32 directly to `.ptrk_env/{env_name}/` (R2P2-ESP32 content directly, no subdirectory)
+- `setup_build_environment` copies `.ptrk_env/{env_name}/` to `.ptrk_build/{env_name}/`
+- `device.rb:validate_and_get_r2p2_path` expects `.ptrk_build/{env_name}/R2P2-ESP32/` subdirectory
+- **Path structure mismatch**: expects nested R2P2-ESP32 dir but gets R2P2-ESP32 content directly
+
+**Error Location**: `lib/picotorokko/commands/device.rb:290-291`
+```ruby
+r2p2_path = File.join(build_path, "R2P2-ESP32")  # ← expects subdirectory
+raise "Error: R2P2-ESP32 not found" unless Dir.exist?(r2p2_path)
+```
+
+**Fix**: Change to use `build_path` directly
+```ruby
+r2p2_path = build_path  # R2P2-ESP32 content is already copied here
+```
+
+**Impact**: Blocking manual E2E verification flow
+
+**Fix Applied**: ✅ COMPLETED (commit pending)
+- Modified `device.rb:validate_and_get_r2p2_path` to use `build_path` directly
+- Removed incorrect `File.join(build_path, "R2P2-ESP32")` path construction
+
+**Verification Results** (Manual E2E Test):
+- ✅ Environment setup successful: `ptrk env set --latest` creates `.ptrk_env/{env}/` with full 3-level submodule structure
+- ✅ Build directory creation: `.ptrk_build/{env}/` correctly copies from `.ptrk_env/{env}/`
+- ✅ Directory structure: 3-level hierarchy confirmed:
+  - Level 1: `.ptrk_build/{env}/` (R2P2-ESP32 root)
+  - Level 2: `.ptrk_build/{env}/components/picoruby-esp32/` (picoruby-esp32)
+  - Level 3: `.ptrk_build/{env}/components/picoruby-esp32/picoruby/` (picoruby)
+- ✅ Push safety: `.git remote -v` shows `no_push` for push URLs in `.ptrk_env/{env}/`
+- ✅ Device build command: Now executes setup_esp32 (previously blocked)
+- ⚠️ Note: Build fails with OpenSSL library error (environment-dependent, not tool issue)
+
+---
+
 ## Code Quality: AGENTS.md Rule Compliance
 
 ### [TODO-QUALITY-1] Remove rubocop:disable from lib/picotorokko/commands/env.rb

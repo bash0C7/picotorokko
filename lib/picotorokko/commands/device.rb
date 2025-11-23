@@ -283,7 +283,9 @@ module Picotorokko
         build_path = Picotorokko::Env.get_build_path(env_name)
         raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
 
-        r2p2_path = File.join(build_path, "R2P2-ESP32")
+        # R2P2-ESP32 content is copied directly to build_path
+        # (not in a subdirectory, since setup_build_environment copies env content directly)
+        r2p2_path = build_path
         raise "Error: R2P2-ESP32 not found in build environment" unless Dir.exist?(r2p2_path)
 
         r2p2_path
