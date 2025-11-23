@@ -1,247 +1,6 @@
 # Project Status
 
-## Current Status (Latest - 2025-11-22)
-
-**✅ COMPLETED: Phase 4a (Build Directory Setup)**
-- ✅ **Phase 4a**: Complete - `.ptrk_build` directory setup from `.ptrk_env` cache
-- ✅ **Phase 3b-rubocop**: Complete - RBS parsing and JSON generation
-- ✅ **Phase 3c-rubocop**: Complete - Project `.rubocop.yml` linked to current env
-- ✅ **Phase 3d**: Complete - ENV_NAME optional with current fallback
-- ✅ **Phase 3e**: Complete - `patch_apply` command removed
-- ✅ **Phase 3f**: Complete - `ptrk rubocop` command removed
-- ✅ **Tests**: All unit tests (152) and integration tests (81) passing with 85.28% line coverage
-- ✅ **Quality**: RuboCop clean (0 violations)
-- 🚀 **Next**: Phase 4d (device default env to current)
-
-**Completed Milestones:**
-- ✅ **All Tests**: Passing (229 unit + integration tests, 100% success rate)
-- ✅ **Quality**: RuboCop clean (0 violations), 84.24% line coverage
-- ✅ **Phase 3c**: `ptrk env current` command for environment selection
-- ✅ **Phase 3b-cleanup**: Removed `ptrk env latest` (replaced by `ptrk env set --latest`)
-- ✅ **Phase 3b-submodule**: Full implementation of `ptrk env set --latest` with submodule rewriting
-- ✅ **Phase 3b (Part 1)**: Added `--latest` option to `ptrk env set` command
-- ✅ **Phase 3**: Removed automatic environment creation from ptrk new
-- ✅ **Phase 3a**: Directory naming consistency - `.ptrk_env` + YYYYMMDD_HHMMSS format
-- ✅ **Error Handling**: All identified code quality issues verified and documented
-- ✅ **ptrk init Command**: Complete with PicoRuby templates (.rubocop.yml, CLAUDE.md)
-- ✅ **Mrbgemfile DSL**: Complete with template generation
-- ✅ **Type System Integration**: Complete (rbs-inline + Steep)
-- ✅ **Build Environment Setup**: Automatic git clone/checkout for `ptrk env set --latest`
-- ✅ **Rake Command Polymorphism**: Smart detection for bundle exec vs rake
-- ✅ **PicoRuby Development Templates**: Enhanced CLAUDE.md with mrbgems, I2C/GPIO/RMT, memory optimization
-
----
-
-## Active Implementation: Fix ptrk env latest (Phase 3-4)
-
-### ⚠️ Design Correction
-**Old (SPEC.md v1 - incorrect)**:
-- `ptrk cache fetch` → `ptrk build setup` → `ptrk device build`
-
-**New (SPEC.md v2 - correct)**:
-- `ptrk env latest` → save environment definition only
-- `ptrk device build` → setup `.ptrk_build/` and build firmware
-
-### Phase 3a: Directory naming consistency (ptrk_env → .ptrk_env)
-- [x] **TDD RED**: Write tests for `.ptrk_env/` directory usage
-- [x] **TDD GREEN**: Update `ENV_DIR` constant from `ptrk_env` to `.ptrk_env`
-- [x] **TDD GREEN**: Update `ENV_NAME_PATTERN` to `/^\d+_\d+$/` (YYYYMMDD_HHMMSS format only)
-- [x] **TDD GREEN**: Update `validate_env_name!` for new pattern
-- [x] **TDD GREEN**: Update all `get_build_path`, `get_environment`, file operations to use `.ptrk_env/`
-- [x] **TDD GREEN**: Update test fixtures and test setup
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "refactor: rename ptrk_env to .ptrk_env and validate env names as YYYYMMDD_HHMMSS"
-
-### Phase 3: Remove env creation from ptrk new
-- [x] **TDD RED**: Write test for `ptrk new` without environment creation
-- [x] **TDD GREEN**: Remove `setup_default_environment` from ProjectInitializer
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **TDD REFACTOR**: Clean up any dead code
-- [x] **COMMIT**: "refactor: remove automatic environment creation from ptrk new"
-
-### Phase 3b: Rename ptrk env latest to ptrk env set --latest
-
-**Design**: Use git submodule mechanism for cross-repo consistency
-- Clone R2P2-ESP32 at specified commit
-- Initialize submodules and checkout picoruby-esp32 & picoruby at specified commits
-- Disable push on all repos to prevent accidental pushes
-- Generate env-name from local timestamp (YYYYMMDD_HHMMSS format)
-
-#### Phase 3b-submodule: Implement submodule rewriting
-
-**Git Operations Flow**:
-```bash
-# 1. Clone R2P2-ESP32 with minimal object fetch
-git clone --filter=blob:none {R2P2_URL} .ptrk_env/{env_name}/
-cd .ptrk_env/{env_name}
-git checkout {R2P2_commit}
-
-# 2. Initialize and fetch all nested submodules recursively
-git submodule update --init --recursive --jobs 4
-
-# 3. Checkout picoruby-esp32 to specified commit
-cd components/picoruby-esp32
-git checkout {esp32_commit}
-
-# 4. Checkout nested picoruby submodule
-cd picoruby
-git checkout {picoruby_commit}
-
-# 5. Stage and commit submodule changes
-cd ../..  # Return to .ptrk_env/{env_name}
-git add components/picoruby-esp32
-git commit --amend -m "ptrk env: {YYYYMMDD_HHMMSS}"
-
-# 6. Disable push on all repos
-git remote set-url --push origin no_push
-cd components/picoruby-esp32 && git remote set-url --push origin no_push
-cd picoruby && git remote set-url --push origin no_push
-```
-
-**Implementation Tasks**:
-- [x] **TDD RED**: Write test for `ptrk env set --latest` with submodule rewriting
-- [x] **TDD GREEN**: Generate env-name from local timestamp (YYYYMMDD_HHMMSS using `Time.now.strftime`)
-- [x] **TDD GREEN**: Clone R2P2-ESP32 with `--filter=blob:none` to `.ptrk_env/{env_name}/`
-- [x] **TDD GREEN**: Handle git clone failures (fatal error, no retry)
-- [x] **TDD GREEN**: Checkout R2P2-ESP32 to specified commit
-- [x] **TDD GREEN**: Initialize submodules: `git submodule update --init --recursive --jobs 4`
-- [x] **TDD GREEN**: Extract picoruby-esp32 & picoruby commit refs from env definition
-- [x] **TDD GREEN**: Checkout picoruby-esp32 to specified commit
-- [x] **TDD GREEN**: Checkout picoruby (nested submodule) to specified commit
-- [x] **TDD GREEN**: Stage submodule changes: `git add components/picoruby-esp32`
-- [x] **TDD GREEN**: Amend commit with env-name: `git commit --amend -m "ptrk env: {env_name}"`
-- [x] **TDD GREEN**: Disable push on main repo: `git remote set-url --push origin no_push`
-- [x] **TDD GREEN**: Disable push on picoruby-esp32 submodule
-- [x] **TDD GREEN**: Disable push on picoruby nested submodule
-- [x] **TDD GREEN**: Record R2P2-ESP32, picoruby-esp32, picoruby commit hashes in .picoruby-env.yml
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "feat: implement ptrk env set --latest with submodule rewriting"
-
-#### Phase 3b-cleanup: Remove ptrk env latest command
-- [x] **TDD RED**: Write test verifying `ptrk env latest` is no longer available
-- [x] **TDD GREEN**: Remove `latest` command from env.rb
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "refactor: remove ptrk env latest command (replaced by ptrk env set --latest)"
-
-#### Phase 3b-rubocop: Generate RuboCop config in env set
-
-**Design**: Extract RBS files directly from env's picoruby repository
-- Source: `.ptrk_env/{env}/picoruby/mrbgems/picoruby-*/sig/*.rbs`
-- Parse RBS using `RBS::Parser.parse_signature` (reference: picoruby.github.io/lib/rbs_doc/class_formatter.rb)
-- Extract methods from `RBS::AST::Members::MethodDefinition` nodes
-- Compare with CRuby core class methods
-- Store env-specific JSON databases
-
-**RBS Parsing Pattern** (from picoruby.github.io):
-```ruby
-sig = RBS::Parser.parse_signature(File.read(path))
-sig[2].each do |dec|
-  case dec
-  when RBS::AST::Declarations::Class, RBS::AST::Declarations::Module
-    methods = {instance: [], singleton: []}
-    dec.members.each do |member|
-      case member
-      when RBS::AST::Members::MethodDefinition
-        next if member.comment&.string&.include?("@ignore")
-        methods[member.kind] << member.name.to_s  # kind: :instance or :singleton
-      end
-    end
-  end
-end
-```
-
-**JSON Output Format**:
-```json
-{
-  "Array": {"instance": ["each", "map", "select"], "singleton": ["new"]},
-  "String": {"instance": ["upcase", "downcase"], "singleton": ["new"]}
-}
-```
-
-**Implementation Tasks**:
-- [x] **TDD RED**: Write test for RuboCop setup during `ptrk env set --latest`
-- [x] **TDD GREEN**: Generate `.ptrk_env/{env}/rubocop/data/` directory during env creation
-- [x] **TDD GREEN**: Locate RBS files: `Dir.glob(".ptrk_env/{env}/picoruby/mrbgems/picoruby-*/sig/*.rbs")`
-- [x] **TDD GREEN**: Parse RBS files using `RBS::Parser.parse_signature(File.read(path))`
-- [x] **TDD GREEN**: Walk AST: iterate `RBS::AST::Declarations::Class/Module` nodes
-- [x] **TDD GREEN**: Extract methods: filter `RBS::AST::Members::MethodDefinition` nodes
-- [x] **TDD GREEN**: Handle RBS parse errors: skip file with warning output (don't halt)
-- [x] **TDD GREEN**: Classify methods by `member.kind` (`:instance` vs `:singleton`)
-- [x] **TDD GREEN**: Filter `@ignore` annotations: `next if member.comment&.string&.include?("@ignore")`
-- [x] **TDD GREEN**: Extract CRuby core class methods (Array, String, Hash, Integer, Float, Symbol, Regexp, Range, Numeric)
-- [x] **TDD GREEN**: Calculate unsupported methods: `cruby_methods - picoruby_methods`
-- [x] **TDD GREEN**: Generate `picoruby_supported_methods.json` in `.ptrk_env/{env}/rubocop/data/`
-- [x] **TDD GREEN**: Generate `picoruby_unsupported_methods.json` in `.ptrk_env/{env}/rubocop/data/`
-- [x] **TDD GREEN**: Generate env-specific `.rubocop-picoruby.yml` in `.ptrk_env/{env}/rubocop/`
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "feat: generate env-specific RuboCop configuration in ptrk env set"
-
-### Phase 3c: Implement current environment tracking
-- [x] **TDD RED**: Write test for `ptrk env current ENV_NAME` command
-- [x] **TDD GREEN**: Implement `ptrk env current` to set/get current environment
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "feat: add ptrk env current command for environment selection"
-
-#### Phase 3c-rubocop: Sync .rubocop.yml with current env
-
-**Design**: Merge env-specific RuboCop config with existing project config
-- Use `inherit_from` to reference `.ptrk_env/{env}/rubocop/.rubocop-picoruby.yml`
-- Preserves user's existing `.rubocop.yml` settings
-- Auto-generates if doesn't exist
-
-- [x] **TDD RED**: Write test for `.rubocop.yml` placement when `ptrk env current` is set
-- [x] **TDD GREEN**: Create `.rubocop.yml` in project root if not exists
-- [x] **TDD GREEN**: Add `inherit_from: .ptrk_env/{env}/rubocop/.rubocop-picoruby.yml` to `.rubocop.yml`
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "feat: generate project .rubocop.yml linked to current env"
-
-### Phase 3d: Support ENV_NAME omission with current fallback
-- [x] **TDD RED**: Write tests for optional ENV_NAME on patch_diff, patch_export, reset, show
-- [x] **TDD GREEN**: Make ENV_NAME optional, default to current environment
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "feat: make ENV_NAME optional for env commands (default to current)"
-
-### Phase 3e: Remove ptrk env patch_apply
-- [x] **TDD RED**: Write test verifying patch_apply is no longer available
-- [x] **TDD GREEN**: Remove patch_apply command (patches applied during device build)
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "refactor: remove patch_apply command (patches applied during build)"
-
-### Phase 3f: Remove ptrk rubocop command
-- [x] **TDD RED**: Write test verifying `ptrk rubocop` is no longer available
-- [x] **TDD GREEN**: Remove RuboCop command class (`lib/picotorokko/commands/rubocop.rb`)
-- [x] **TDD GREEN**: Remove CLI registration from `lib/picotorokko/cli.rb`
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "refactor: remove ptrk rubocop command (integrated into ptrk env)"
-
-### Phase 4: Implement .ptrk_build Setup in ptrk device build
-
-**Design**: Separate readonly env cache from build working directory
-- `.ptrk_env/{env_name}/` - readonly env (git working copies from env definition)
-- `.ptrk_build/{env_name}/` - build working directory (patches, storage/home applied)
-
-#### Phase 4a: Setup .ptrk_build directory structure
-- [x] **TDD RED**: Write test for `.ptrk_build/{env_name}/` directory creation
-- [x] **TDD GREEN**: Copy entire tree from `.ptrk_env/{env_name}/` to `.ptrk_build/{env_name}/`
-- [x] **TDD GREEN**: Add BUILD_DIR constant (".ptrk_build")
-- [x] **TDD GREEN**: Update get_build_path to return .ptrk_build/{env_name}
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "feat: setup .ptrk_build directory from env cache"
-
-#### Phase 4b: Apply patches to .ptrk_build directory
-- [x] **TDD GREEN**: Implement patch application via apply_patches_to_build method
-- [x] **TDD GREEN**: Patches applied automatically during setup_build_environment
-- [x] **COMMIT**: Included in Phase 4a commit
-
-#### Phase 4c: Reflect storage/home contents
-- [x] **TDD GREEN**: Copy from `storage/home/` to `.ptrk_build/{env_name}/R2P2-ESP32/storage/home/`
-- [x] **TDD GREEN**: Copy from `mrbgems/` to `.ptrk_build/{env_name}/R2P2-ESP32/mrbgems/`
-- [x] **COMMIT**: Included in Phase 4a commit
-
-#### Phase 4d: Update ptrk device default env
-- [x] **TDD GREEN**: Change `ptrk device build` default from `latest` to `current`
-- [x] **TDD RUBOCOP**: Auto-fix style
-- [x] **COMMIT**: "refactor: use current as default env for all device commands"
+## Remaining Tasks
 
 ### Phase 5: End-to-end Verification
 - [ ] Verify workflow: `ptrk env set --latest` → `ptrk env current 20251121_060114` → `ptrk device build`
@@ -271,6 +30,203 @@ end
 - [ ] **COMMIT**: "refactor: extract helper modules to eliminate rubocop:disable in env.rb"
 
 **Estimated effort**: Medium (class is ~800 lines, needs careful extraction)
+
+### [TODO-QUALITY-2] Fix RBS parsing encoding error in env.rb
+
+**Issue**: RBS parsing fails with `invalid byte sequence in US-ASCII` when parsing picoruby RBS files containing non-ASCII characters.
+
+**Error Location**: `lib/picotorokko/commands/env.rb:344:in 'parse_rbs_file'`
+
+**Solution**: Specify UTF-8 encoding when reading RBS files:
+```ruby
+# Current (problematic)
+File.read(path)
+
+# Fix
+File.read(path, encoding: 'UTF-8')
+```
+
+**Tasks**:
+- [ ] Update `parse_rbs_file` method to read files with UTF-8 encoding
+- [ ] Add test for RBS files containing non-ASCII characters
+- [ ] TDD verification: Ensure all existing tests pass
+- [ ] COMMIT: "fix: use UTF-8 encoding when parsing RBS files"
+
+**Estimated effort**: Low
+
+### [TODO-QUALITY-3] Fix mrbgems generate template rendering error
+
+**Issue**: `ptrk mrbgems generate` fails with template validation error.
+
+**Error**: `レンダリング後のコードが無効なRubyコードです (RuntimeError)`
+
+**Error Location**: `lib/picotorokko/template/ruby_engine.rb:55:in 'verify_output_validity!'`
+
+**Tasks**:
+- [ ] Investigate which template file causes invalid Ruby output
+- [ ] Fix template or validation logic
+- [ ] TDD verification: Ensure all existing tests pass
+- [ ] COMMIT: "fix: resolve mrbgems generate template rendering error"
+
+**Estimated effort**: Low-Medium
+
+### [TODO-QUALITY-4] Fix patch_export git diff path handling
+
+**Issue**: `ptrk env patch_export` fails when processing submodule changes.
+
+**Error**: `fatal: ambiguous argument 'components/picoruby-esp32': unknown revision or path`
+
+**Error Location**: `lib/picotorokko/commands/env.rb:859:in 'export_repo_changes'`
+
+**Tasks**:
+- [ ] Fix git diff command to properly separate paths from revisions using `--`
+- [ ] Handle submodule paths correctly in export logic
+- [ ] TDD verification: Ensure all existing tests pass
+- [ ] COMMIT: "fix: handle git diff path arguments correctly in patch_export"
+
+**Estimated effort**: Low-Medium
+
+---
+
+## Scenario Tests
+
+### [TODO-SCENARIO-1] mrbgems workflow scenario test
+
+**Objective**: Verify mrbgems are correctly generated and included in builds.
+
+**Scenario Steps**:
+1. `ptrk new testapp` → Verify `mrbgems/app/` is generated
+2. `ptrk mrbgems generate mylib` → Verify `mrbgems/mylib/` is generated
+3. `ptrk device build` → Verify `.ptrk_build/{env}/R2P2-ESP32/mrbgems/` contains all mrbgems
+4. Multiple mrbgems → Verify both `app/` and `mylib/` are copied
+
+**Tasks**:
+- [ ] Create scenario test file: `test/scenario/mrbgems_workflow_test.rb`
+- [ ] Implement test for each scenario step
+- [ ] TDD verification: All tests pass
+- [ ] COMMIT: "test: add mrbgems workflow scenario test"
+
+**Estimated effort**: Medium
+
+### [TODO-SCENARIO-2] patch workflow scenario test
+
+**Objective**: Verify patch creation and application workflow.
+
+**Scenario Steps**:
+1. `ptrk env set --latest` → Initial state (no patches/)
+2. Modify file in `.ptrk_build/` → `ptrk env patch_diff` shows changes
+3. `ptrk env patch_export` → `patches/*.patch` files generated
+4. Next `ptrk device build` → Patches applied to new `.ptrk_build/`
+5. `ptrk env patch_diff` → No differences (patches already applied)
+
+**Tasks**:
+- [ ] Create scenario test file: `test/scenario/patch_workflow_test.rb`
+- [ ] Implement test for each scenario step
+- [ ] TDD verification: All tests pass
+- [ ] COMMIT: "test: add patch workflow scenario test"
+
+**Estimated effort**: Medium
+
+### [TODO-SCENARIO-3] Project lifecycle end-to-end scenario test
+
+**Objective**: Verify complete project lifecycle from creation to build.
+
+**Scenario Steps**:
+1. `ptrk new myapp` → Project structure created (Gemfile, storage/, mrbgems/, etc.)
+2. `ptrk env set --latest` → Environment cloned with submodules
+3. `ptrk env current {env}` → Environment selected, .rubocop.yml linked
+4. `ptrk device build` → Build directory setup, mrbgems/storage copied
+5. `ptrk device flash` → (ESP-IDF required, verify error message)
+6. `ptrk device monitor` → (ESP-IDF required, verify error message)
+
+**Tasks**:
+- [ ] Create scenario test file: `test/scenario/project_lifecycle_test.rb`
+- [ ] Implement test for each scenario step
+- [ ] TDD verification: All tests pass
+- [ ] COMMIT: "test: add project lifecycle scenario test"
+
+**Estimated effort**: Medium
+
+### [TODO-SCENARIO-4] Multiple environment management scenario test
+
+**Objective**: Verify multiple environment creation and switching.
+
+**Scenario Steps**:
+1. `ptrk env set --latest` → Create env1 (YYYYMMDD_HHMMSS)
+2. Sleep 1 second
+3. `ptrk env set --latest` → Create env2 (different timestamp)
+4. `ptrk env list` → Both environments displayed
+5. `ptrk env current {env1}` → Select env1
+6. `ptrk device build` → Build uses env1
+7. `ptrk env current {env2}` → Switch to env2
+8. `ptrk device build` → Build uses env2
+9. Verify `.ptrk_build/{env1}/` and `.ptrk_build/{env2}/` both exist
+
+**Tasks**:
+- [ ] Create scenario test file: `test/scenario/multi_env_test.rb`
+- [ ] Implement test for each scenario step
+- [ ] TDD verification: All tests pass
+- [ ] COMMIT: "test: add multiple environment management scenario test"
+
+**Estimated effort**: Medium
+
+### [TODO-SCENARIO-5] storage/home workflow scenario test
+
+**Objective**: Verify storage/home files are correctly copied to build.
+
+**Scenario Steps**:
+1. Create `storage/home/app.rb` with test content
+2. `ptrk device build` → Verify `.ptrk_build/{env}/R2P2-ESP32/storage/home/app.rb` exists
+3. Verify content matches source
+4. Update `storage/home/app.rb` content
+5. `ptrk device build` → Verify updated content in build directory
+6. Add `storage/home/lib/helper.rb` → Verify nested directory copied
+
+**Tasks**:
+- [ ] Create scenario test file: `test/scenario/storage_home_test.rb`
+- [ ] Implement test for each scenario step
+- [ ] TDD verification: All tests pass
+- [ ] COMMIT: "test: add storage/home workflow scenario test"
+
+**Estimated effort**: Low-Medium
+
+### [TODO-SCENARIO-6] Phase 5 end-to-end verification scenario test
+
+**Objective**: Codify the manual e2e verification performed in Phase 5.
+
+**Scenario Steps** (with workarounds):
+1. Setup playground: `bundle config set --local path vendor/bundle && bundle install`
+2. Create project: `ptrk new myapp`
+3. Edit Gemfile: Change ptrk gem path to `"../.."` (local development)
+4. **Workaround**: Add `gem "rbs", "~> 3.0"` to Gemfile (until TODO-QUALITY-2 fixed)
+5. Install dependencies: `bundle config set --local path vendor/bundle && bundle install`
+6. Setup environment: `ptrk env set --latest`
+   - Expect: RBS UTF-8 error (TODO-QUALITY-2)
+   - After fix: Should complete successfully
+7. Set current: `ptrk env current {env_name}`
+8. Build: `ptrk device build`
+   - Expect: "rake: not found" (ESP-IDF not installed)
+   - Verify: .ptrk_build created, storage/home copied, mrbgems copied
+
+**Verification Points**:
+- [ ] Submodule structure exists (3 levels):
+  - `.ptrk_env/{env}/`
+  - `.ptrk_env/{env}/components/picoruby-esp32/`
+  - `.ptrk_env/{env}/components/picoruby-esp32/picoruby/`
+- [ ] Push disabled on all repos: `git remote -v` shows `no_push` for push URL
+- [ ] .ptrk_build directory created from .ptrk_env
+- [ ] storage/home/ copied to R2P2-ESP32/storage/home/
+- [ ] mrbgems/ copied to R2P2-ESP32/mrbgems/
+- [ ] Appropriate error when ESP-IDF not installed
+
+**Tasks**:
+- [ ] Create scenario test file: `test/scenario/phase5_e2e_test.rb`
+- [ ] Implement test for each verification point
+- [ ] Include workaround steps with comments for future removal
+- [ ] TDD verification: All tests pass
+- [ ] COMMIT: "test: add Phase 5 e2e verification scenario test"
+
+**Estimated effort**: Medium-High (complex setup with multiple workarounds)
 
 ---
 
@@ -455,32 +411,6 @@ All features must pass:
 - ✅ Coverage: Targets met (≥85% line, ≥60% branch)
 - ✅ Type checking: Steep validation passing
 - ✅ Documentation: Updated with code changes
-
----
-
-## Recent Changes
-
-### Session 2025-11-21: Phase 3a - Directory Naming Consistency
-- **Implemented Phase 3a**: Complete directory rename and env naming pattern update
-- **Constants updated**:
-  - `ENV_DIR`: `"ptrk_env"` → `".ptrk_env"` (hidden directory for cleaner project root)
-  - `ENV_NAME_PATTERN`: `/^[a-z0-9_-]+$/` → `/^\d+_\d+$/` (strict YYYYMMDD_HHMMSS format)
-- **Full test coverage**: 153 unit tests + 70 integration tests (100% passing, 83.29% coverage)
-- **All file operations updated**: ProjectInitializer, templates, tests
-- **RuboCop**: 0 violations, quality gates met
-- **TDD Microycle**: Perfect RED → GREEN → RUBOCOP → REFACTOR → COMMIT cycle
-
-### Session 2025-11-18: Code Quality Verification
-- Verified all identified code quality issues
-- All issues confirmed as fixed with proper error handling and test coverage
-- Updated documentation to reflect completion status
-- Test suite: All tests passing, coverage targets met
-
-### Session 2025-11-17: PicoRuby Development Templates
-- Added `.rubocop.yml` template with PicoRuby-specific configuration
-- Enhanced `CLAUDE.md` template with mrbgems, peripheral APIs, memory optimization
-- Updated ProjectInitializer to copy template files
-- Fixed UTF-8 encoding in tests for international characters
 
 ---
 
