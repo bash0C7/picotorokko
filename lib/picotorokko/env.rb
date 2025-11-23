@@ -401,7 +401,8 @@ module Picotorokko
         openssl_setup = detect_openssl_flags
 
         # Prepare shell command with ESP-IDF environment setup
-        esp_env_command = "#{openssl_setup}. #{Shellwords.escape(idf_export_script)} && " \
+        # set -x enables command echoing for debugging
+        esp_env_command = "set -x && #{openssl_setup}. #{Shellwords.escape(idf_export_script)} && " \
                           "export ESPBAUD=115200 && #{command}"
 
         executor.execute(esp_env_command, working_dir)

@@ -309,25 +309,13 @@ module Picotorokko
         []
       end
 
-      # Build rake command with appropriate prefix (bundle exec or not)
-      # Detects Gemfile in R2P2-ESP32 directory to determine if bundler is needed
-      # NOTE: Directory change (cd) is handled by executor via Dir.chdir block
+      # Build rake command - always uses rake directly without bundle exec
+      # R2P2-ESP32 project may have Gemfile without rake dependency
       # @rbs (String, String) -> String
-      def build_rake_command(r2p2_path, task_name)
+      def build_rake_command(_r2p2_path, task_name)
         raise "Error: task_name cannot be empty" if task_name.to_s.empty?
 
-        gemfile_path = File.join(r2p2_path, "Gemfile")
-        # Validate Gemfile: must be a regular file and readable
-        if File.exist?(gemfile_path)
-          raise "Error: Gemfile is not a regular file: #{gemfile_path}" unless File.file?(gemfile_path)
-          raise "Error: Gemfile is not readable: #{gemfile_path}" unless File.readable?(gemfile_path)
-
-          rake_cmd = "bundle exec rake"
-        else
-          rake_cmd = "rake"
-        end
-
-        "#{rake_cmd} #{task_name}"
+        "rake #{task_name}"
       end
 
       # Setup build environment (.build/) from environment definition

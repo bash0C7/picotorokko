@@ -1274,20 +1274,19 @@ class CommandsEnvTest < PicotorokkoTestCase
       end
     end
 
-    test "device validates Gemfile existence before bundle exec" do
+    test "device build_rake_command always uses rake directly" do
       device = Picotorokko::Commands::Device.new
       tmpdir = Dir.mktmpdir
 
       begin
-        # Create a directory as Gemfile (not a regular file)
-        gemfile_path = File.join(tmpdir, "Gemfile")
-        Dir.mkdir(gemfile_path)
+        # Test with no Gemfile
+        cmd = device.send(:build_rake_command, tmpdir, "setup_esp32")
+        assert_equal("rake setup_esp32", cmd)
 
-        # Should raise error because Gemfile is a directory
-        error = assert_raises(RuntimeError) do
-          device.send(:build_rake_command, tmpdir, "build")
-        end
-        assert_match(/not a regular file/, error.message)
+        # Test with Gemfile present (should still use rake, not bundle exec)
+        File.write(File.join(tmpdir, "Gemfile"), "source 'https://rubygems.org'")
+        cmd = device.send(:build_rake_command, tmpdir, "build")
+        assert_equal("rake build", cmd)
       ensure
         FileUtils.rm_rf(tmpdir)
       end

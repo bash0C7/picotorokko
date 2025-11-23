@@ -246,7 +246,8 @@ class EnvTest < Test::Unit::TestCase
 
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
       # Mock the bash command that sources ESP-IDF and runs rake
-      mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && true", stdout: "", stderr: "")
+      # Note: set -x && is added for debug output
+      mock_executor.set_result("set -x && . #{idf_export} && export ESPBAUD=115200 && true", stdout: "", stderr: "")
 
       # Simple command that should succeed
       assert_nothing_raised do
@@ -263,8 +264,9 @@ class EnvTest < Test::Unit::TestCase
       Picotorokko::Env.set_executor(mock_executor)
 
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
-      mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && false", stdout: "", stderr: "Error",
-                                                                                    fail: true)
+      # NOTE: set -x && is added for debug output
+      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && false"
+      mock_executor.set_result(cmd, stdout: "", stderr: "Error", fail: true)
 
       assert_raise(RuntimeError) do
         Picotorokko::Env.execute_with_esp_env("false")
@@ -287,7 +289,9 @@ class EnvTest < Test::Unit::TestCase
 
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
       # Mock executor expects full command with ESP-IDF setup
-      mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && touch marker.txt", stdout: "", stderr: "")
+      # NOTE: set -x && is added for debug output
+      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && touch marker.txt"
+      mock_executor.set_result(cmd, stdout: "", stderr: "")
 
       Picotorokko::Env.execute_with_esp_env("touch marker.txt", work_dir)
 
@@ -309,8 +313,9 @@ class EnvTest < Test::Unit::TestCase
       Picotorokko::Env.set_executor(mock_executor)
 
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
-      mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && false", stdout: "", stderr: "Error",
-                                                                                    fail: true)
+      # NOTE: set -x && is added for debug output
+      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && false"
+      mock_executor.set_result(cmd, stdout: "", stderr: "Error", fail: true)
 
       assert_raise(RuntimeError) do
         Picotorokko::Env.execute_with_esp_env("false", work_dir)
@@ -331,7 +336,8 @@ class EnvTest < Test::Unit::TestCase
 
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
       # Verify command includes OpenSSL environment variables
-      expected_command = "export LDFLAGS=-L#{openssl_path}/lib && " \
+      # Note: set -x && is added for debug output
+      expected_command = "set -x && export LDFLAGS=-L#{openssl_path}/lib && " \
                          "export CPPFLAGS=-I#{openssl_path}/include && " \
                          "export PKG_CONFIG_PATH=#{openssl_path}/lib/pkgconfig && " \
                          ". #{idf_export} && export ESPBAUD=115200 && test_command"
@@ -365,7 +371,8 @@ class EnvTest < Test::Unit::TestCase
 
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
       # Command should work without OpenSSL flags
-      expected_command = ". #{idf_export} && export ESPBAUD=115200 && test_command"
+      # Note: set -x && is added for debug output
+      expected_command = "set -x && . #{idf_export} && export ESPBAUD=115200 && test_command"
       mock_executor.set_result(expected_command, stdout: "", stderr: "")
 
       assert_nothing_raised do

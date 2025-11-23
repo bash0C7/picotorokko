@@ -469,19 +469,7 @@ class CommandsDeviceTest < PicotorokkoTestCase
 
   # Rake command building tests
   sub_test_case "build_rake_command helper" do
-    test "returns 'bundle exec rake' when Gemfile exists" do
-      Dir.mktmpdir do |tmpdir|
-        FileUtils.touch(File.join(tmpdir, "Gemfile"))
-        device = Picotorokko::Commands::Device.new
-
-        cmd = device.send(:build_rake_command, tmpdir, "build")
-
-        assert_match(/bundle exec rake/, cmd)
-        assert_match(/build$/, cmd)
-      end
-    end
-
-    test "returns 'rake' when Gemfile does not exist" do
+    test "returns 'rake' without bundle exec" do
       Dir.mktmpdir do |tmpdir|
         device = Picotorokko::Commands::Device.new
 
@@ -493,16 +481,15 @@ class CommandsDeviceTest < PicotorokkoTestCase
       end
     end
 
-    test "returns 'bundle exec rake' when Gemfile exists" do
+    test "returns 'rake' even when Gemfile exists" do
       Dir.mktmpdir do |tmpdir|
-        # Create Gemfile to trigger bundle exec
-        File.write(File.join(tmpdir, "Gemfile"), "")
+        FileUtils.touch(File.join(tmpdir, "Gemfile"))
         device = Picotorokko::Commands::Device.new
 
         cmd = device.send(:build_rake_command, tmpdir, "build")
 
-        assert_equal "bundle exec rake build", cmd
-        assert_match(/bundle exec/, cmd)
+        assert_equal "rake build", cmd
+        assert_not_match(/bundle exec/, cmd)
         assert_not_match(/cd /, cmd) # No cd command, handled by executor
       end
     end
