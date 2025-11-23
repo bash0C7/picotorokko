@@ -1,4 +1,5 @@
 require "open3"
+require "bundler"
 
 # rbs_inline: enabled
 
@@ -30,14 +31,17 @@ module Picotorokko
     include Executor
 
     # コマンドを実行し、stdout と stderr を返す
+    # Run in isolated environment (Bundler cleared) to avoid interference from ptrk's bundler
     # @rbs (String, String | nil) -> [String, String]
     def execute(command, working_dir = nil)
       execute_block = lambda do
-        stdout, stderr, status = Open3.capture3(command)
+        Bundler.with_unbundled_env do
+          stdout, stderr, status = Open3.capture3(command)
 
-        raise "Command failed (exit #{status.exitstatus}): #{command}\nStderr: #{stderr}" unless status.success?
+          raise "Command failed (exit #{status.exitstatus}): #{command}\nStderr: #{stderr}" unless status.success?
 
-        [stdout, stderr]
+          [stdout, stderr]
+        end
       end
 
       working_dir ? Dir.chdir(working_dir) { execute_block.call } : execute_block.call

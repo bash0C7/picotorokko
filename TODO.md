@@ -61,6 +61,43 @@ r2p2_path = build_path  # R2P2-ESP32 content is already copied here
 
 ---
 
+### [TODO-BUG-3] Bundler environment interferes with device command execution
+
+**Status**: ✅ FIXED (commit pending)
+
+**Issue**: `ptrk device build` fails with "can't find executable rake" when running in bundler-managed project
+
+**Root Cause**:
+- `device.rb#delegate_to_r2p2` calls `executor.execute(rake_cmd, working_dir)`
+- Executor inherits parent process's Bundler environment variables
+- R2P2-ESP32 doesn't use bundler, so system rake not found
+- Affects all device operations: build, flash, monitor, setup_esp32, etc.
+
+**Error Location**: `lib/picotorokko/executor.rb:35-43`
+
+**Fix Approach**:
+- Wrap command execution in `Bundler.with_unbundled_env`
+- Clears all Bundler env vars (`BUNDLE_*`, `RUBYOPT`, `GEM_PATH`, etc.)
+- Creates isolated shell for each device command
+- ESP-IDF environment still sourced per-command (no regression)
+
+**Implementation**:
+```ruby
+def execute(command, working_dir = nil)
+  execute_block = lambda do
+    Bundler.with_unbundled_env do
+      stdout, stderr, status = Open3.capture3(command)
+      # ... error handling
+    end
+  end
+  # ... working_dir handling
+end
+```
+
+**Impact**: Unblocks all device operations from bundler interference
+
+---
+
 ### [TODO-BUG-2] ptrk env set --latest does not auto-set current environment
 
 **Status**: 🔍 DISCOVERED DURING MANUAL TESTING
