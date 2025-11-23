@@ -3,12 +3,17 @@
 ## Remaining Tasks
 
 ### Phase 5: End-to-end Verification
-- [ ] Verify workflow: `ptrk env set --latest` → `ptrk env current 20251121_060114` → `ptrk device build`
-- [ ] Test in playground environment
-- [ ] Confirm `.ptrk_env/20251121_060114/R2P2-ESP32/` has complete submodule structure (git submodule update executed)
-- [ ] Confirm `.ptrk_build/20251121_060114/R2P2-ESP32/` is copy of .ptrk_env with patches and storage/home applied
-- [ ] Verify push is disabled on all repos: `git remote -v` shows no push URL
-- [ ] Verify `.ptrk_env/` repos cannot be accidentally modified
+
+**Status**: ✅ COMPLETED
+
+- [x] Verify workflow: `ptrk env set --latest` → `ptrk env current` → `ptrk device build`
+- [x] Test in playground environment
+- [x] Confirm `.ptrk_env/{env}/R2P2-ESP32/` has complete submodule structure (3 levels)
+- [x] Confirm `.ptrk_build/{env}/R2P2-ESP32/` is copy of .ptrk_env with patches and storage/home applied
+- [x] Verify push is disabled on all repos: `git remote -v` shows `no_push` for push URL
+- [x] Verify `.ptrk_env/` repos cannot be accidentally modified
+
+**Bug Fixed**: Added `--no-gpg-sign` to `git commit --amend` (commit 45614c5)
 
 ---
 
