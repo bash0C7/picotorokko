@@ -340,7 +340,7 @@ module Picotorokko
         # Parse RBS file and extract method definitions
         # @rbs (String, Hash[String, Hash[String, Array[String]]]) -> void
         def parse_rbs_file(rbs_file, methods_hash)
-          content = File.read(rbs_file)
+          content = File.read(rbs_file, encoding: "UTF-8")
           sig = RBS::Parser.parse_signature(content)
 
           sig[2].each do |dec|

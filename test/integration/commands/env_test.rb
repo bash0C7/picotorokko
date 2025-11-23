@@ -1589,6 +1589,39 @@ class CommandsEnvTest < PicotorokkoTestCase
       end
     end
 
+    test "parse_rbs_file handles non-ASCII characters in RBS files" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          # Create RBS file with non-ASCII characters (Japanese comments)
+          rbs_content = <<~RBS
+            # 日本語コメント: このクラスは配列を扱います
+            class Array[unchecked out Elem]
+              # 要素を繰り返し処理
+              def each: () { (Elem) -> void } -> self
+              def size: () -> Integer
+            end
+          RBS
+
+          rbs_file = File.join(tmpdir, "test.rbs")
+          File.write(rbs_file, rbs_content, encoding: "UTF-8")
+
+          # Call parse_rbs_file
+          env_cmd = Picotorokko::Commands::Env.new
+          methods_hash = {}
+
+          # Should not raise encoding error
+          assert_nothing_raised do
+            env_cmd.send(:parse_rbs_file, rbs_file, methods_hash)
+          end
+
+          # Verify methods were extracted
+          assert methods_hash.key?("Array"), "Should extract Array class"
+          assert_include methods_hash["Array"]["instance"], "each"
+          assert_include methods_hash["Array"]["instance"], "size"
+        end
+      end
+    end
+
     test "set --latest generates RuboCop configuration directory" do
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
