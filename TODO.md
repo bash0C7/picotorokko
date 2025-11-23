@@ -54,6 +54,79 @@ File.read(path, encoding: 'UTF-8')
 
 **Estimated effort**: Low
 
+### [TODO-QUALITY-3] Fix mrbgems generate template rendering error
+
+**Issue**: `ptrk mrbgems generate` fails with template validation error.
+
+**Error**: `レンダリング後のコードが無効なRubyコードです (RuntimeError)`
+
+**Error Location**: `lib/picotorokko/template/ruby_engine.rb:55:in 'verify_output_validity!'`
+
+**Tasks**:
+- [ ] Investigate which template file causes invalid Ruby output
+- [ ] Fix template or validation logic
+- [ ] TDD verification: Ensure all existing tests pass
+- [ ] COMMIT: "fix: resolve mrbgems generate template rendering error"
+
+**Estimated effort**: Low-Medium
+
+### [TODO-QUALITY-4] Fix patch_export git diff path handling
+
+**Issue**: `ptrk env patch_export` fails when processing submodule changes.
+
+**Error**: `fatal: ambiguous argument 'components/picoruby-esp32': unknown revision or path`
+
+**Error Location**: `lib/picotorokko/commands/env.rb:859:in 'export_repo_changes'`
+
+**Tasks**:
+- [ ] Fix git diff command to properly separate paths from revisions using `--`
+- [ ] Handle submodule paths correctly in export logic
+- [ ] TDD verification: Ensure all existing tests pass
+- [ ] COMMIT: "fix: handle git diff path arguments correctly in patch_export"
+
+**Estimated effort**: Low-Medium
+
+---
+
+## Scenario Tests
+
+### [TODO-SCENARIO-1] mrbgems workflow scenario test
+
+**Objective**: Verify mrbgems are correctly generated and included in builds.
+
+**Scenario Steps**:
+1. `ptrk new testapp` → Verify `mrbgems/app/` is generated
+2. `ptrk mrbgems generate mylib` → Verify `mrbgems/mylib/` is generated
+3. `ptrk device build` → Verify `.ptrk_build/{env}/R2P2-ESP32/mrbgems/` contains all mrbgems
+4. Multiple mrbgems → Verify both `app/` and `mylib/` are copied
+
+**Tasks**:
+- [ ] Create scenario test file: `test/scenario/mrbgems_workflow_test.rb`
+- [ ] Implement test for each scenario step
+- [ ] TDD verification: All tests pass
+- [ ] COMMIT: "test: add mrbgems workflow scenario test"
+
+**Estimated effort**: Medium
+
+### [TODO-SCENARIO-2] patch workflow scenario test
+
+**Objective**: Verify patch creation and application workflow.
+
+**Scenario Steps**:
+1. `ptrk env set --latest` → Initial state (no patches/)
+2. Modify file in `.ptrk_build/` → `ptrk env patch_diff` shows changes
+3. `ptrk env patch_export` → `patches/*.patch` files generated
+4. Next `ptrk device build` → Patches applied to new `.ptrk_build/`
+5. `ptrk env patch_diff` → No differences (patches already applied)
+
+**Tasks**:
+- [ ] Create scenario test file: `test/scenario/patch_workflow_test.rb`
+- [ ] Implement test for each scenario step
+- [ ] TDD verification: All tests pass
+- [ ] COMMIT: "test: add patch workflow scenario test"
+
+**Estimated effort**: Medium
+
 ---
 
 ## Implementation Notes
