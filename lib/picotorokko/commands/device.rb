@@ -37,11 +37,13 @@ module Picotorokko
       def monitor
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
-        validate_and_get_r2p2_path(actual_env)
+        r2p2_path = validate_and_get_r2p2_path(actual_env)
 
-        puts "Monitoring: #{actual_env}"
-        puts "(Press Ctrl+C to exit)"
-        delegate_to_r2p2("monitor", env_name)
+        puts "To monitor ESP32 serial output, run:"
+        puts ""
+        puts "  pushd #{r2p2_path} && source ~/esp/esp-idf/export.sh && rake monitor ; popd"
+        puts ""
+        puts "(Press Ctrl+C to exit monitor)"
       end
 
       # Build firmware for ESP32
@@ -78,6 +80,41 @@ module Picotorokko
         puts "Building: #{actual_env}"
         delegate_to_r2p2("build", env_name)
         puts "\u2713 Build completed"
+      end
+
+      # Build, flash and monitor in sequence (default R2P2-ESP32 task)
+      # Automatically runs setup_esp32 on first build (when build/repos/esp32 doesn't exist)
+      # @rbs () -> void
+      desc "all", "Build, flash and monitor (default rake task)"
+      option :env, default: "current", desc: "Environment name"
+      def all
+        env_name = options[:env]
+        actual_env = resolve_env_name(env_name)
+
+        # Check if setup is needed BEFORE resetting build environment
+        build_path = Picotorokko::Env.get_build_path(actual_env)
+        r2p2_full_path = File.join(build_path, "R2P2-ESP32")
+        setup_marker = File.join(r2p2_full_path, "build/repos/esp32")
+        setup_required = !File.exist?(setup_marker)
+
+        # Setup build environment (.build/ directory) from environment definition
+        puts "Setting up build environment: #{actual_env}"
+        setup_build_environment_for_device(actual_env)
+
+        # Validate R2P2-ESP32 path after setup (raises error if invalid)
+        validate_and_get_r2p2_path(actual_env)
+
+        # Apply Mrbgemfile if it exists
+        apply_mrbgemfile(actual_env)
+
+        if setup_required
+          puts "First build detected, running setup_esp32..."
+          delegate_to_r2p2("setup_esp32", env_name)
+        end
+
+        puts "Running build → flash → monitor: #{actual_env}"
+        delegate_to_r2p2("", env_name)
+        puts "\u2713 Completed build → flash → monitor"
       end
 
       # Setup ESP32 build environment (idf setup)
@@ -311,11 +348,14 @@ module Picotorokko
 
       # Build rake command - always uses rake directly without bundle exec
       # R2P2-ESP32 project may have Gemfile without rake dependency
+      # Empty task_name runs default rake task
       # @rbs (String, String) -> String
       def build_rake_command(_r2p2_path, task_name)
-        raise "Error: task_name cannot be empty" if task_name.to_s.empty?
-
-        "rake #{task_name}"
+        if task_name.to_s.empty?
+          "rake"
+        else
+          "rake #{task_name}"
+        end
       end
 
       # Setup build environment (.build/) from environment definition

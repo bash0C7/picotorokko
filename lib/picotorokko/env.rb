@@ -386,6 +386,7 @@ module Picotorokko
         return "" if openssl_path.empty?
 
         "export LDFLAGS=-L#{openssl_path}/lib && " \
+          "export CFLAGS=-I#{openssl_path}/include && " \
           "export CPPFLAGS=-I#{openssl_path}/include && " \
           "export PKG_CONFIG_PATH=#{openssl_path}/lib/pkgconfig && "
       rescue StandardError

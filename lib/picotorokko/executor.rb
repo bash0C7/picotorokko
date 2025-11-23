@@ -32,15 +32,31 @@ module Picotorokko
 
     # コマンドを実行し、stdout と stderr を返す
     # Run in isolated environment (Bundler cleared) to avoid interference from ptrk's bundler
+    # Output is displayed in real-time including set -x debug output
     # @rbs (String, String | nil) -> [String, String]
     def execute(command, working_dir = nil)
       execute_block = lambda do
         Bundler.with_unbundled_env do
-          stdout, stderr, status = Open3.capture3(command)
+          stdout_data = ""
+          stderr_data = ""
 
-          raise "Command failed (exit #{status.exitstatus}): #{command}\nStderr: #{stderr}" unless status.success?
+          Open3.popen3(command) do |_stdin, stdout, stderr, wait_thr|
+            # Read and display stdout in real-time
+            stdout.each_line do |line|
+              puts(line)
+              stdout_data += line
+            end
+            # Read and display stderr in real-time (including set -x output)
+            stderr.each_line do |line|
+              warn(line)
+              stderr_data += line
+            end
 
-          [stdout, stderr]
+            status = wait_thr.value
+            raise "Command failed (exit #{status.exitstatus}): #{command}" unless status.success?
+
+            [stdout_data, stderr_data]
+          end
         end
       end
 
