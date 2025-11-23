@@ -3,18 +3,25 @@
 ## Remaining Tasks
 
 ### Phase 5: End-to-end Verification
-- [ ] Verify workflow: `ptrk env set --latest` → `ptrk env current 20251121_060114` → `ptrk device build`
-- [ ] Test in playground environment
-- [ ] Confirm `.ptrk_env/20251121_060114/R2P2-ESP32/` has complete submodule structure (git submodule update executed)
-- [ ] Confirm `.ptrk_build/20251121_060114/R2P2-ESP32/` is copy of .ptrk_env with patches and storage/home applied
-- [ ] Verify push is disabled on all repos: `git remote -v` shows no push URL
-- [ ] Verify `.ptrk_env/` repos cannot be accidentally modified
+
+**Status**: ✅ COMPLETED
+
+- [x] Verify workflow: `ptrk env set --latest` → `ptrk env current` → `ptrk device build`
+- [x] Test in playground environment
+- [x] Confirm `.ptrk_env/{env}/R2P2-ESP32/` has complete submodule structure (3 levels)
+- [x] Confirm `.ptrk_build/{env}/R2P2-ESP32/` is copy of .ptrk_env with patches and storage/home applied
+- [x] Verify push is disabled on all repos: `git remote -v` shows `no_push` for push URL
+- [x] Verify `.ptrk_env/` repos cannot be accidentally modified
+
+**Bug Fixed**: Added `--no-gpg-sign` to `git commit --amend` (commit 45614c5)
 
 ---
 
 ## Code Quality: AGENTS.md Rule Compliance
 
 ### [TODO-QUALITY-1] Remove rubocop:disable from lib/picotorokko/commands/env.rb
+
+**⚠️ REQUIRES SPECIAL INSTRUCTION FROM USER TO PROCEED**
 
 **Issue**: AGENTS.md prohibits `# rubocop:disable` comments. Refactor instead.
 
@@ -33,58 +40,34 @@
 
 ### [TODO-QUALITY-2] Fix RBS parsing encoding error in env.rb
 
+**Status**: ✅ COMPLETED (commit 83bf081)
+
 **Issue**: RBS parsing fails with `invalid byte sequence in US-ASCII` when parsing picoruby RBS files containing non-ASCII characters.
 
-**Error Location**: `lib/picotorokko/commands/env.rb:344:in 'parse_rbs_file'`
-
-**Solution**: Specify UTF-8 encoding when reading RBS files:
-```ruby
-# Current (problematic)
-File.read(path)
-
-# Fix
-File.read(path, encoding: 'UTF-8')
-```
-
-**Tasks**:
-- [ ] Update `parse_rbs_file` method to read files with UTF-8 encoding
-- [ ] Add test for RBS files containing non-ASCII characters
-- [ ] TDD verification: Ensure all existing tests pass
-- [ ] COMMIT: "fix: use UTF-8 encoding when parsing RBS files"
-
-**Estimated effort**: Low
+**Solution Applied**: Specified UTF-8 encoding when reading RBS files in `parse_rbs_file` method.
 
 ### [TODO-QUALITY-3] Fix mrbgems generate template rendering error
 
-**Issue**: `ptrk mrbgems generate` fails with template validation error.
+**Status**: ✅ COMPLETED (commit 9c627c6)
 
-**Error**: `レンダリング後のコードが無効なRubyコードです (RuntimeError)`
+**Issue**: `ptrk mrbgems generate` fails with template validation error when using lowercase names.
 
-**Error Location**: `lib/picotorokko/template/ruby_engine.rb:55:in 'verify_output_validity!'`
+**Root Cause**: Template uses `TEMPLATE_CLASS_NAME` placeholder, but lowercase names like "mylib" produce `class mylib` which is invalid Ruby (class names must start with uppercase).
 
-**Tasks**:
-- [ ] Investigate which template file causes invalid Ruby output
-- [ ] Fix template or validation logic
-- [ ] TDD verification: Ensure all existing tests pass
-- [ ] COMMIT: "fix: resolve mrbgems generate template rendering error"
-
-**Estimated effort**: Low-Medium
+**Solution Applied**: Convert `class_name` to PascalCase in `prepare_template_context`:
+- "mylib" → "Mylib"
+- "my_lib" → "MyLib"
+- "MyAwesomeLib" → "MyAwesomeLib" (preserved)
 
 ### [TODO-QUALITY-4] Fix patch_export git diff path handling
 
+**Status**: ✅ COMPLETED (commit 4605fab)
+
 **Issue**: `ptrk env patch_export` fails when processing submodule changes.
 
-**Error**: `fatal: ambiguous argument 'components/picoruby-esp32': unknown revision or path`
-
-**Error Location**: `lib/picotorokko/commands/env.rb:859:in 'export_repo_changes'`
-
-**Tasks**:
-- [ ] Fix git diff command to properly separate paths from revisions using `--`
-- [ ] Handle submodule paths correctly in export logic
-- [ ] TDD verification: Ensure all existing tests pass
-- [ ] COMMIT: "fix: handle git diff path arguments correctly in patch_export"
-
-**Estimated effort**: Low-Medium
+**Solution Applied**:
+- Added `--` separator to git diff command for proper path handling
+- Added .git directory existence check to skip non-repository directories
 
 ---
 
@@ -92,141 +75,64 @@ File.read(path, encoding: 'UTF-8')
 
 ### [TODO-SCENARIO-1] mrbgems workflow scenario test
 
+**Status**: ✅ COMPLETED (commit 9c627c6)
+
 **Objective**: Verify mrbgems are correctly generated and included in builds.
 
-**Scenario Steps**:
-1. `ptrk new testapp` → Verify `mrbgems/app/` is generated
-2. `ptrk mrbgems generate mylib` → Verify `mrbgems/mylib/` is generated
-3. `ptrk device build` → Verify `.ptrk_build/{env}/R2P2-ESP32/mrbgems/` contains all mrbgems
-4. Multiple mrbgems → Verify both `app/` and `mylib/` are copied
-
-**Tasks**:
-- [ ] Create scenario test file: `test/scenario/mrbgems_workflow_test.rb`
-- [ ] Implement test for each scenario step
-- [ ] TDD verification: All tests pass
-- [ ] COMMIT: "test: add mrbgems workflow scenario test"
-
-**Estimated effort**: Medium
+**Implementation**:
+- Created `test/scenario/mrbgems_workflow_test.rb` with 5 scenario tests
+- Covers project creation, custom mrbgem generation, multiple mrbgems, error handling, and class name conversion
 
 ### [TODO-SCENARIO-2] patch workflow scenario test
 
+**Status**: ✅ COMPLETED (commit d3c4d77)
+
 **Objective**: Verify patch creation and application workflow.
 
-**Scenario Steps**:
-1. `ptrk env set --latest` → Initial state (no patches/)
-2. Modify file in `.ptrk_build/` → `ptrk env patch_diff` shows changes
-3. `ptrk env patch_export` → `patches/*.patch` files generated
-4. Next `ptrk device build` → Patches applied to new `.ptrk_build/`
-5. `ptrk env patch_diff` → No differences (patches already applied)
-
-**Tasks**:
-- [ ] Create scenario test file: `test/scenario/patch_workflow_test.rb`
-- [ ] Implement test for each scenario step
-- [ ] TDD verification: All tests pass
-- [ ] COMMIT: "test: add patch workflow scenario test"
-
-**Estimated effort**: Medium
+**Implementation**:
+- Created `test/scenario/patch_workflow_test.rb` with 5 scenario tests
+- Covers initial state, patch_diff, patch_export, patch content validation, and multiple file handling
 
 ### [TODO-SCENARIO-3] Project lifecycle end-to-end scenario test
 
+**Status**: ✅ COMPLETED (commit b8dff0b)
+
 **Objective**: Verify complete project lifecycle from creation to build.
 
-**Scenario Steps**:
-1. `ptrk new myapp` → Project structure created (Gemfile, storage/, mrbgems/, etc.)
-2. `ptrk env set --latest` → Environment cloned with submodules
-3. `ptrk env current {env}` → Environment selected, .rubocop.yml linked
-4. `ptrk device build` → Build directory setup, mrbgems/storage copied
-5. `ptrk device flash` → (ESP-IDF required, verify error message)
-6. `ptrk device monitor` → (ESP-IDF required, verify error message)
-
-**Tasks**:
-- [ ] Create scenario test file: `test/scenario/project_lifecycle_test.rb`
-- [ ] Implement test for each scenario step
-- [ ] TDD verification: All tests pass
-- [ ] COMMIT: "test: add project lifecycle scenario test"
-
-**Estimated effort**: Medium
+**Implementation**:
+- Created `test/scenario/project_lifecycle_test.rb` with 5 scenario tests
+- Covers project creation, environment setup, build directory, and ESP-IDF error handling
 
 ### [TODO-SCENARIO-4] Multiple environment management scenario test
 
+**Status**: ✅ COMPLETED (commit 964ed34)
+
 **Objective**: Verify multiple environment creation and switching.
 
-**Scenario Steps**:
-1. `ptrk env set --latest` → Create env1 (YYYYMMDD_HHMMSS)
-2. Sleep 1 second
-3. `ptrk env set --latest` → Create env2 (different timestamp)
-4. `ptrk env list` → Both environments displayed
-5. `ptrk env current {env1}` → Select env1
-6. `ptrk device build` → Build uses env1
-7. `ptrk env current {env2}` → Switch to env2
-8. `ptrk device build` → Build uses env2
-9. Verify `.ptrk_build/{env1}/` and `.ptrk_build/{env2}/` both exist
-
-**Tasks**:
-- [ ] Create scenario test file: `test/scenario/multi_env_test.rb`
-- [ ] Implement test for each scenario step
-- [ ] TDD verification: All tests pass
-- [ ] COMMIT: "test: add multiple environment management scenario test"
-
-**Estimated effort**: Medium
+**Implementation**:
+- Created `test/scenario/multi_env_test.rb` with 5 scenario tests
+- Covers environment creation, listing, switching, and build directory coexistence
 
 ### [TODO-SCENARIO-5] storage/home workflow scenario test
 
+**Status**: ✅ COMPLETED (commit 091de5d)
+
 **Objective**: Verify storage/home files are correctly copied to build.
 
-**Scenario Steps**:
-1. Create `storage/home/app.rb` with test content
-2. `ptrk device build` → Verify `.ptrk_build/{env}/R2P2-ESP32/storage/home/app.rb` exists
-3. Verify content matches source
-4. Update `storage/home/app.rb` content
-5. `ptrk device build` → Verify updated content in build directory
-6. Add `storage/home/lib/helper.rb` → Verify nested directory copied
-
-**Tasks**:
-- [ ] Create scenario test file: `test/scenario/storage_home_test.rb`
-- [ ] Implement test for each scenario step
-- [ ] TDD verification: All tests pass
-- [ ] COMMIT: "test: add storage/home workflow scenario test"
-
-**Estimated effort**: Low-Medium
+**Implementation**:
+- Created `test/scenario/storage_home_test.rb` with 5 scenario tests
+- Covers directory creation, file operations, nested directories, and binary file support
 
 ### [TODO-SCENARIO-6] Phase 5 end-to-end verification scenario test
 
+**Status**: ✅ COMPLETED (commit 33b7022)
+
 **Objective**: Codify the manual e2e verification performed in Phase 5.
 
-**Scenario Steps** (with workarounds):
-1. Setup playground: `bundle config set --local path vendor/bundle && bundle install`
-2. Create project: `ptrk new myapp`
-3. Edit Gemfile: Change ptrk gem path to `"../.."` (local development)
-4. **Workaround**: Add `gem "rbs", "~> 3.0"` to Gemfile (until TODO-QUALITY-2 fixed)
-5. Install dependencies: `bundle config set --local path vendor/bundle && bundle install`
-6. Setup environment: `ptrk env set --latest`
-   - Expect: RBS UTF-8 error (TODO-QUALITY-2)
-   - After fix: Should complete successfully
-7. Set current: `ptrk env current {env_name}`
-8. Build: `ptrk device build`
-   - Expect: "rake: not found" (ESP-IDF not installed)
-   - Verify: .ptrk_build created, storage/home copied, mrbgems copied
-
-**Verification Points**:
-- [ ] Submodule structure exists (3 levels):
-  - `.ptrk_env/{env}/`
-  - `.ptrk_env/{env}/components/picoruby-esp32/`
-  - `.ptrk_env/{env}/components/picoruby-esp32/picoruby/`
-- [ ] Push disabled on all repos: `git remote -v` shows `no_push` for push URL
-- [ ] .ptrk_build directory created from .ptrk_env
-- [ ] storage/home/ copied to R2P2-ESP32/storage/home/
-- [ ] mrbgems/ copied to R2P2-ESP32/mrbgems/
-- [ ] Appropriate error when ESP-IDF not installed
-
-**Tasks**:
-- [ ] Create scenario test file: `test/scenario/phase5_e2e_test.rb`
-- [ ] Implement test for each verification point
-- [ ] Include workaround steps with comments for future removal
-- [ ] TDD verification: All tests pass
-- [ ] COMMIT: "test: add Phase 5 e2e verification scenario test"
-
-**Estimated effort**: Medium-High (complex setup with multiple workarounds)
+**Implementation**:
+- Created `test/scenario/phase5_e2e_test.rb` with 5 scenario tests
+- Covers project structure creation, environment setup, build directory structure, mrbgems scaffold, and storage/home verification
+- Tests use simulated environments without network operations
 
 ---
 
@@ -327,6 +233,17 @@ bundle exec rake ci           # CI checks: all tests + RuboCop + coverage valida
 bundle exec rake dev          # Development: RuboCop auto-fix + unit tests
 ```
 
+**Step Execution for Scenario Tests** (using debug gem):
+```bash
+# Set breakpoint at specific line
+rdbg -c -b "test/scenario/phase5_e2e_test.rb:30" -- bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
+
+# Interactive mode
+RUBY_DEBUG_OPEN=true bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
+
+# Debug commands: step, next, continue, info locals, pp <var>
+```
+
 ---
 
 ## Completed Features (v0.1.0)
@@ -378,6 +295,29 @@ bundle exec rake dev          # Development: RuboCop auto-fix + unit tests
 - **Status**: Planned
 - **Objective**: Enhanced GitHub Actions workflow templates
 - **Estimated**: v0.3.0+
+
+### Priority 99: Prism AST Debug Injection (LOWEST PRIORITY)
+
+**⚠️ REQUIRES SPECIAL INSTRUCTION FROM USER TO PROCEED**
+
+- **Status**: Idea only
+- **Objective**: Use Prism to dynamically inject debug breakpoints into test AST without modifying source
+- **Approach**: Parse test files, inject `binding.break` at strategic points (assertions, command calls), execute transformed code
+- **Note**: Current approach using `rdbg` command-line breakpoints is sufficient for scenario test stepping
+
+### [TODO-VERIFY-1] Step Execution Verification for Scenario Tests
+
+**⚠️ REQUIRES SPECIAL INSTRUCTION FROM USER TO PROCEED**
+
+- **Status**: Pending
+- **Objective**: Establish regular step execution verification workflow for scenario tests
+- **Approach**: Use Ruby debug gem (`rdbg`) with command-line breakpoints
+- **Prerequisites**: Install debug gem locally (`gem install debug`)
+- **Usage**:
+  ```bash
+  rdbg -c -b "test/scenario/phase5_e2e_test.rb:30" -- bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
+  ```
+- **Note**: debug gem removed from Gemfile due to CI build issues; install locally when needed
 
 ---
 

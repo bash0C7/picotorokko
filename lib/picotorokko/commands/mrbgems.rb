@@ -43,11 +43,19 @@ module Picotorokko
       # @rbs (String) -> Hash[Symbol, String]
       def prepare_template_context(name)
         c_prefix = name.downcase
+        # Convert to PascalCase for valid Ruby class name
+        # If name starts with uppercase, keep as-is (user specified PascalCase)
+        # Otherwise, convert first letter of each segment to uppercase
+        class_name = if name[0] == name[0].upcase
+                       name
+                     else
+                       name.split(/[-_]/).map { |s| s[0].upcase + s[1..] }.join
+                     end
         author_name = options[:author] || `git config user.name`.strip || "Your Name"
 
         {
           mrbgem_name: name,
-          class_name: name,
+          class_name: class_name,
           c_prefix: c_prefix,
           author_name: author_name
         }

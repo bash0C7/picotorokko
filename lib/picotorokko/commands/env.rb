@@ -247,9 +247,9 @@ module Picotorokko
           git_add = "cd #{Shellwords.escape(env_path)} && git add components/picoruby-esp32"
           raise "Failed to stage submodule changes" unless system(git_add)
 
-          # Amend commit with env-name
+          # Amend commit with env-name (skip gpg signing to avoid signing server issues)
           git_amend = "cd #{Shellwords.escape(env_path)} && " \
-                      "git commit --amend -m #{Shellwords.escape("ptrk env: #{env_name}")}"
+                      "git commit --amend --no-gpg-sign -m #{Shellwords.escape("ptrk env: #{env_name}")}"
           raise "Failed to amend commit" unless system(git_amend)
 
           # Disable push on all repos
@@ -340,7 +340,7 @@ module Picotorokko
         # Parse RBS file and extract method definitions
         # @rbs (String, Hash[String, Hash[String, Array[String]]]) -> void
         def parse_rbs_file(rbs_file, methods_hash)
-          content = File.read(rbs_file)
+          content = File.read(rbs_file, encoding: "UTF-8")
           sig = RBS::Parser.parse_signature(content)
 
           sig[2].each do |dec|
@@ -836,6 +836,12 @@ module Picotorokko
       # @rbs (String, String) -> void
       def export_repo_changes(repo, work_path)
         Dir.chdir(work_path) do
+          # Skip if not a git repository
+          unless Dir.exist?(".git")
+            puts "  #{repo}: (not a git repository)"
+            return
+          end
+
           changed_files = `git diff --name-only 2>/dev/null`.split("\n")
 
           if changed_files.empty?
@@ -852,7 +858,7 @@ module Picotorokko
             file_dir = File.dirname(file)
             FileUtils.mkdir_p(File.join(patch_dir, file_dir)) unless file_dir == "."
 
-            diff_output = `git diff #{Shellwords.escape(file)}`
+            diff_output = `git diff -- #{Shellwords.escape(file)}`
             patch_file = File.join(patch_dir, file)
 
             if diff_output.strip.empty?
