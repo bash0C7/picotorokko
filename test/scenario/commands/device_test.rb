@@ -487,21 +487,23 @@ class CommandsDeviceTest < PicotorokkoTestCase
 
         cmd = device.send(:build_rake_command, tmpdir, "build")
 
-        assert_match(/^cd .* && rake build$/, cmd)
+        assert_equal "rake build", cmd
         assert_not_match(/bundle exec/, cmd)
+        assert_not_match(/cd /, cmd) # No cd command, handled by executor
       end
     end
 
-    test "properly escapes paths in command" do
+    test "returns 'bundle exec rake' when Gemfile exists" do
       Dir.mktmpdir do |tmpdir|
-        path_with_spaces = File.join(tmpdir, "path with spaces")
-        FileUtils.mkdir_p(path_with_spaces)
+        # Create Gemfile to trigger bundle exec
+        File.write(File.join(tmpdir, "Gemfile"), "")
         device = Picotorokko::Commands::Device.new
 
-        cmd = device.send(:build_rake_command, path_with_spaces, "build")
+        cmd = device.send(:build_rake_command, tmpdir, "build")
 
-        # Should contain escaped path
-        assert_match(/cd .*path.*with.*spaces/, cmd)
+        assert_equal "bundle exec rake build", cmd
+        assert_match(/bundle exec/, cmd)
+        assert_not_match(/cd /, cmd) # No cd command, handled by executor
       end
     end
   end

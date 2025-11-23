@@ -45,6 +45,7 @@ module Picotorokko
       end
 
       # Build firmware for ESP32
+      # Automatically runs setup_esp32 on first build (when build/repos/esp32 doesn't exist)
       # @rbs () -> void
       desc "build", "Build firmware for ESP32"
       option :env, default: "current", desc: "Environment name"
@@ -57,10 +58,18 @@ module Picotorokko
         setup_build_environment_for_device(actual_env)
 
         # Validate R2P2-ESP32 path after setup
-        validate_and_get_r2p2_path(actual_env)
+        r2p2_path = validate_and_get_r2p2_path(actual_env)
 
         # Apply Mrbgemfile if it exists
         apply_mrbgemfile(actual_env)
+
+        # Check if this is first build (build/repos/esp32 doesn't exist)
+        setup_required = setup_needed?(r2p2_path)
+
+        if setup_required
+          puts "First build detected, running setup_esp32..."
+          delegate_to_r2p2("setup_esp32", env_name)
+        end
 
         puts "Building: #{actual_env}"
         delegate_to_r2p2("build", env_name)
@@ -166,6 +175,14 @@ module Picotorokko
       end
 
       private
+
+      # Check if setup_esp32 is needed (first build detection)
+      # Returns true if build/repos/esp32 directory doesn't exist
+      # @rbs (String) -> bool
+      def setup_needed?(r2p2_path)
+        setup_marker = File.join(r2p2_path, "build/repos/esp32")
+        !File.exist?(setup_marker)
+      end
 
       # @rbs (String) -> String
       def validate_env_value(value)
@@ -296,6 +313,7 @@ module Picotorokko
 
       # Build rake command with appropriate prefix (bundle exec or not)
       # Detects Gemfile in R2P2-ESP32 directory to determine if bundler is needed
+      # NOTE: Directory change (cd) is handled by executor via Dir.chdir block
       # @rbs (String, String) -> String
       def build_rake_command(r2p2_path, task_name)
         raise "Error: task_name cannot be empty" if task_name.to_s.empty?
@@ -311,7 +329,7 @@ module Picotorokko
           rake_cmd = "rake"
         end
 
-        "cd #{Shellwords.escape(r2p2_path)} && #{rake_cmd} #{task_name}"
+        "#{rake_cmd} #{task_name}"
       end
 
       # Setup build environment (.build/) from environment definition

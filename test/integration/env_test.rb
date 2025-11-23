@@ -223,35 +223,97 @@ class EnvTest < Test::Unit::TestCase
 
   # execute_with_esp_env のテスト
   sub_test_case "execute_with_esp_env" do
+    def setup
+      super
+      @original_idf_path = ENV.fetch("IDF_PATH", nil)
+      # Create temp ESP-IDF export.sh for testing
+      @idf_dir = File.join(@tmpdir, "idf")
+      FileUtils.mkdir_p(@idf_dir)
+      File.write(File.join(@idf_dir, "export.sh"), "#!/bin/bash\n")
+      ENV["IDF_PATH"] = @idf_dir
+    end
+
+    def teardown
+      # Restore original IDF_PATH
+      ENV["IDF_PATH"] = @original_idf_path
+      super
+    end
+
     test "executes command successfully" do
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # Mock the bash command that sources ESP-IDF and runs rake
+      mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && true", stdout: "", stderr: "")
+
       # Simple command that should succeed
       assert_nothing_raised do
         Picotorokko::Env.execute_with_esp_env("true")
       end
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
 
     test "raises error when command fails" do
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && false", stdout: "", stderr: "Error",
+                                                                                    fail: true)
+
       assert_raise(RuntimeError) do
         Picotorokko::Env.execute_with_esp_env("false")
       end
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
 
     test "executes command in specified working directory" do
       work_dir = File.join(@tmpdir, "workdir")
       FileUtils.mkdir_p(work_dir)
-      marker_file = File.join(work_dir, "marker.txt")
 
-      Picotorokko::Env.execute_with_esp_env("touch #{File.basename(marker_file)}", work_dir)
-      assert_true(File.exist?(marker_file))
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # Mock executor expects full command with ESP-IDF setup
+      mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && touch marker.txt", stdout: "", stderr: "")
+
+      Picotorokko::Env.execute_with_esp_env("touch marker.txt", work_dir)
+
+      # Verify working_dir was passed to executor
+      assert_equal(1, mock_executor.calls.count)
+      assert_equal(work_dir, mock_executor.calls[0][:working_dir])
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
 
     test "raises error when command fails in working directory" do
       work_dir = File.join(@tmpdir, "workdir")
       FileUtils.mkdir_p(work_dir)
 
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      mock_executor.set_result(". #{idf_export} && export ESPBAUD=115200 && false", stdout: "", stderr: "Error",
+                                                                                    fail: true)
+
       assert_raise(RuntimeError) do
         Picotorokko::Env.execute_with_esp_env("false", work_dir)
       end
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
   end
 end
