@@ -1260,15 +1260,13 @@ class CommandsEnvTest < PicotorokkoTestCase
       assert_match(/non-empty environment name/, error2.message)
     end
 
-    test "build_rake_command raises on empty task_name" do
+    test "build_rake_command returns 'rake' for empty task_name (default task)" do
       device = Picotorokko::Commands::Device.new
       tmpdir = Dir.mktmpdir
 
       begin
-        error = assert_raises(RuntimeError) do
-          device.send(:build_rake_command, tmpdir, "")
-        end
-        assert_match(/cannot be empty/, error.message)
+        cmd = device.send(:build_rake_command, tmpdir, "")
+        assert_equal "rake", cmd
       ensure
         FileUtils.rm_rf(tmpdir)
       end
