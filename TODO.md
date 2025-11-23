@@ -305,6 +305,20 @@ RUBY_DEBUG_OPEN=true bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
 - **Approach**: Parse test files, inject `binding.break` at strategic points (assertions, command calls), execute transformed code
 - **Note**: Current approach using `rdbg` command-line breakpoints is sufficient for scenario test stepping
 
+### [TODO-VERIFY-1] Step Execution Verification for Scenario Tests
+
+**⚠️ REQUIRES SPECIAL INSTRUCTION FROM USER TO PROCEED**
+
+- **Status**: Pending
+- **Objective**: Establish regular step execution verification workflow for scenario tests
+- **Approach**: Use Ruby debug gem (`rdbg`) with command-line breakpoints
+- **Prerequisites**: Install debug gem locally (`gem install debug`)
+- **Usage**:
+  ```bash
+  rdbg -c -b "test/scenario/phase5_e2e_test.rb:30" -- bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
+  ```
+- **Note**: debug gem removed from Gemfile due to CI build issues; install locally when needed
+
 ---
 
 ## Documentation Files
