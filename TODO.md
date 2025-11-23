@@ -90,23 +90,13 @@
 
 ### [TODO-SCENARIO-3] Project lifecycle end-to-end scenario test
 
+**Status**: ✅ COMPLETED (commit b8dff0b)
+
 **Objective**: Verify complete project lifecycle from creation to build.
 
-**Scenario Steps**:
-1. `ptrk new myapp` → Project structure created (Gemfile, storage/, mrbgems/, etc.)
-2. `ptrk env set --latest` → Environment cloned with submodules
-3. `ptrk env current {env}` → Environment selected, .rubocop.yml linked
-4. `ptrk device build` → Build directory setup, mrbgems/storage copied
-5. `ptrk device flash` → (ESP-IDF required, verify error message)
-6. `ptrk device monitor` → (ESP-IDF required, verify error message)
-
-**Tasks**:
-- [ ] Create scenario test file: `test/scenario/project_lifecycle_test.rb`
-- [ ] Implement test for each scenario step
-- [ ] TDD verification: All tests pass
-- [ ] COMMIT: "test: add project lifecycle scenario test"
-
-**Estimated effort**: Medium
+**Implementation**:
+- Created `test/scenario/project_lifecycle_test.rb` with 5 scenario tests
+- Covers project creation, environment setup, build directory, and ESP-IDF error handling
 
 ### [TODO-SCENARIO-4] Multiple environment management scenario test
 
