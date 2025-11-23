@@ -100,26 +100,13 @@
 
 ### [TODO-SCENARIO-4] Multiple environment management scenario test
 
+**Status**: ✅ COMPLETED (commit 964ed34)
+
 **Objective**: Verify multiple environment creation and switching.
 
-**Scenario Steps**:
-1. `ptrk env set --latest` → Create env1 (YYYYMMDD_HHMMSS)
-2. Sleep 1 second
-3. `ptrk env set --latest` → Create env2 (different timestamp)
-4. `ptrk env list` → Both environments displayed
-5. `ptrk env current {env1}` → Select env1
-6. `ptrk device build` → Build uses env1
-7. `ptrk env current {env2}` → Switch to env2
-8. `ptrk device build` → Build uses env2
-9. Verify `.ptrk_build/{env1}/` and `.ptrk_build/{env2}/` both exist
-
-**Tasks**:
-- [ ] Create scenario test file: `test/scenario/multi_env_test.rb`
-- [ ] Implement test for each scenario step
-- [ ] TDD verification: All tests pass
-- [ ] COMMIT: "test: add multiple environment management scenario test"
-
-**Estimated effort**: Medium
+**Implementation**:
+- Created `test/scenario/multi_env_test.rb` with 5 scenario tests
+- Covers environment creation, listing, switching, and build directory coexistence
 
 ### [TODO-SCENARIO-5] storage/home workflow scenario test
 
