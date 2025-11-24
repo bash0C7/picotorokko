@@ -305,8 +305,10 @@ end
 **Implementation Notes**:
 - Tests use t-wada style TDD: write failing tests → implement minimal code → RuboCop auto-fix → refactor → commit
 - All tests follow existing test patterns with proper tmpdir setup and cleanup
-- Tests directly call private methods via `send()` for isolation
-- build_config application via `apply_mrbgemfile` verified with manual directory setup and file validation
+- Mrbgemfile application logic extracted to `MrbgemfileApplier` class (lib/picotorokko/mrbgemfile_applier.rb)
+- Tests directly call `MrbgemfileApplier.apply()` - no send() needed, clean public API
+- Device#apply_mrbgemfile_internal delegates to MrbgemfileApplier
+- Architecture: Device command (orchestration) → MrbgemfileApplier (logic)
 
 ---
 
