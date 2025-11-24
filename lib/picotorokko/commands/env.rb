@@ -717,36 +717,37 @@ module Picotorokko
         raise "Error: Environment directory not found: #{env_path}" unless Dir.exist?(env_path)
 
         # Copy entire .ptrk_env/{env_name}/ to .ptrk_build/{env_name}/
+        # Note: env_path contains R2P2-ESP32 content directly (not in subdirectory)
         puts "  Copying environment to build directory..."
         FileUtils.mkdir_p(File.dirname(build_path))
         FileUtils.rm_rf(build_path)
         FileUtils.cp_r(env_path, build_path)
         puts "  ✓ Environment copied to #{build_path}"
 
-        # Copy storage/home/ to R2P2-ESP32 for build
+        # Apply patches first (before storage/mrbgems)
+        # This ensures user's storage/home is not overwritten by patches
+        apply_patches_to_build(build_path)
+
+        # Copy storage/home/ to build workspace
+        # Note: build_path IS the R2P2-ESP32 content (no subdirectory)
         storage_src = File.join(Picotorokko::Env.project_root, "storage", "home")
         if Dir.exist?(storage_src)
-          r2p2_path = File.join(build_path, "R2P2-ESP32")
-          storage_dst = File.join(r2p2_path, "storage", "home")
+          storage_dst = File.join(build_path, "storage", "home")
           FileUtils.mkdir_p(File.dirname(storage_dst))
           FileUtils.rm_rf(storage_dst)
           FileUtils.cp_r(storage_src, storage_dst)
-          puts "  ✓ Copied storage/home/ to R2P2-ESP32"
+          puts "  ✓ Copied storage/home/ to build workspace"
         end
 
         # Copy mrbgems/ to nested picoruby path for build
         mrbgems_src = File.join(Picotorokko::Env.project_root, "mrbgems")
-        if Dir.exist?(mrbgems_src)
-          r2p2_path = File.join(build_path, "R2P2-ESP32")
-          mrbgems_dst = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems")
-          FileUtils.mkdir_p(File.dirname(mrbgems_dst))
-          FileUtils.rm_rf(mrbgems_dst)
-          FileUtils.cp_r(mrbgems_src, mrbgems_dst)
-          puts "  ✓ Copied mrbgems/ to nested picoruby path"
-        end
+        return unless Dir.exist?(mrbgems_src)
 
-        # Apply patches
-        apply_patches_to_build(build_path)
+        mrbgems_dst = File.join(build_path, "components", "picoruby-esp32", "picoruby", "mrbgems")
+        FileUtils.mkdir_p(File.dirname(mrbgems_dst))
+        FileUtils.rm_rf(mrbgems_dst)
+        FileUtils.cp_r(mrbgems_src, mrbgems_dst)
+        puts "  ✓ Copied mrbgems/ to nested picoruby path"
       end
 
       # Apply stored patches to build environment
@@ -754,14 +755,15 @@ module Picotorokko
       def apply_patches_to_build(build_path)
         puts "  Applying patches..."
 
+        # NOTE: build_path contains R2P2-ESP32 content directly (not in subdirectory)
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
           case repo
           when "R2P2-ESP32"
-            work_path = File.join(build_path, "R2P2-ESP32")
+            work_path = build_path
           when "picoruby-esp32"
-            work_path = File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32")
+            work_path = File.join(build_path, "components", "picoruby-esp32")
           when "picoruby"
-            work_path = File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32", "picoruby")
+            work_path = File.join(build_path, "components", "picoruby-esp32", "picoruby")
           end
 
           next unless Dir.exist?(work_path)
