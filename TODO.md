@@ -263,19 +263,28 @@ end
 
 ### [TODO-WORKFLOW-1] ptrk patch Workflow Documentation
 
-**Status**: ✅ COMPLETED (commit e651f90)
+**Status**: ✅ COMPLETED (commit 0de405f)
 
 **Issue**: User confusion about patch workflow - where to edit and how patches are applied.
 
-**Clarified Workflow**:
-1. **Recommended**: Create patch files directly in `project-root/patch/{repo}/`
-2. **Advanced**: Edit in `.ptrk_build/{env}/` → export with `ptrk env patch_export`
-3. **No explicit apply command**: Patches are automatically applied during `ptrk device build`
+**Solution Implemented**:
+1. **New `ptrk patch` command** with list, diff, export subcommands
+2. **New `ptrk device prepare`** - prepares build environment without resetting
+3. **Modified `ptrk device build`** - uses prepare if no build dir exists, does not reset
 
-**Key Points**:
-- Build workspace (`.ptrk_build/`) is **reset on each build** - always export before rebuilding
-- `patch_export` is for **saving work**, not applying patches
-- Build order ensures user's `storage/home` is not overwritten by patches
+**Recommended Workflow**:
+```bash
+ptrk device prepare              # Create build environment
+# Edit in .ptrk_build/{env}/R2P2-ESP32/
+ptrk patch export                # Save changes
+ptrk device build                # Build (no reset)
+```
+
+**Key Improvements**:
+- Build workspace is **NOT reset** when using prepare + build
+- `ptrk patch export` saves changes from build to patch/
+- `ptrk patch list` shows all patches
+- `ptrk patch diff` shows differences
 
 **Documentation**: See `.claude/docs/build-workspace-guide.md` "Patch Workflow" section
 

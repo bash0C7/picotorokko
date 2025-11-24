@@ -52,10 +52,16 @@ project-root/
 
 ## Build Workspace Lifecycle
 
-### 1. Environment Setup (via `ptrk device build` - automatic)
+### 1. Environment Preparation (via `ptrk device prepare`)
 
-When `ptrk device build` is called, the build workspace is prepared:
+Use `ptrk device prepare` to create the build workspace:
 
+```bash
+ptrk device prepare              # Uses current environment
+ptrk device prepare --env NAME   # Specific environment
+```
+
+**What it does:**
 ```
 Step 1: Copy .ptrk_env/{env_name}/R2P2-ESP32/ → .ptrk_build/{env_name}/R2P2-ESP32/
         (Copies source repositories as the base)
@@ -70,10 +76,23 @@ Step 4: Copy project-root/mrbgems/ → R2P2-ESP32/components/picoruby-esp32/pico
         (Places custom Ruby modules in build target, ready for C compilation)
 ```
 
+**Key Feature**: If build workspace already exists, `prepare` does nothing (preserves your changes).
+
+### 2. Auto-Prepare on Build
+
+When `ptrk device build` is called and no build workspace exists:
+
+```bash
+ptrk device build
+# → Build environment not found, preparing...
+# → (runs prepare automatically)
+# → Building...
+```
+
 This **ENV → Patch → Storage → mrbgems** workflow ensures the build workspace contains
 all project customizations properly layered.
 
-### 2. Initial Setup (via `ptrk device build` with fresh workspace)
+### 3. Initial Setup (via `ptrk device build` with fresh workspace)
 
 Occurs **only on first build** when `build/repos/esp32` directory is missing:
 
@@ -94,7 +113,7 @@ This builds:
 
 **Generated**: `build/repos/esp32/` directory (marks workspace as "set up")
 
-### 3. Build & Flash (via `ptrk device build`, `ptrk device flash`)
+### 4. Build & Flash (via `ptrk device build`, `ptrk device flash`)
 
 On every build (after setup):
 
@@ -166,9 +185,37 @@ Both sources overlay files onto the build target in the same order.
 
 ## Patch Workflow
 
-### Recommended Workflow
+### Recommended Workflow (Iterative Development)
 
-The simplest workflow is to **create patch files directly** in the project root:
+The best workflow uses `ptrk device prepare` to preserve your changes:
+
+```bash
+# 1. Prepare build environment (creates workspace)
+ptrk device prepare
+
+# 2. Edit files directly in build workspace
+vim .ptrk_build/{env}/R2P2-ESP32/custom/config.h
+
+# 3. Export changes to patch directory
+ptrk patch export
+
+# 4. Build (does NOT reset workspace)
+ptrk device build
+```
+
+**Key Benefit**: Build workspace is NOT reset when using `ptrk device prepare` + `ptrk device build`.
+
+### ptrk patch Commands
+
+```bash
+ptrk patch list              # List all patch files
+ptrk patch diff [ENV_NAME]   # Show differences between build and patches
+ptrk patch export [ENV_NAME] # Export changes from build to patch/
+```
+
+### Alternative: Direct Patch Creation
+
+For simple cases, create patch files directly:
 
 ```bash
 # 1. Create patch file directly
@@ -177,24 +224,6 @@ echo '#define MY_VALUE 42' > patch/R2P2-ESP32/custom/config.h
 
 # 2. Build applies patches automatically
 ptrk device build
-```
-
-### Using patch_export (Advanced)
-
-For iterative development in the build environment:
-
-```bash
-# 1. Build to create workspace
-ptrk device build
-
-# 2. Edit files directly in build workspace
-vim .ptrk_build/my-env/custom/config.h
-
-# 3. Export changes to patch directory
-ptrk env patch_export my-env
-
-# Note: Build workspace is reset on each build!
-# Always export before rebuilding.
 ```
 
 ### Why No Explicit `apply` Command?

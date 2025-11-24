@@ -64,7 +64,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           # Attempting build should raise "Environment directory not found"
           device_cmd = Picotorokko::Commands::Device.new
           error = assert_raises(RuntimeError) do
-            device_cmd.send(:setup_build_environment_for_device, env_name)
+            device_cmd.send(:prepare_build_environment, env_name)
           end
           assert_match(/Environment directory not found/, error.message)
         ensure
@@ -109,7 +109,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           # Setup build environment should succeed
           device_cmd = Picotorokko::Commands::Device.new
           capture_stdout do
-            device_cmd.send(:setup_build_environment_for_device, env_name)
+            device_cmd.send(:prepare_build_environment, env_name)
           end
 
           # Verify build directory was created
@@ -154,7 +154,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           # Setup build environment
           device_cmd = Picotorokko::Commands::Device.new
           capture_stdout do
-            device_cmd.send(:setup_build_environment_for_device, env_name)
+            device_cmd.send(:prepare_build_environment, env_name)
           end
 
           # Verify storage/home was copied to R2P2-ESP32
@@ -196,7 +196,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           # Setup build environment
           device_cmd = Picotorokko::Commands::Device.new
           capture_stdout do
-            device_cmd.send(:setup_build_environment_for_device, env_name)
+            device_cmd.send(:prepare_build_environment, env_name)
           end
 
           # Verify mrbgems was copied to nested picoruby path in R2P2-ESP32
@@ -246,7 +246,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           # Setup build environment
           device_cmd = Picotorokko::Commands::Device.new
           capture_stdout do
-            device_cmd.send(:setup_build_environment_for_device, env_name)
+            device_cmd.send(:prepare_build_environment, env_name)
           end
 
           # Verify correct directory structure
@@ -301,7 +301,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           # Setup build environment
           device_cmd = Picotorokko::Commands::Device.new
           capture_stdout do
-            device_cmd.send(:setup_build_environment_for_device, env_name)
+            device_cmd.send(:prepare_build_environment, env_name)
           end
 
           # Verify patch was applied from project root to R2P2-ESP32
@@ -350,7 +350,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           # Setup build will succeed
           device_cmd = Picotorokko::Commands::Device.new
           capture_stdout do
-            device_cmd.send(:setup_build_environment_for_device, env_name)
+            device_cmd.send(:prepare_build_environment, env_name)
           end
 
           # But actual rake execution will fail (no build task defined)

@@ -55,18 +55,20 @@ module Picotorokko
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
 
-        # Check if setup is needed BEFORE resetting build environment
-        # This allows us to detect first build before setup_build_environment_for_device wipes it
         build_path = Picotorokko::Env.get_build_path(actual_env)
         r2p2_full_path = File.join(build_path, "R2P2-ESP32")
         setup_marker = File.join(r2p2_full_path, "build/repos/esp32")
+
+        # Prepare build environment if it doesn't exist
+        unless Dir.exist?(build_path)
+          puts "Build environment not found, preparing..."
+          prepare_build_environment(actual_env)
+        end
+
+        # Check if ESP32 setup is needed
         setup_required = !File.exist?(setup_marker)
 
-        # Setup build environment (.build/ directory) from environment definition
-        puts "Setting up build environment: #{actual_env}"
-        setup_build_environment_for_device(actual_env)
-
-        # Validate R2P2-ESP32 path after setup (raises error if invalid)
+        # Validate R2P2-ESP32 path (raises error if invalid)
         validate_and_get_r2p2_path(actual_env)
 
         # Apply Mrbgemfile if it exists
@@ -91,17 +93,20 @@ module Picotorokko
         env_name = options[:env]
         actual_env = resolve_env_name(env_name)
 
-        # Check if setup is needed BEFORE resetting build environment
         build_path = Picotorokko::Env.get_build_path(actual_env)
         r2p2_full_path = File.join(build_path, "R2P2-ESP32")
         setup_marker = File.join(r2p2_full_path, "build/repos/esp32")
+
+        # Prepare build environment if it doesn't exist
+        unless Dir.exist?(build_path)
+          puts "Build environment not found, preparing..."
+          prepare_build_environment(actual_env)
+        end
+
+        # Check if ESP32 setup is needed
         setup_required = !File.exist?(setup_marker)
 
-        # Setup build environment (.build/ directory) from environment definition
-        puts "Setting up build environment: #{actual_env}"
-        setup_build_environment_for_device(actual_env)
-
-        # Validate R2P2-ESP32 path after setup (raises error if invalid)
+        # Validate R2P2-ESP32 path (raises error if invalid)
         validate_and_get_r2p2_path(actual_env)
 
         # Apply Mrbgemfile if it exists
@@ -115,6 +120,28 @@ module Picotorokko
         puts "Running build → flash → monitor: #{actual_env}"
         delegate_to_r2p2("", env_name)
         puts "\u2713 Completed build → flash → monitor"
+      end
+
+      # Prepare build environment without resetting existing changes
+      # @rbs () -> void
+      desc "prepare", "Prepare build environment (preserves existing changes)"
+      option :env, default: "current", desc: "Environment name"
+      def prepare
+        env_name = options[:env]
+        actual_env = resolve_env_name(env_name)
+
+        build_path = Picotorokko::Env.get_build_path(actual_env)
+
+        if Dir.exist?(build_path)
+          puts "Build environment already exists: #{actual_env}"
+          puts "  Location: #{build_path}"
+          puts "  (Use 'ptrk device reset' to force reset)"
+          return
+        end
+
+        puts "Preparing build environment: #{actual_env}"
+        prepare_build_environment(actual_env)
+        puts "\u2713 Build environment prepared: #{build_path}"
       end
 
       # Setup ESP32 build environment (idf setup)
@@ -337,25 +364,125 @@ module Picotorokko
         end
       end
 
-      # Setup build environment (.build/) from environment definition
-      # Creates .build directory, clones repositories with submodules, applies patches
+      # Prepare build environment without resetting existing changes
+      # Creates .build directory, applies patches, copies storage/mrbgems
       # @rbs (String) -> void
-      def setup_build_environment_for_device(env_name)
-        # Get environment definition
+      def prepare_build_environment(env_name)
         env_config = Picotorokko::Env.get_environment(env_name)
         raise "Error: Environment '#{env_name}' not found" if env_config.nil?
 
-        # Construct repos_info from environment definition
-        repos_info = {
-          "R2P2-ESP32" => env_config["R2P2-ESP32"],
-          "picoruby-esp32" => env_config["picoruby-esp32"],
-          "picoruby" => env_config["picoruby"]
-        }
+        env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
+        build_path = Picotorokko::Env.get_build_path(env_name)
+        r2p2_path = File.join(build_path, "R2P2-ESP32")
 
-        # Delegate to env setup method (from env.rb)
-        # We call this via direct method delegation to the Env command class
-        env_cmd = Picotorokko::Commands::Env.new
-        env_cmd.send(:setup_build_environment, env_name, repos_info)
+        raise "Error: Environment directory not found: #{env_path}" unless Dir.exist?(env_path)
+
+        # Copy entire env to build
+        puts "  Copying environment to build directory..."
+        FileUtils.mkdir_p(File.dirname(build_path))
+        FileUtils.cp_r(env_path, build_path)
+        puts "  \u2713 Environment copied to #{build_path}"
+
+        # Apply patches
+        apply_patches_to_build(r2p2_path)
+
+        # Copy storage/home
+        copy_storage_home(r2p2_path)
+
+        # Copy mrbgems
+        copy_mrbgems(r2p2_path)
+      end
+
+      # Apply patches from patch/ directory to build
+      # @rbs (String) -> void
+      def apply_patches_to_build(r2p2_path)
+        # Apply patches from .ptrk_env/patch/ (stored patches)
+        stored_patch_dir = Picotorokko::Env.patch_dir
+        apply_patches_from_dir(stored_patch_dir, r2p2_path) if Dir.exist?(stored_patch_dir)
+
+        # Apply patches from project root patch/ directory
+        project_patch_dir = File.join(Picotorokko::Env.project_root, "patch")
+        apply_patches_from_dir(project_patch_dir, r2p2_path) if Dir.exist?(project_patch_dir)
+
+        puts "  \u2713 Applied patches"
+      end
+
+      # Apply patches from a specific directory
+      # @rbs (String, String) -> void
+      def apply_patches_from_dir(patch_dir, r2p2_path)
+        %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
+          apply_repo_patches(patch_dir, repo, r2p2_path)
+        end
+      end
+
+      # Apply patches for a single repository
+      # @rbs (String, String, String) -> void
+      def apply_repo_patches(patch_dir, repo, r2p2_path)
+        repo_patch_dir = File.join(patch_dir, repo)
+        return unless Dir.exist?(repo_patch_dir)
+
+        target_path = repo_target_path(repo, r2p2_path)
+        return unless target_path && Dir.exist?(target_path)
+
+        copy_patch_files(repo_patch_dir, target_path)
+      end
+
+      # Get target path for repository
+      # @rbs (String, String) -> (String | nil)
+      def repo_target_path(repo, r2p2_path)
+        case repo
+        when "R2P2-ESP32"
+          r2p2_path
+        when "picoruby-esp32"
+          File.join(r2p2_path, "components", "picoruby-esp32")
+        when "picoruby"
+          File.join(r2p2_path, "components", "picoruby-esp32", "picoruby")
+        end
+      end
+
+      # Copy patch files to target directory
+      # @rbs (String, String) -> void
+      def copy_patch_files(repo_patch_dir, target_path)
+        Dir.glob("#{repo_patch_dir}/**/*").each do |patch_file|
+          next if File.directory?(patch_file)
+
+          relative_path = patch_file.sub("#{repo_patch_dir}/", "")
+          target_file = File.join(target_path, relative_path)
+
+          FileUtils.mkdir_p(File.dirname(target_file))
+          FileUtils.cp(patch_file, target_file)
+        end
+      end
+
+      # Copy storage/home to build
+      # @rbs (String) -> void
+      def copy_storage_home(r2p2_path)
+        storage_home = Picotorokko::Env.storage_home
+        return unless Dir.exist?(storage_home)
+
+        target_storage = File.join(r2p2_path, "storage", "home")
+        FileUtils.mkdir_p(target_storage)
+        FileUtils.cp_r(Dir.glob("#{storage_home}/*"), target_storage)
+        puts "  \u2713 Copied storage/home"
+      end
+
+      # Copy mrbgems to build
+      # @rbs (String) -> void
+      def copy_mrbgems(r2p2_path)
+        mrbgems_dir = File.join(Picotorokko::Env.project_root, "mrbgems")
+        return unless Dir.exist?(mrbgems_dir)
+
+        target_mrbgems = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems")
+        FileUtils.mkdir_p(target_mrbgems)
+
+        Dir.glob("#{mrbgems_dir}/*").each do |gem_dir|
+          next unless File.directory?(gem_dir)
+
+          gem_name = File.basename(gem_dir)
+          FileUtils.cp_r(gem_dir, File.join(target_mrbgems, gem_name))
+        end
+
+        puts "  \u2713 Copied mrbgems"
       end
     end
 
