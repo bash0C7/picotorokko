@@ -222,6 +222,77 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         end
       end
     end
+
+    test "directory replacement: old build workspace files are deleted when rebuild happens" do
+      Dir.mktmpdir do |tmpdir|
+        with_fresh_project_root do
+          Dir.chdir(tmpdir)
+
+          # Setup environment
+          setup_complete_test_environment("test-env")
+
+          # Create initial storage/home with file v1
+          storage_dir = File.join(Picotorokko::Env.project_root, "storage", "home")
+          FileUtils.mkdir_p(storage_dir)
+          File.write(File.join(storage_dir, "app.rb"), "# Version 1")
+
+          # Create mrbgems with gem v1
+          mrbgems_dir = File.join(Picotorokko::Env.project_root, "mrbgems", "test_gem")
+          FileUtils.mkdir_p(mrbgems_dir)
+          File.write(File.join(mrbgems_dir, "mrbgem.rake"), "# Gem version 1")
+
+          with_esp_env_mocking do |_mock|
+            capture_stdout do
+              Picotorokko::Commands::Device.start(["build", "--env", "test-env"])
+            end
+          end
+
+          # Verify first build copied files
+          build_path = Picotorokko::Env.get_build_path("test-env")
+          r2p2_path = File.join(build_path, "R2P2-ESP32")
+          storage_copy = File.join(r2p2_path, "storage", "home", "app.rb")
+          gem_copy = File.join(
+            r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems", "test_gem", "mrbgem.rake"
+          )
+
+          assert File.exist?(storage_copy), "First build should create storage/home/app.rb"
+          assert_equal "# Version 1", File.read(storage_copy)
+          assert File.exist?(gem_copy), "First build should create mrbgems/test_gem/mrbgem.rake"
+          assert_equal "# Gem version 1", File.read(gem_copy)
+
+          # Update source files to version 2
+          File.write(File.join(storage_dir, "app.rb"), "# Version 2")
+          File.write(File.join(mrbgems_dir, "mrbgem.rake"), "# Gem version 2")
+
+          # Add extra files in build workspace that are NOT in source (simulating manual addition)
+          extra_storage_file = File.join(r2p2_path, "storage", "home", "manual_file.txt")
+          File.write(extra_storage_file, "This file was manually added")
+
+          extra_gem_file = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems", "manual_gem")
+          FileUtils.mkdir_p(extra_gem_file)
+          File.write(File.join(extra_gem_file, "manual.rb"), "# Manually added gem")
+
+          # Run build again
+          with_esp_env_mocking do |_mock|
+            capture_stdout do
+              Picotorokko::Commands::Device.start(["build", "--env", "test-env"])
+            end
+          end
+
+          # Verify: source files are updated
+          assert_equal "# Version 2", File.read(storage_copy),
+                       "storage/home/app.rb should be updated to version 2"
+          assert_equal "# Gem version 2", File.read(gem_copy),
+                       "mrbgems/test_gem/mrbgem.rake should be updated to version 2"
+
+          # Verify: manually-added files are DELETED (directory replacement behavior)
+          assert !File.exist?(extra_storage_file),
+                 "Manually-added file in storage/home should be deleted on rebuild"
+          assert !File.exist?(extra_gem_file),
+                 "Manually-added directory in mrbgems should be deleted on rebuild"
+        end
+      end
+    end
   end
 
   private

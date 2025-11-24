@@ -138,24 +138,38 @@ The `setup_build_environment` method in `lib/picotorokko/commands/env.rb` orches
 
 **Code Flow:**
 ```ruby
-# Step 1: Copy ENV source to build directory
+# Step 1: Delete existing build directory, then copy ENV source
+FileUtils.rm_rf(build_path)  # ⚠️ Removes entire .ptrk_build/{env}/
 FileUtils.cp_r(env_path, build_path)
 
 # Step 2: Apply patches from project root
 apply_patches_to_build(build_path)  # Applies patch/ directory
 
-# Step 3: Copy storage/home for application code
+# Step 3: Delete existing storage/home, then copy from project root
+FileUtils.rm_rf("#{build_path}/R2P2-ESP32/storage/home/")  # ⚠️ Complete replacement
 FileUtils.cp_r(storage_src, "#{build_path}/R2P2-ESP32/storage/home/")
 
-# Step 4: Copy mrbgems to nested picoruby path
+# Step 4: Delete existing mrbgems, then copy from project root
+FileUtils.rm_rf("#{build_path}/R2P2-ESP32/components/picoruby-esp32/picoruby/mrbgems/")  # ⚠️ Complete replacement
 FileUtils.cp_r(mrbgems_src,
                "#{build_path}/R2P2-ESP32/components/picoruby-esp32/picoruby/mrbgems/")
 ```
 
 **Critical Points:**
+- **⚠️ Directory Replacement Behavior**: Each step uses `FileUtils.rm_rf()` to completely delete the destination directory before copying
+- **Implication**: Any files manually added to the build workspace will be **deleted** on the next build
+- **Design Rationale**: Ensures clean, reproducible builds without stale artifacts
 - Storage and mrbgems are **only** in R2P2-ESP32, **not** at ENV level
 - mrbgems must be in nested path for CMakeLists.txt to discover C sources
 - Patches apply to the copied R2P2-ESP32 directory (Step 2), before storage/mrbgems
+
+**For Users**: The build workspace (`.ptrk_build/`) is **generated and mutable**. The source of truth is:
+- `.ptrk_env/{env}/` — Environment definition (from `ptrk env set`)
+- `storage/home/` — Application code (project root)
+- `mrbgems/` — Custom Ruby/C modules (project root)
+- `patch/` — Customization overlays (project root)
+
+Do not manually edit files in `.ptrk_build/` expecting them to persist across builds.
 
 ### mrbgems Placement and C Source Integration
 
@@ -205,6 +219,8 @@ ptrk device build
 
 **Key Benefit**: Build workspace is NOT reset when using `ptrk device prepare` + `ptrk device build`.
 
+**⚠️ Important**: If you call `ptrk device build` directly (without `prepare`), the build workspace **IS completely reset** via `FileUtils.rm_rf()`. See "[Directory Replacement Behavior](#build-workspace-setup-flow)" for details.
+
 ### ptrk patch Commands
 
 ```bash
@@ -225,7 +241,6 @@ echo '#define MY_VALUE 42' > patch/R2P2-ESP32/custom/config.h
 # 2. Build applies patches automatically
 ptrk device build
 ```
-
 ### Why No Explicit `apply` Command?
 
 There is no `ptrk patch apply` command because:
@@ -341,6 +356,32 @@ ls -la patch/             # Should exist (may be empty)
 rm -rf .ptrk_build/{env_name}
 ptrk device build --env {env_name}  # Recreates workspace
 ```
+
+### Problem: "I edited files in .ptrk_build/ but they disappeared after rebuild"
+
+**Cause**: Build workspace is completely replaced on every `ptrk device build` call
+
+**Explanation**: The directory replacement behavior uses `FileUtils.rm_rf()` to delete the entire destination directory before copying new files. This ensures clean builds but means **manual edits to build workspace files are not persistent**.
+
+**Recovery Options:**
+
+1. **Use `ptrk env patch_export`** (Recommended)
+   ```bash
+   # Export your changes from build workspace to patch/ directory
+   ptrk env patch_export {env_name}
+   # Your changes are now saved in project-root/patch/
+   ```
+
+2. **Move files to permanent locations** before editing:
+   - **Application code** → `project-root/storage/home/`
+   - **Custom gems** → `project-root/mrbgems/`
+   - **Configuration patches** → `project-root/patch/R2P2-ESP32/`
+
+3. **Remember the workflow**:
+   - ❌ Don't edit in `.ptrk_build/` expecting persistence
+   - ✅ Always edit in `project-root/` or use `patch_export` to save work
+
+**Design Note**: The build workspace is intentionally ephemeral. The source of truth must always be in `project-root/` (tracked in git) so builds are reproducible.
 
 ### Problem: mrbgems C files not compiling
 
