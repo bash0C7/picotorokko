@@ -8,6 +8,22 @@ require "stringio"
 class DeviceBuildWorkspaceTest < PicotorokkoTestCase
   include SystemCommandMocking
 
+  def teardown
+    # Clean up test artifacts from project root
+    %w[mrbgems patch].each do |dir|
+      path = File.join(Dir.pwd, dir)
+      FileUtils.rm_rf(path) if Dir.exist?(path)
+    end
+    # Clean up storage/home test files (but not the directory itself)
+    storage_home = File.join(Dir.pwd, "storage", "home")
+    if Dir.exist?(storage_home)
+      Dir.glob(File.join(storage_home, "*")).each do |f|
+        FileUtils.rm_rf(f) unless File.basename(f) == "app.rb" && File.read(f).include?("# storage home")
+      end
+    end
+    super
+  end
+
   sub_test_case "build workspace setup" do
     test "copies storage/home to build workspace" do
       Dir.mktmpdir do |tmpdir|
