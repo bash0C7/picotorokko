@@ -21,44 +21,53 @@
 
 ### [TODO-BUG-1] R2P2-ESP32 Path Inconsistency in device build
 
-**Status**: ✅ COMPLETED (commit f39ac28)
+**Status**: ✅ COMPLETED (commit pending)
 
 **Issue**: `ptrk device build` fails with "R2P2-ESP32 not found in build environment"
 
 **Root Cause**:
-- `clone_env_repository` clones R2P2-ESP32 directly to `.ptrk_env/{env_name}/` (R2P2-ESP32 content directly, no subdirectory)
-- `setup_build_environment` was using `File.join(build_path, "R2P2-ESP32")` which doesn't exist
+- Directory structure was inconsistent between env/build (direct content) and patch (R2P2-ESP32 subdirectory)
+- Caused confusion about where to find R2P2-ESP32 content
 
 **Fix Applied**:
-1. Modified `setup_build_environment` to use `build_path` directly (not `build_path/R2P2-ESP32`)
-2. Modified `apply_patches_to_build` to use correct paths
-3. Changed build order: ENV → **Patch** → Storage → mrbgems (patches first, then user content)
-4. Added comprehensive tests in `test/scenario/commands/device_build_workspace_test.rb`
+1. **Unified directory structure**: All locations now use R2P2-ESP32 as subdirectory
+2. Modified `clone_env_repository` to clone into `.ptrk_env/{env}/R2P2-ESP32/`
+3. Modified `setup_build_environment` to use `build_path/R2P2-ESP32`
+4. Modified `apply_patches_to_build` to use consistent paths
+5. Build order: ENV → **Patch** → Storage → mrbgems (patches first, then user content)
+6. Updated all tests to expect R2P2-ESP32 subdirectory structure
 
-**Correct Directory Structure** (verified):
+**Unified Directory Structure** (verified):
 ```
-.ptrk_env/{env}/              # R2P2-ESP32 content directly (git clone target)
-├── Rakefile
-├── components/
-│   └── picoruby-esp32/
-│       └── picoruby/
-└── storage/home/
+.ptrk_env/{env}/
+└── R2P2-ESP32/               # ← Subdirectory (matches patch/)
+    ├── Rakefile
+    ├── rubocop/              # RuboCop configuration
+    ├── components/
+    │   └── picoruby-esp32/
+    │       └── picoruby/
+    └── storage/home/
 
-.ptrk_build/{env}/            # Copy of .ptrk_env/{env}/ with patches/storage/mrbgems applied
-├── Rakefile
-├── components/
-│   └── picoruby-esp32/
-│       └── picoruby/
-│           └── mrbgems/      # ← User's mrbgems copied here
-├── storage/home/             # ← User's storage/home copied here
-└── (patch files applied)     # ← From project-root/patch/R2P2-ESP32/
+.ptrk_build/{env}/
+└── R2P2-ESP32/               # ← Subdirectory (matches patch/)
+    ├── Rakefile
+    ├── components/
+    │   └── picoruby-esp32/
+    │       └── picoruby/
+    │           └── mrbgems/  # ← User's mrbgems copied here
+    ├── storage/home/         # ← User's storage/home copied here
+    └── (patch files applied) # ← From project-root/patch/R2P2-ESP32/
+
+patch/
+└── R2P2-ESP32/               # ← Subdirectory (consistent!)
+    └── ...
 ```
 
 **Build Order** (ENV → Patch → Storage → mrbgems):
 1. Copy `.ptrk_env/{env}/` → `.ptrk_build/{env}/`
-2. Apply patches from `patch/R2P2-ESP32/` (so user's storage isn't overwritten)
-3. Copy `storage/home/` → `.ptrk_build/{env}/storage/home/`
-4. Copy `mrbgems/` → `.ptrk_build/{env}/components/picoruby-esp32/picoruby/mrbgems/`
+2. Apply patches from `patch/R2P2-ESP32/` to `R2P2-ESP32/`
+3. Copy `storage/home/` → `.ptrk_build/{env}/R2P2-ESP32/storage/home/`
+4. Copy `mrbgems/` → `.ptrk_build/{env}/R2P2-ESP32/components/picoruby-esp32/picoruby/mrbgems/`
 
 ---
 

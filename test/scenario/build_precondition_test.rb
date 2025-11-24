@@ -145,10 +145,11 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
           Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
 
-          # Create .ptrk_env structure (content directly in env_path)
+          # Create .ptrk_env structure with R2P2-ESP32 subdirectory
           env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
-          FileUtils.mkdir_p(env_path)
-          FileUtils.mkdir_p(File.join(env_path, "components", "picoruby-esp32", "picoruby", "mrbgems"))
+          r2p2_path = File.join(env_path, "R2P2-ESP32")
+          FileUtils.mkdir_p(r2p2_path)
+          FileUtils.mkdir_p(File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems"))
 
           # Setup build environment
           device_cmd = Picotorokko::Commands::Device.new
@@ -156,10 +157,10 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
             device_cmd.send(:setup_build_environment_for_device, env_name)
           end
 
-          # Verify storage/home was copied
+          # Verify storage/home was copied to R2P2-ESP32
           build_path = Picotorokko::Env.get_build_path(env_name)
-          storage_in_build = File.join(build_path, "storage", "home", "app.rb")
-          assert File.exist?(storage_in_build), "storage/home/app.rb should be copied to build"
+          storage_in_build = File.join(build_path, "R2P2-ESP32", "storage", "home", "app.rb")
+          assert File.exist?(storage_in_build), "storage/home/app.rb should be copied to R2P2-ESP32"
         ensure
           Dir.chdir(original_dir)
         end
@@ -186,9 +187,10 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
           Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
 
-          # Create .ptrk_env structure with nested directories for picoruby
+          # Create .ptrk_env structure with R2P2-ESP32 subdirectory
           env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
-          picoruby_nested_path = File.join(env_path, "components", "picoruby-esp32", "picoruby")
+          r2p2_path = File.join(env_path, "R2P2-ESP32")
+          picoruby_nested_path = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby")
           FileUtils.mkdir_p(picoruby_nested_path)
 
           # Setup build environment
@@ -197,9 +199,9 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
             device_cmd.send(:setup_build_environment_for_device, env_name)
           end
 
-          # Verify mrbgems was copied to nested picoruby path
+          # Verify mrbgems was copied to nested picoruby path in R2P2-ESP32
           build_path = Picotorokko::Env.get_build_path(env_name)
-          mrbgems_in_build = File.join(build_path, "components", "picoruby-esp32",
+          mrbgems_in_build = File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32",
                                        "picoruby", "mrbgems", "app")
           assert Dir.exist?(mrbgems_in_build), "mrbgems/app should be copied to nested picoruby path"
         ensure
@@ -235,9 +237,10 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
           Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
 
-          # Create .ptrk_env structure with minimal nested directories for picoruby
+          # Create .ptrk_env structure with R2P2-ESP32 subdirectory
           env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
-          picoruby_nested_path = File.join(env_path, "components", "picoruby-esp32", "picoruby")
+          r2p2_path = File.join(env_path, "R2P2-ESP32")
+          picoruby_nested_path = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby")
           FileUtils.mkdir_p(picoruby_nested_path)
 
           # Setup build environment
@@ -249,13 +252,13 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           # Verify correct directory structure
           build_path = Picotorokko::Env.get_build_path(env_name)
 
-          # ✅ storage/home should be in build (build_path contains R2P2-ESP32 content)
-          storage_in_build = File.join(build_path, "storage", "home", "app.rb")
+          # ✅ storage/home should be in R2P2-ESP32
+          storage_in_build = File.join(build_path, "R2P2-ESP32", "storage", "home", "app.rb")
           assert File.exist?(storage_in_build),
-                 "storage/home should be copied to build workspace"
+                 "storage/home should be copied to R2P2-ESP32"
 
-          # ✅ mrbgems should be in nested picoruby path (build target)
-          mrbgems_nested = File.join(build_path, "components", "picoruby-esp32",
+          # ✅ mrbgems should be in nested picoruby path
+          mrbgems_nested = File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32",
                                      "picoruby", "mrbgems", "my_gem", "mrbgem.rake")
           assert File.exist?(mrbgems_nested),
                  "mrbgems should be in nested picoruby path for build"
@@ -289,10 +292,11 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
           picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
           Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
 
-          # Create .ptrk_env structure (content directly in env_path)
+          # Create .ptrk_env structure with R2P2-ESP32 subdirectory
           env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
-          FileUtils.mkdir_p(env_path)
-          FileUtils.mkdir_p(File.join(env_path, "components", "picoruby-esp32", "picoruby"))
+          r2p2_path = File.join(env_path, "R2P2-ESP32")
+          FileUtils.mkdir_p(r2p2_path)
+          FileUtils.mkdir_p(File.join(r2p2_path, "components", "picoruby-esp32", "picoruby"))
 
           # Setup build environment
           device_cmd = Picotorokko::Commands::Device.new
@@ -300,11 +304,11 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
             device_cmd.send(:setup_build_environment_for_device, env_name)
           end
 
-          # Verify patch was applied from project root
+          # Verify patch was applied from project root to R2P2-ESP32
           build_path = Picotorokko::Env.get_build_path(env_name)
-          patch_applied = File.join(build_path, "custom", "config.h")
+          patch_applied = File.join(build_path, "R2P2-ESP32", "custom", "config.h")
           assert File.exist?(patch_applied),
-                 "patch files from project root patch/ should be applied to build"
+                 "patch files from project root patch/ should be applied to R2P2-ESP32"
           assert_equal "#define CUSTOM_VALUE 42", File.read(patch_applied)
         ensure
           Dir.chdir(original_dir)

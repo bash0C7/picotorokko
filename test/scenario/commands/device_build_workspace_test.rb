@@ -12,7 +12,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     # Clean up test artifacts from project root
     %w[mrbgems patch].each do |dir|
       path = File.join(Dir.pwd, dir)
-      FileUtils.rm_rf(path) if Dir.exist?(path)
+      FileUtils.rm_rf(path)
     end
     # Clean up storage/home test files (but not the directory itself)
     storage_home = File.join(Dir.pwd, "storage", "home")
@@ -46,9 +46,9 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
 
           # Verify storage/home was copied to build workspace
           build_path = Picotorokko::Env.get_build_path("test-env")
-          copied_app = File.join(build_path, "storage", "home", "app.rb")
+          copied_app = File.join(build_path, "R2P2-ESP32", "storage", "home", "app.rb")
 
-          assert File.exist?(copied_app), "storage/home/app.rb should be copied to build workspace"
+          assert File.exist?(copied_app), "storage/home/app.rb should be copied to R2P2-ESP32"
           assert_equal "# Test app\nputs 'Hello'", File.read(copied_app)
         end
       end
@@ -76,10 +76,10 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
           # Verify mrbgems was copied to nested picoruby path
           build_path = Picotorokko::Env.get_build_path("test-env")
           copied_gem = File.join(
-            build_path, "components", "picoruby-esp32", "picoruby", "mrbgems", "test_gem", "mrbgem.rake"
+            build_path, "R2P2-ESP32", "components", "picoruby-esp32", "picoruby", "mrbgems", "test_gem", "mrbgem.rake"
           )
 
-          assert File.exist?(copied_gem), "mrbgems should be copied to nested picoruby path"
+          assert File.exist?(copied_gem), "mrbgems should be copied to nested picoruby path in R2P2-ESP32"
           assert_equal "# Test gem", File.read(copied_gem)
         end
       end
@@ -106,9 +106,9 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
 
           # Verify patch was applied to build workspace
           build_path = Picotorokko::Env.get_build_path("test-env")
-          patched_file = File.join(build_path, "custom_config.h")
+          patched_file = File.join(build_path, "R2P2-ESP32", "custom_config.h")
 
-          assert File.exist?(patched_file), "patch files should be applied to build workspace"
+          assert File.exist?(patched_file), "patch files should be applied to R2P2-ESP32"
           assert_equal "#define CUSTOM_VALUE 42", File.read(patched_file)
         end
       end
@@ -140,9 +140,9 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
 
           # User's storage/home should override patch
           build_path = Picotorokko::Env.get_build_path("test-env")
-          final_app = File.join(build_path, "storage", "home", "app.rb")
+          final_app = File.join(build_path, "R2P2-ESP32", "storage", "home", "app.rb")
 
-          assert File.exist?(final_app), "app.rb should exist"
+          assert File.exist?(final_app), "app.rb should exist in R2P2-ESP32"
           assert_equal "# User app", File.read(final_app),
                        "User's storage/home should not be overwritten by patches"
         end
@@ -174,13 +174,14 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
           end
 
           build_path = Picotorokko::Env.get_build_path("test-env")
+          r2p2_path = File.join(build_path, "R2P2-ESP32")
 
           # Verify all files exist and have identical content
-          assert_equal "# App file", File.read(File.join(build_path, "storage", "home", "app.rb"))
-          assert_equal "key: value", File.read(File.join(build_path, "storage", "home", "config.yml"))
+          assert_equal "# App file", File.read(File.join(r2p2_path, "storage", "home", "app.rb"))
+          assert_equal "key: value", File.read(File.join(r2p2_path, "storage", "home", "config.yml"))
 
           gem_path = File.join(
-            build_path, "components", "picoruby-esp32", "picoruby", "mrbgems", "my_gem", "src", "custom.c"
+            r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems", "my_gem", "src", "custom.c"
           )
           assert_equal "// C source", File.read(gem_path)
         end
@@ -209,19 +210,19 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
 
     Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
 
-    # Create .ptrk_env/{env_name}/ with R2P2-ESP32 structure
+    # Create .ptrk_env/{env_name}/R2P2-ESP32/ structure
     # This simulates what clone_env_repository creates
     env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
+    r2p2_path = File.join(env_path, "R2P2-ESP32")
     FileUtils.mkdir_p(env_path)
 
     # Create directory structure that matches actual R2P2-ESP32 repo structure
-    # The content is directly in env_path (no R2P2-ESP32 subdirectory)
-    FileUtils.mkdir_p(File.join(env_path, "components", "picoruby-esp32", "picoruby", "mrbgems"))
-    FileUtils.mkdir_p(File.join(env_path, "storage", "home"))
+    FileUtils.mkdir_p(File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems"))
+    FileUtils.mkdir_p(File.join(r2p2_path, "storage", "home"))
 
     # Copy mock Rakefile
     mock_rakefile = File.join(File.expand_path("../..", __dir__), "fixtures", "R2P2-ESP32", "Rakefile")
-    FileUtils.cp(mock_rakefile, File.join(env_path, "Rakefile"))
+    FileUtils.cp(mock_rakefile, File.join(r2p2_path, "Rakefile"))
 
     env_name
   end
