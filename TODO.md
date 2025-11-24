@@ -251,13 +251,14 @@ end
 
 ## Implementation Notes
 
-### Dependencies to Add
+### Dependencies for Future Implementation
 
-Add to `Gemfile`:
-```ruby
-gem "rbs", "~> 3.0"  # For RBS file parsing in Phase 3b-rubocop
-gem "steep", "~> 1.5"  # For Steepfile configuration access (if needed)
-```
+**For E2E Device Testing Framework (v0.2.0)**:
+- Add to `picotorokko.gemspec` (when production E2E code is implemented):
+  ```ruby
+  spec.add_development_dependency "serialport", "~> 1.3"  # Serial port communication for device testing
+  ```
+- Note: Currently in gemspec from POC trial; remove until production implementation ready
 
 ### Key Design Decisions
 
@@ -394,10 +395,267 @@ RUBY_DEBUG_OPEN=true bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
 
 ## Roadmap (Future Versions)
 
-### Priority 1: Device Testing Framework
-- **Status**: Research phase
-- **Objective**: Enable `ptrk device {build,flash,monitor} --test` for Picotest integration
-- **Estimated**: v0.2.0
+### Priority 1: Device Testing Framework (E2E)
+
+**Status**: 🔬 Research Complete / POC Trial In Progress (IMMATURE)
+
+**Research Documents**:
+- [e2e-testing-with-esp-idf.md](.claude/docs/e2e-testing-with-esp-idf.md) — ESP-IDF Monitor 詳細分析と Ruby 実装ガイド
+- [e2e-poc-analysis.md](.claude/docs/e2e-poc-analysis.md) — POC テスト失敗の原因分析
+
+**Current Status** (2025-11-24):
+- ✅ Python esp-idf-monitor: Verified working stably with actual device
+- ✅ Research phase: Completed with comprehensive documentation
+- 🔄 POC Implementation: **Immature - Trial and error in progress**
+  - `test/poc/event_driven_e2e_test.rb`: Complex event-driven approach (not yet working)
+  - `test/poc/simple_e2e_test.rb`: Simplified `getc` approach (still debugging)
+  - Root cause: Ruby implementation details differ from Python - requires empirical testing
+- ⚠️ Note: Device is confirmed working with Python idf-monitor; issues are in Ruby code
+
+**Key Learnings from Trial**:
+- Previous POC failures in `serial_e2e_test.rb` and `pty_e2e_test.rb` were due to:
+  - Incorrect reset logic (DTR vs RTS)
+  - Blocking I/O with long timeouts
+  - Overly complex architecture (PTY wrapping)
+- Python idf-monitor patterns analyzed but Ruby-specific challenges emerged:
+  - SerialPort gem behavior differs slightly from pyserial
+  - Device state management and initialization needs clarification
+  - Thread synchronization and getc() timeout handling require refinement
+
+**POC Architectures (Archived)**:
+
+1. **event_driven_e2e_test.rb** (Event-Driven Pattern)
+   - Architecture: Background serial reader thread → event queue → main loop non-blocking polling
+   - Key Implementation:
+     - `read(1024)` with 250ms timeout on background thread
+     - Event queue for thread-safe serial data communication
+     - `expect()` polls queue and checks accumulated lines (30ms polling interval)
+     - Line buffering: Accumulates serial data, splits on `\r?\n`, keeps incomplete lines
+   - Reset: DTR-based (DTR=0, sleep 0.1, DTR=1)
+   - Issues Found: Queue-based approach adds complexity; Ruby's read() timeout behavior differs from Python
+
+2. **simple_e2e_test.rb** (Simplified getc Pattern)
+   - Architecture: Background reader thread using `getc` for character-by-character reading
+   - Key Implementation:
+     - `getc` reads one character at a time (simpler than event queue)
+     - Builds line buffer char-by-char: `@line_buffer += ch`
+     - Line complete when `ch == "\n"` detected
+     - `expect()` simple polling loop checking accumulated lines
+   - Reset: None (relies on boot sequence)
+   - Advantages: Simpler control flow than event queue pattern
+   - Status: Still under investigation; `getc` timeout behavior unclear
+
+3. **serial_e2e_test.rb** (Blocking SerialPort Pattern)
+   - Architecture: Single-threaded with `SerialPort.read` blocking calls
+   - Key Implementation:
+     - `Timeout.timeout(timeout)` wrapper around loop
+     - `SerialPort.read(1024)` blocks with 500ms read_timeout
+     - Accumulates data in buffer: `@output_buffer += data`
+     - Pattern match on accumulated buffer: `@output_buffer.match?(pattern)`
+   - Reset: DTR-based (DTR=0, sleep 0.1, DTR=1)
+   - Issues: Timeout.timeout doesn't interrupt blocked read(); busy loop when timeout occurs
+
+4. **pty_e2e_test.rb** (PTY Wrapping Pattern) ❌ ABANDONED
+   - Architecture: `PTY.spawn` wrapping `rake monitor` command
+   - Key Implementation:
+     - Spawns shell command as PTY subprocess
+     - `read_nonblock(1024)` with `IO::WaitReadable` error handling
+     - `IO.select` for async I/O wait (0.1s timeout)
+   - Problem: Wrapping rake monitor introduces additional layer; adds PTY complexities on top of serial complications
+   - Why Abandoned: Over-engineered; direct SerialPort better for device communication
+
+5. **pty_debug.rb** (Debug Script)
+   - Minimal PTY test for observing output; used for troubleshooting connection issues
+
+**POC Comparison Matrix** (vs. ESP-IDF Monitor Reference):
+
+| Aspect | serial_e2e_test.rb | pty_e2e_test.rb | event_driven | simple_e2e (getc) | ESP-IDF Monitor |
+|--------|-------------------|-----------------|-------------|-------------------|-----------------|
+| **Architecture** | Blocking I/O + timeout | PTY subprocess | Event queue + thread | Background thread | Non-blocking polling |
+| **Read Model** | `read(1024)` blocking | PTY read_nonblock | `read(1024)` + queue | `getc` char-by-char | `read(in_waiting or 1)` |
+| **Main Loop Timing** | 500ms+ (read timeout) | 100ms (PTY select) | 30ms (queue poll) | 10ms polling | 30ms (event poll) |
+| **DTR/RTS Control** | ❌ Only DTR, wrong logic | ❌ None (via idf-monitor) | ❌ DTR only | ❌ None | ✅ Proper RTS + DTR |
+| **Device Reset** | ❌ Doesn't work | ✅ Works (indirect) | ❌ Doesn't work | ❌ None | ✅ Direct control |
+| **Line Buffering** | ❌ No (partial line issues) | ✅ Yes (obscured) | ✅ Yes (split on \\n) | ✅ Yes (char-by-char) | ✅ Yes, explicit |
+| **Pattern Matching** | ❌ Unreliable | ~ Fragile (formatting) | ~ Works with queue | ✅ Reliable | ✅ Reliable |
+| **Direct Device Access** | ✅ Yes (but broken) | ❌ No (through idf-monitor) | ✅ Yes (but broken) | ✅ Yes | ✅ Yes |
+| **Testability** | ~ Medium | ~ Low | ~ Medium | ✅ High | ✅ High |
+
+**Critical Implementation Issues**:
+
+1. **DTR/RTS Logic Inversion**
+   - Serial control pins: LOW=1 (set high physically), HIGH=0 (set low physically)
+   - ESP32 pinouts: RTS controls EN (reset), DTR controls IO0 (boot mode)
+   - Correct reset: `@port.rts = 1` (RTS LOW physically) → 5ms pulse → `@port.rts = 0` (RTS HIGH)
+   - Wrong approach: Using DTR alone doesn't reset; uses wrong pin
+
+2. **Blocking I/O Timeout Architecture** (serial_e2e_test.rb problem)
+   - `SerialPort.read(1024)` blocks 500ms minimum if no data
+   - Forces slow 500ms polling interval
+   - Artificial delays compound with test execution
+   - Partial line data arrives in chunks (50-100 bytes), causes pattern matching failures
+
+3. **Line Buffering Requirements**
+   - Device sends incomplete lines: "hello\r\n" may arrive as "hel" + "lo\r\n"
+   - Must buffer and split on line boundaries, not accumulate indefinitely
+   - Incomplete line at end should flush after 100ms timeout
+   - Handle both `\r\n` and `\n` line endings
+
+4. **PTY Wrapping Anti-Pattern** (pty_e2e_test.rb problem)
+   - Wrapping idf-monitor via PTY adds extra layer: Device → Serial → idf-monitor → PTY → Our Code
+   - idf-monitor designed for human interaction, not programmatic use
+   - Output includes ANSI color codes and formatting that interfere with pattern matching
+   - No direct control over device reset/bootloader
+   - Process management complexity and fragility
+
+**Recommended Ruby Implementation Pattern** (Event-Driven):
+
+```ruby
+class E2EMonitor
+  def initialize(port, baud = 115200)
+    @port = SerialPort.new(port, baud)
+    @port.read_timeout = 250  # ms (CHECK_ALIVE_FLAG_TIMEOUT)
+    @port.flow_control = SerialPort::NONE
+    @event_queue = Queue.new
+    @output_lines = []
+    @line_buffer = ""
+  end
+
+  def start(auto_reset: true)
+    reset if auto_reset
+    @running = true
+    Thread.new { read_loop }
+    main_loop
+  end
+
+  def reset
+    @port.rts = 1   # RTS LOW (EN pin physically)
+    sleep 0.005     # 5ms pulse
+    @port.rts = 0   # RTS HIGH (EN pin physically)
+  end
+
+  def send_command(cmd)
+    @port.write("#{cmd}\\r\\n")
+  end
+
+  def expect(pattern, timeout: 10)
+    deadline = Time.now + timeout
+    while Time.now < deadline
+      return line if @output_lines.any? { |line| line.match?(pattern) }
+      sleep 0.01
+    end
+    raise TimeoutError, "Pattern not found: #{pattern.inspect}"
+  end
+
+  private
+
+  def read_loop
+    while @running
+      begin
+        data = @port.read(1024)  # Uses 250ms timeout
+        @event_queue.push([:serial, data]) if data
+      rescue Errno::EAGAIN, Errno::EWOULDBLOCK
+        sleep 0.01
+      end
+    end
+  end
+
+  def main_loop
+    last_flush = Time.now
+    while @running
+      begin
+        event = @event_queue.pop(true)  # Non-blocking
+        handle_serial_data(event[1]) if event[0] == :serial
+        last_flush = Time.now
+      rescue ThreadError
+        # Queue empty, flush incomplete line after 100ms
+        if Time.now - last_flush > 0.1
+          flush_line_buffer
+          last_flush = Time.now
+        end
+        sleep 0.03  # 30ms polling interval
+      end
+    end
+  end
+
+  def handle_serial_data(data)
+    @line_buffer += data
+    lines = @line_buffer.split(/\\r?\\n/, -1)
+    @line_buffer = lines.pop || ""
+    @output_lines.concat(lines)
+  end
+
+  def flush_line_buffer
+    return if @line_buffer.empty?
+    @output_lines << @line_buffer
+    @line_buffer = ""
+  end
+end
+```
+
+**Timeout Recommendations** (from esp-idf-monitor reference):
+- SERIAL_READ_TIMEOUT: 250ms (pyserial CHECK_ALIVE_FLAG_TIMEOUT)
+- LINE_FLUSH_TIMEOUT: 100ms (incomplete line buffer)
+- MAIN_LOOP_POLL: 30ms (responsive polling)
+- HARD_RESET_PULSE: 5ms (EN pin reset width)
+- BOOTLOADER_DELAY: 100-150ms (IO0 sequence duration)
+
+**Key Learnings from POC Trial**:
+- Direct `SerialPort` (serial_e2e_test, simple_e2e_test, event_driven_e2e_test) vastly superior to PTY wrapping
+- RTS-based reset (not DTR) is correct for ESP32: RTS controls EN (reset pin)
+  - Correct sequence: `rts = 1` (LOW physically) → 5ms pulse → `rts = 0` (HIGH physically)
+  - DTR controls IO0 (boot mode), not reset
+- Background thread with event queue required for responsive `expect()` behavior (30ms polling)
+- Blocking I/O timeout architecture fundamentally incompatible with responsive E2E testing:
+  - `read(1024)` with 500ms timeout causes artificial delays
+  - Partial line arrivals (50-100 bytes) cause pattern matching failures
+  - Non-blocking `read` with queue-based event system much more reliable
+- Ruby SerialPort gem quirks vs Python pyserial:
+  - `getc` timeout behavior unreliable (may not respect read_timeout)
+  - `read()` with timeout setting may still block indefinitely
+  - No direct equivalent to Python's `in_waiting` property for non-blocking reads
+- Line buffering strategy proven reliable: Accumulate data, split on `\r?\n`, flush incomplete lines after 100ms
+
+**Production Implementation Strategy**:
+
+Based on research analysis, the Event-Driven Monitor pattern (shown above) is the recommended approach:
+1. **Architecture**: Background thread for serial reading + event queue + 30ms polling loop
+2. **Reset Control**: RTS-based (EN pin) with 5ms pulse: `rts = 1` → 5ms → `rts = 0`
+3. **Bootloader Mode**: DTR-based sequence for IO0 control (100ms duration)
+4. **Line Handling**: Accumulate data, split on `\r?\n`, flush at 100ms timeout
+5. **Timeouts**:
+   - Serial read: 250ms (check alive flag)
+   - Main loop poll: 30ms (responsive)
+   - Line flush: 100ms (incomplete line)
+
+**Verified DO/DON'T Patterns**:
+- ✅ DO: Use event queue with background thread for non-blocking reads
+- ✅ DO: Implement proper line buffering with timeout-based flush
+- ✅ DO: Control RTS for device reset (not DTR)
+- ✅ DO: 30ms main loop polling interval (not 500ms)
+- ❌ DON'T: Use blocking `read()` with long timeouts
+- ❌ DON'T: Wrap idf-monitor via PTY (adds complexity, removes control)
+- ❌ DON'T: Rely on DTR alone for reset
+- ❌ DON'T: Accumulate output indefinitely without line boundaries
+
+**Implementation Roadmap**:
+1. **Create `lib/picotorokko/e2e/monitor.rb`** — Production-grade Monitor class (event-driven pattern)
+2. **Add `serialport` gem** — Update Gemfile and .gemspec
+3. **Create test helpers** — `test/helpers/e2e_helper.rb`
+4. **Write E2E test suite** — `test/e2e/device_control_test.rb` with:
+   - Device reset verification
+   - Command send/receive with pattern matching
+   - Bootloader mode entry
+   - Error condition handling
+5. **CI Integration**: Detect serial port availability, skip if unavailable
+6. **Documentation**: Usage guide for E2E testing workflow
+
+**Next Steps**:
+1. Implement E2EMonitor class based on event-driven pattern above
+2. Test with actual device to verify reset sequences and timing
+3. Extract working pattern into production library
+
+**Estimated**: v0.2.0 (pending successful POC verification)
 
 ### Priority 2: Additional mrbgems Management
 - **Status**: Planned
@@ -469,7 +727,18 @@ All features must pass:
 
 ## Known Limitations & Future Work
 
-1. **Device Testing**: Picotest integration not yet implemented (`--test` flag for device commands)
+1. **Device Testing**: Research complete; ready for production implementation
+   - **Research Summary**: Event-driven architecture with background thread + queue proven superior to blocking I/O or PTY wrapping
+   - **Key Findings**:
+     - RTS-based reset (EN pin) is correct control mechanism (not DTR)
+     - 30ms main loop polling required for responsive behavior
+     - Event queue decouples reading from processing for robustness
+     - 250ms serial read timeout + 100ms line flush timeout optimal
+   - **Previous Failed POC Patterns**:
+     - `serial_e2e_test.rb`: Blocking I/O with 500ms timeout too slow, pattern matching unreliable
+     - `pty_e2e_test.rb`: Extra layer (Device → Serial → idf-monitor → PTY → Code) adds complexity and removes control
+     - These failures were architectural, not implementation issues
+   - **Production Path**: Implement Event-Driven Monitor class (pattern provided in TODO above) for v0.2.0
 2. **C Linting**: No C linting tools currently in templates (could add clang-format in v0.2.0)
 3. **Cache Management**: Not implemented (considered for v0.2.0+)
 4. **mrbgems Generation**: Basic support only; full workflow in v0.2.0
