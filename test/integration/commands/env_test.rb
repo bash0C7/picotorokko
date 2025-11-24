@@ -1731,8 +1731,8 @@ class CommandsEnvTest < PicotorokkoTestCase
 
             expected_env_name = "20251122_103000"
 
-            # Verify .ptrk_env/{env}/rubocop/data/ directory was created
-            rubocop_data_path = File.join(Picotorokko::Env::ENV_DIR, expected_env_name, "rubocop", "data")
+            # Verify .ptrk_env/{env}/R2P2-ESP32/rubocop/data/ directory was created
+            rubocop_data_path = File.join(Picotorokko::Env::ENV_DIR, expected_env_name, "R2P2-ESP32", "rubocop", "data")
             assert Dir.exist?(rubocop_data_path),
                    "Should create #{rubocop_data_path} directory for RuboCop configuration"
 
@@ -1743,7 +1743,9 @@ class CommandsEnvTest < PicotorokkoTestCase
             assert File.exist?(unsupported_json), "Should generate picoruby_unsupported_methods.json"
 
             # Verify .rubocop-picoruby.yml is generated
-            rubocop_yml = File.join(Picotorokko::Env::ENV_DIR, expected_env_name, "rubocop", ".rubocop-picoruby.yml")
+            rubocop_yml = File.join(
+              Picotorokko::Env::ENV_DIR, expected_env_name, "R2P2-ESP32", "rubocop", ".rubocop-picoruby.yml"
+            )
             assert File.exist?(rubocop_yml), "Should generate .rubocop-picoruby.yml"
           ensure
             Time.define_singleton_method(:now, original_now)

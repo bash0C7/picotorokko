@@ -216,31 +216,33 @@ module Picotorokko
           puts "✓ Current environment set to: #{env_name}"
         end
 
-        # Clone R2P2-ESP32 repository to .ptrk_env/{env_name}/
+        # Clone R2P2-ESP32 repository to .ptrk_env/{env_name}/R2P2-ESP32/
         # @rbs (String, Hash[String, Hash[String, String]]) -> void
         def clone_env_repository(env_name, repos_info)
           env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
+          r2p2_path = File.join(env_path, "R2P2-ESP32")
           r2p2_url = Picotorokko::Env::REPOS["R2P2-ESP32"]
           r2p2_commit = repos_info["R2P2-ESP32"]["commit"]
 
-          puts "\nCloning R2P2-ESP32 to #{env_path}..."
+          puts "\nCloning R2P2-ESP32 to #{r2p2_path}..."
 
-          # Clone with --filter=blob:none for partial clone (faster)
+          # Create env directory and clone R2P2-ESP32 into subdirectory
+          FileUtils.mkdir_p(env_path)
           clone_cmd = "git clone --filter=blob:none #{Shellwords.escape(r2p2_url)} " \
-                      "#{Shellwords.escape(env_path)} 2>/dev/null"
+                      "#{Shellwords.escape(r2p2_path)} 2>/dev/null"
           raise "Clone failed: R2P2-ESP32 from #{r2p2_url}" unless system(clone_cmd)
 
           # Checkout to specified commit
-          checkout_cmd = "cd #{Shellwords.escape(env_path)} && git checkout #{Shellwords.escape(r2p2_commit)}"
+          checkout_cmd = "cd #{Shellwords.escape(r2p2_path)} && git checkout #{Shellwords.escape(r2p2_commit)}"
           raise "Checkout failed: R2P2-ESP32 to commit #{r2p2_commit}" unless system(checkout_cmd)
 
           # Initialize and fetch all nested submodules recursively
-          submodule_cmd = "cd #{Shellwords.escape(env_path)} && git submodule update --init --recursive --jobs 4"
+          submodule_cmd = "cd #{Shellwords.escape(r2p2_path)} && git submodule update --init --recursive --jobs 4"
           raise "Submodule update failed for R2P2-ESP32" unless system(submodule_cmd)
 
           # Checkout picoruby-esp32 to specified commit
           esp32_commit = repos_info["picoruby-esp32"]["commit"]
-          esp32_path = File.join(env_path, "components", "picoruby-esp32")
+          esp32_path = File.join(r2p2_path, "components", "picoruby-esp32")
           esp32_checkout = "cd #{Shellwords.escape(esp32_path)} && git checkout #{Shellwords.escape(esp32_commit)}"
           raise "Checkout failed: picoruby-esp32 to commit #{esp32_commit}" unless system(esp32_checkout)
 
@@ -251,17 +253,17 @@ module Picotorokko
           raise "Checkout failed: picoruby to commit #{picoruby_commit}" unless system(picoruby_checkout)
 
           # Stage submodule changes
-          git_add = "cd #{Shellwords.escape(env_path)} && git add components/picoruby-esp32"
+          git_add = "cd #{Shellwords.escape(r2p2_path)} && git add components/picoruby-esp32"
           raise "Failed to stage submodule changes" unless system(git_add)
 
           # Amend commit with env-name (skip gpg signing to avoid signing server issues)
-          git_amend = "cd #{Shellwords.escape(env_path)} && " \
+          git_amend = "cd #{Shellwords.escape(r2p2_path)} && " \
                       "git commit --amend --no-gpg-sign -m #{Shellwords.escape("ptrk env: #{env_name}")}"
           raise "Failed to amend commit" unless system(git_amend)
 
           # Disable push on all repos
           disable_push = "git remote set-url --push origin no_push"
-          system("cd #{Shellwords.escape(env_path)} && #{disable_push}")
+          system("cd #{Shellwords.escape(r2p2_path)} && #{disable_push}")
           system("cd #{Shellwords.escape(esp32_path)} && #{disable_push}")
           system("cd #{Shellwords.escape(picoruby_path)} && #{disable_push}")
 
@@ -271,7 +273,7 @@ module Picotorokko
           puts "  ✓ Push disabled on all repositories"
 
           # Generate RuboCop configuration
-          generate_rubocop_config(env_name, env_path)
+          generate_rubocop_config(env_name, r2p2_path)
         end
 
         # Generate RuboCop configuration with PicoRuby method database
@@ -712,6 +714,7 @@ module Picotorokko
       def setup_build_environment(env_name, _repos_info)
         env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
         build_path = Picotorokko::Env.get_build_path(env_name)
+        r2p2_path = File.join(build_path, "R2P2-ESP32")
 
         # Verify .ptrk_env/{env_name}/ exists
         raise "Error: Environment directory not found: #{env_path}" unless Dir.exist?(env_path)
@@ -723,10 +726,13 @@ module Picotorokko
         FileUtils.cp_r(env_path, build_path)
         puts "  ✓ Environment copied to #{build_path}"
 
-        # Copy storage/home/ to R2P2-ESP32 for build
+        # Apply patches first (before storage/mrbgems)
+        # This ensures user's storage/home is not overwritten by patches
+        apply_patches_to_build(r2p2_path)
+
+        # Copy storage/home/ to R2P2-ESP32 build workspace
         storage_src = File.join(Picotorokko::Env.project_root, "storage", "home")
         if Dir.exist?(storage_src)
-          r2p2_path = File.join(build_path, "R2P2-ESP32")
           storage_dst = File.join(r2p2_path, "storage", "home")
           FileUtils.mkdir_p(File.dirname(storage_dst))
           FileUtils.rm_rf(storage_dst)
@@ -736,32 +742,29 @@ module Picotorokko
 
         # Copy mrbgems/ to nested picoruby path for build
         mrbgems_src = File.join(Picotorokko::Env.project_root, "mrbgems")
-        if Dir.exist?(mrbgems_src)
-          r2p2_path = File.join(build_path, "R2P2-ESP32")
-          mrbgems_dst = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems")
-          FileUtils.mkdir_p(File.dirname(mrbgems_dst))
-          FileUtils.rm_rf(mrbgems_dst)
-          FileUtils.cp_r(mrbgems_src, mrbgems_dst)
-          puts "  ✓ Copied mrbgems/ to nested picoruby path"
-        end
+        return unless Dir.exist?(mrbgems_src)
 
-        # Apply patches
-        apply_patches_to_build(build_path)
+        mrbgems_dst = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems")
+        FileUtils.mkdir_p(File.dirname(mrbgems_dst))
+        FileUtils.rm_rf(mrbgems_dst)
+        FileUtils.cp_r(mrbgems_src, mrbgems_dst)
+        puts "  ✓ Copied mrbgems/ to nested picoruby path"
       end
 
       # Apply stored patches to build environment
       # @rbs (String) -> void
-      def apply_patches_to_build(build_path)
+      def apply_patches_to_build(r2p2_path)
         puts "  Applying patches..."
 
+        # r2p2_path is .ptrk_build/{env}/R2P2-ESP32/
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
           case repo
           when "R2P2-ESP32"
-            work_path = File.join(build_path, "R2P2-ESP32")
+            work_path = r2p2_path
           when "picoruby-esp32"
-            work_path = File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32")
+            work_path = File.join(r2p2_path, "components", "picoruby-esp32")
           when "picoruby"
-            work_path = File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32", "picoruby")
+            work_path = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby")
           end
 
           next unless Dir.exist?(work_path)
