@@ -230,12 +230,14 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
+        Picotorokko::Env.reset_cached_root!
         begin
           # Create project with mrbgems
           initializer = Picotorokko::ProjectInitializer.new("testapp", {})
           initializer.initialize_project
 
           Dir.chdir("testapp")
+          Picotorokko::Env.reset_cached_root!
 
           # Add a custom mrbgem
           capture_stdout do
@@ -278,12 +280,14 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
+        Picotorokko::Env.reset_cached_root!
         begin
           # Create project
           initializer = Picotorokko::ProjectInitializer.new("testapp", {})
           initializer.initialize_project
 
           Dir.chdir("testapp")
+          Picotorokko::Env.reset_cached_root!
 
           # Generate multiple mrbgems
           capture_stdout do
@@ -334,12 +338,14 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
+        Picotorokko::Env.reset_cached_root!
         begin
           # Create project
           initializer = Picotorokko::ProjectInitializer.new("testapp", {})
           initializer.initialize_project
 
           Dir.chdir("testapp")
+          Picotorokko::Env.reset_cached_root!
 
           # Modify Mrbgemfile to add more source types
           mrbgemfile = File.read("Mrbgemfile")
@@ -369,8 +375,8 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           build_config_path = File.join(build_config_dir, "default.rb")
           config_content = File.read(build_config_path)
 
-          assert_match(%r{conf\.gem\s+core:\s+"mruby-string-ext"}, config_content)
-          assert_match(%r{conf\.gem\s+core:\s+"mruby-array"}, config_content)
+          assert_match(/conf\.gem\s+core:\s+"mruby-string-ext"/, config_content)
+          assert_match(/conf\.gem\s+core:\s+"mruby-array"/, config_content)
           assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
         ensure
           Dir.chdir(original_dir)
