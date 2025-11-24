@@ -723,38 +723,26 @@ module Picotorokko
         FileUtils.cp_r(env_path, build_path)
         puts "  ✓ Environment copied to #{build_path}"
 
-        # Copy storage/home/ to both build env level and R2P2-ESP32
+        # Copy storage/home/ to R2P2-ESP32 for build
         storage_src = File.join(Picotorokko::Env.project_root, "storage", "home")
         if Dir.exist?(storage_src)
-          # Copy to build env level
-          storage_dst_env = File.join(build_path, "storage", "home")
-          FileUtils.mkdir_p(File.dirname(storage_dst_env))
-          FileUtils.rm_rf(storage_dst_env)
-          FileUtils.cp_r(storage_src, storage_dst_env)
-          puts "  ✓ Copied storage/home/ to build env level"
-
-          # Copy to R2P2-ESP32 subdirectory
           r2p2_path = File.join(build_path, "R2P2-ESP32")
-          storage_dst_r2p2 = File.join(r2p2_path, "storage", "home")
-          FileUtils.mkdir_p(File.dirname(storage_dst_r2p2))
-          FileUtils.rm_rf(storage_dst_r2p2)
-          FileUtils.cp_r(storage_src, storage_dst_r2p2)
+          storage_dst = File.join(r2p2_path, "storage", "home")
+          FileUtils.mkdir_p(File.dirname(storage_dst))
+          FileUtils.rm_rf(storage_dst)
+          FileUtils.cp_r(storage_src, storage_dst)
+          puts "  ✓ Copied storage/home/ to R2P2-ESP32"
         end
 
-        # Copy mrbgems/ to both build env level and R2P2-ESP32
+        # Copy mrbgems/ to nested picoruby path for build
         mrbgems_src = File.join(Picotorokko::Env.project_root, "mrbgems")
         if Dir.exist?(mrbgems_src)
-          # Copy to build env level
-          mrbgems_dst_env = File.join(build_path, "mrbgems")
-          FileUtils.rm_rf(mrbgems_dst_env)
-          FileUtils.cp_r(mrbgems_src, mrbgems_dst_env)
-          puts "  ✓ Copied mrbgems/ to build env level"
-
-          # Copy to R2P2-ESP32 subdirectory
           r2p2_path = File.join(build_path, "R2P2-ESP32")
-          mrbgems_dst_r2p2 = File.join(r2p2_path, "mrbgems")
-          FileUtils.rm_rf(mrbgems_dst_r2p2)
-          FileUtils.cp_r(mrbgems_src, mrbgems_dst_r2p2)
+          mrbgems_dst = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems")
+          FileUtils.mkdir_p(File.dirname(mrbgems_dst))
+          FileUtils.rm_rf(mrbgems_dst)
+          FileUtils.cp_r(mrbgems_src, mrbgems_dst)
+          puts "  ✓ Copied mrbgems/ to nested picoruby path"
         end
 
         # Apply patches
