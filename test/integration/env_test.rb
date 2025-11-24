@@ -223,35 +223,173 @@ class EnvTest < Test::Unit::TestCase
 
   # execute_with_esp_env のテスト
   sub_test_case "execute_with_esp_env" do
+    def setup
+      super
+      @original_idf_path = ENV.fetch("IDF_PATH", nil)
+      # Create temp ESP-IDF export.sh for testing
+      @idf_dir = File.join(@tmpdir, "idf")
+      FileUtils.mkdir_p(@idf_dir)
+      File.write(File.join(@idf_dir, "export.sh"), "#!/bin/bash\n")
+      ENV["IDF_PATH"] = @idf_dir
+    end
+
+    def teardown
+      # Restore original IDF_PATH
+      ENV["IDF_PATH"] = @original_idf_path
+      super
+    end
+
     test "executes command successfully" do
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # Mock the bash command that sources ESP-IDF and runs rake
+      # Note: set -x && is added for debug output
+      mock_executor.set_result("set -x && . #{idf_export} && export ESPBAUD=115200 && true", stdout: "", stderr: "")
+
       # Simple command that should succeed
       assert_nothing_raised do
         Picotorokko::Env.execute_with_esp_env("true")
       end
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
 
     test "raises error when command fails" do
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # NOTE: set -x && is added for debug output
+      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && false"
+      mock_executor.set_result(cmd, stdout: "", stderr: "Error", fail: true)
+
       assert_raise(RuntimeError) do
         Picotorokko::Env.execute_with_esp_env("false")
       end
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
 
     test "executes command in specified working directory" do
       work_dir = File.join(@tmpdir, "workdir")
       FileUtils.mkdir_p(work_dir)
-      marker_file = File.join(work_dir, "marker.txt")
 
-      Picotorokko::Env.execute_with_esp_env("touch #{File.basename(marker_file)}", work_dir)
-      assert_true(File.exist?(marker_file))
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      # Mock brew command to fail (return no OpenSSL)
+      mock_executor.set_result("brew --prefix openssl@3", stdout: "", stderr: "", fail: false)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # Mock executor expects full command with ESP-IDF setup
+      # NOTE: set -x && is added for debug output
+      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && touch marker.txt"
+      mock_executor.set_result(cmd, stdout: "", stderr: "")
+
+      Picotorokko::Env.execute_with_esp_env("touch marker.txt", work_dir)
+
+      # Verify working_dir was passed to executor on the actual command (second call)
+      assert_equal(2, mock_executor.calls.count)
+      # Second call should have the working_dir
+      assert_equal(work_dir, mock_executor.calls[1][:working_dir])
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
 
     test "raises error when command fails in working directory" do
       work_dir = File.join(@tmpdir, "workdir")
       FileUtils.mkdir_p(work_dir)
 
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # NOTE: set -x && is added for debug output
+      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && false"
+      mock_executor.set_result(cmd, stdout: "", stderr: "Error", fail: true)
+
       assert_raise(RuntimeError) do
         Picotorokko::Env.execute_with_esp_env("false", work_dir)
       end
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
+    end
+
+    test "sets OpenSSL flags when brew openssl is available" do
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      # Mock brew --prefix openssl@3 to return a path
+      openssl_path = "/usr/local/opt/openssl@3"
+      mock_executor.set_result("brew --prefix openssl@3", stdout: "#{openssl_path}\n", stderr: "")
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # Verify command includes OpenSSL environment variables
+      # Note: set -x && is added for debug output
+      expected_command = "set -x && export LDFLAGS=-L#{openssl_path}/lib && " \
+                         "export CPPFLAGS=-I#{openssl_path}/include && " \
+                         "export PKG_CONFIG_PATH=#{openssl_path}/lib/pkgconfig && " \
+                         ". #{idf_export} && export ESPBAUD=115200 && test_command"
+      mock_executor.set_result(expected_command, stdout: "", stderr: "")
+
+      assert_nothing_raised do
+        Picotorokko::Env.execute_with_esp_env("test_command")
+      end
+
+      # Verify both calls were made: brew command and then ESP env command
+      assert_equal(2, mock_executor.calls.count)
+      # First call should be brew --prefix openssl@3
+      assert_equal("brew --prefix openssl@3", mock_executor.calls[0][:command])
+      # Second call should have OpenSSL flags
+      actual_command = mock_executor.calls[1][:command]
+      assert_match(/LDFLAGS=.*openssl/, actual_command)
+      assert_match(/CPPFLAGS=.*openssl/, actual_command)
+      assert_match(/PKG_CONFIG_PATH=.*openssl/, actual_command)
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
+    end
+
+    test "skips OpenSSL setup when brew is not available" do
+      # Set up mock executor for this test
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      # Mock brew --prefix openssl@3 to fail (raise error)
+      mock_executor.set_result("brew --prefix openssl@3", stdout: "", stderr: "Error: openssl@3 not found", fail: true)
+
+      idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
+      # Command should work without OpenSSL flags
+      # Note: set -x && is added for debug output
+      expected_command = "set -x && . #{idf_export} && export ESPBAUD=115200 && test_command"
+      mock_executor.set_result(expected_command, stdout: "", stderr: "")
+
+      assert_nothing_raised do
+        Picotorokko::Env.execute_with_esp_env("test_command")
+      end
+
+      # Verify both calls were made: brew command (which fails) and then ESP env command
+      assert_equal(2, mock_executor.calls.count)
+      # First call should be brew --prefix openssl@3
+      assert_equal("brew --prefix openssl@3", mock_executor.calls[0][:command])
+      # Second call should NOT have OpenSSL flags
+      actual_command = mock_executor.calls[1][:command]
+      assert_not_match(/LDFLAGS/, actual_command)
+      assert_not_match(/CPPFLAGS/, actual_command)
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
   end
 end

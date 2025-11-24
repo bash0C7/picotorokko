@@ -34,6 +34,7 @@ Gem::Specification.new do |spec|
 
   # Runtime dependencies
   spec.add_dependency "thor", "~> 1.3"
+  spec.add_dependency "rbs", "~> 3.4"
 
   # Development dependencies
   spec.add_development_dependency "reality_marble", ">= 0.1.0"
@@ -46,7 +47,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "simplecov-cobertura", "~> 3.1"
 
   # Type system integration (Priority 1: rbs-inline + Steep)
-  spec.add_development_dependency "rbs", "~> 3.4"
   spec.add_development_dependency "steep", "~> 1.8"
   spec.add_development_dependency "rbs-inline", "~> 0.11"
 

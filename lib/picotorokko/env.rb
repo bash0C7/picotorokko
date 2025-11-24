@@ -360,12 +360,53 @@ module Picotorokko
         File.readlink(link)
       end
 
+      # Get ESP-IDF export script path
+      # Supports ENV["IDF_PATH"] override for testing
+      # Raises error if ESP-IDF is not installed at ~/esp/esp-idf/export.sh
+      # @rbs () -> String
+      def get_idf_export_script
+        # Allow IDF_PATH override via environment variable (for testing)
+        idf_path = ENV["IDF_PATH"] || File.expand_path("~/esp/esp-idf")
+        export_script = File.join(idf_path, "export.sh")
+
+        return export_script if File.exist?(export_script)
+
+        raise "Error: ESP-IDF not found at #{idf_path}/export.sh\nPlease install ESP-IDF: " \
+              "https://github.com/espressif/esp-idf or create symlink: " \
+              "ln -s /path/to/esp-idf ~/esp/esp-idf"
+      end
+
+      # Detect Homebrew OpenSSL installation and return export commands
+      # Returns export commands for LDFLAGS, CPPFLAGS, PKG_CONFIG_PATH if available
+      # @rbs () -> String
+      def detect_openssl_flags
+        openssl_path_output, = executor.execute("brew --prefix openssl@3")
+        openssl_path = openssl_path_output.strip
+
+        return "" if openssl_path.empty?
+
+        "export LDFLAGS=-L#{openssl_path}/lib && " \
+          "export CFLAGS=-I#{openssl_path}/include && " \
+          "export CPPFLAGS=-I#{openssl_path}/include && " \
+          "export PKG_CONFIG_PATH=#{openssl_path}/lib/pkgconfig && "
+      rescue StandardError
+        ""
+      end
+
       # Execute command via R2P2-ESP32 Rakefile with ESP-IDF environment
-      # NOTE: ESP-IDF setup is R2P2-ESP32 Rakefile responsibility
-      # ptrk gem only invokes Rake in R2P2-ESP32 directory
-      # @rbs (String, String | nil) -> void
+      # Automatically sources ESP-IDF export.sh and sets ESPBAUD=115200
+      # working_dir: build workspace directory (e.g., .ptrk_build/{env_name}/R2P2-ESP32)
+      # @rbs (String, String | nil) -> [String, String]
       def execute_with_esp_env(command, working_dir = nil)
-        executor.execute(command, working_dir)
+        idf_export_script = get_idf_export_script
+        openssl_setup = detect_openssl_flags
+
+        # Prepare shell command with ESP-IDF environment setup
+        # set -x enables command echoing for debugging
+        esp_env_command = "set -x && #{openssl_setup}. #{Shellwords.escape(idf_export_script)} && " \
+                          "export ESPBAUD=115200 && #{command}"
+
+        executor.execute(esp_env_command, working_dir)
       end
     end
 

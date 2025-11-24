@@ -177,7 +177,8 @@ class CommandsDeviceTest < PicotorokkoTestCase
               end
 
               # 出力を確認
-              assert_match(/Monitoring: test-env/, output)
+              assert_match(/To monitor ESP32 serial output/, output)
+              assert_match(/pushd.*rake monitor/, output)
               assert_match(/Press Ctrl\+C to exit/, output)
             end
 
@@ -225,6 +226,52 @@ class CommandsDeviceTest < PicotorokkoTestCase
               # 出力を確認
               assert_match(/Building: test-env/, output)
               assert_match(/✓ Build completed/, output)
+            end
+
+            # Directory change is handled by with_fresh_project_root
+          end
+        end
+      end
+    end
+  end
+
+  # device all コマンドのテスト
+  sub_test_case "device all command" do
+    test "raises error when environment not found" do
+      Dir.mktmpdir do |tmpdir|
+        with_fresh_project_root do
+          Dir.chdir(tmpdir)
+
+          # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Picotorokko::Commands::Device.start(["all", "--env", "nonexistent-env"])
+            end
+          end
+
+          # Directory change is handled by with_fresh_project_root
+        end
+      end
+    end
+
+    test "shows message when running build → flash → monitor" do
+      Dir.mktmpdir do |tmpdir|
+        with_fresh_project_root do
+          Dir.chdir(tmpdir)
+          begin
+            # NOTE: tmpdir内で新しい環境を構築（前回のテスト実行の影響は受けない）
+
+            setup_test_environment("test-env")
+
+            with_esp_env_mocking do |_mock|
+              output = capture_stdout do
+                Picotorokko::Commands::Device.start(["all", "--env", "test-env"])
+              end
+
+              # 出力を確認
+              assert_match(/Running build → flash → monitor: test-env/, output)
+              assert_match(/✓ Completed build → flash → monitor/, output)
             end
 
             # Directory change is handled by with_fresh_project_root
@@ -469,39 +516,39 @@ class CommandsDeviceTest < PicotorokkoTestCase
 
   # Rake command building tests
   sub_test_case "build_rake_command helper" do
-    test "returns 'bundle exec rake' when Gemfile exists" do
+    test "returns 'rake' without bundle exec" do
+      Dir.mktmpdir do |tmpdir|
+        device = Picotorokko::Commands::Device.new
+
+        cmd = device.send(:build_rake_command, tmpdir, "build")
+
+        assert_equal "rake build", cmd
+        assert_not_match(/bundle exec/, cmd)
+        assert_not_match(/cd /, cmd) # No cd command, handled by executor
+      end
+    end
+
+    test "returns 'rake' even when Gemfile exists" do
       Dir.mktmpdir do |tmpdir|
         FileUtils.touch(File.join(tmpdir, "Gemfile"))
         device = Picotorokko::Commands::Device.new
 
         cmd = device.send(:build_rake_command, tmpdir, "build")
 
-        assert_match(/bundle exec rake/, cmd)
-        assert_match(/build$/, cmd)
-      end
-    end
-
-    test "returns 'rake' when Gemfile does not exist" do
-      Dir.mktmpdir do |tmpdir|
-        device = Picotorokko::Commands::Device.new
-
-        cmd = device.send(:build_rake_command, tmpdir, "build")
-
-        assert_match(/^cd .* && rake build$/, cmd)
+        assert_equal "rake build", cmd
         assert_not_match(/bundle exec/, cmd)
+        assert_not_match(/cd /, cmd) # No cd command, handled by executor
       end
     end
 
-    test "properly escapes paths in command" do
+    test "returns 'rake' (default task) when task_name is empty" do
       Dir.mktmpdir do |tmpdir|
-        path_with_spaces = File.join(tmpdir, "path with spaces")
-        FileUtils.mkdir_p(path_with_spaces)
         device = Picotorokko::Commands::Device.new
 
-        cmd = device.send(:build_rake_command, path_with_spaces, "build")
+        cmd = device.send(:build_rake_command, tmpdir, "")
 
-        # Should contain escaped path
-        assert_match(/cd .*path.*with.*spaces/, cmd)
+        assert_equal "rake", cmd
+        assert_not_match(/bundle exec/, cmd)
       end
     end
   end

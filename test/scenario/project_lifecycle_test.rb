@@ -204,15 +204,14 @@ class ScenarioProjectLifecycleTest < PicotorokkoTestCase
             Picotorokko::Commands::Env.start(["current", env_name])
           end
 
-          # Monitor command should fail without ESP-IDF
-          error = assert_raises(RuntimeError, SystemExit) do
-            capture_stdout do
-              Picotorokko::Commands::Device.start(["monitor"])
-            end
+          # Monitor command shows instruction snippet (doesn't fail)
+          output = capture_stdout do
+            Picotorokko::Commands::Device.start(["monitor"])
           end
 
-          # Error should indicate ESP-IDF or environment issue
-          assert error.message.length.positive?, "Should have error message" if error.is_a?(RuntimeError)
+          # Output should contain instruction on how to run monitor
+          assert_match(/To monitor ESP32 serial output/, output)
+          assert_match(/rake monitor/, output)
         ensure
           Dir.chdir(original_dir)
         end
