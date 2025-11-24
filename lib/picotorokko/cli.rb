@@ -7,6 +7,7 @@ require_relative "commands/env"
 require_relative "commands/device"
 require_relative "commands/new"
 require_relative "commands/mrbgems"
+require_relative "commands/patch"
 module Picotorokko
   # PicoRuby/mRuby ESP32 development tool CLI entry point
   # Handles subcommand routing for environment, device, and mrbgems operations
@@ -36,6 +37,11 @@ module Picotorokko
     # Handles device flashing, monitoring, building, and other device-specific operations
     desc "device SUBCOMMAND ...ARGS", "ESP32 device operation commands"
     subcommand "device", Picotorokko::Commands::Device
+
+    # Patch management commands
+    # Provides export, diff, and list operations for patches
+    desc "patch SUBCOMMAND ...ARGS", "Patch management commands"
+    subcommand "patch", Picotorokko::Commands::Patch
 
     # Display picotorokko version
     # @rbs () -> void
