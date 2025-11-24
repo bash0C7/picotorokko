@@ -225,22 +225,26 @@ ptrk device build
 ### Scenario 3: Patch Management
 
 ```bash
-# 1. Make changes in build/current/
+# 1. Prepare build workspace
+ptrk device prepare
+
+# 2. Make changes in .ptrk_build/{env}/R2P2-ESP32/
 # (edit files)
 
-# 2. Export changes to patch
+# 3. Review changes
+ptrk patch diff
+
+# 4. Export changes to patch
 ptrk patch export
 
-# 3. Git commit
-git add patch/ storage/home/
+# 5. Git commit
+git add .ptrk_env/*/patch/ storage/home/
 git commit -m "Update patches and storage"
 
-# 4. Test application in another environment
-ptrk env set development
-ptrk build setup  # patches auto-applied
-cd build/current/R2P2-ESP32
-rake build
-cd ../../..
+# 6. Test application in another environment
+ptrk env current 20251121_103000
+ptrk device prepare  # patches auto-applied
+ptrk device build
 ```
 
 ---
@@ -271,10 +275,13 @@ ptrk build setup ENV_NAME
 ### Patches Not Applied
 
 ```bash
-# Check diff
+# List available patches
+ptrk patch list
+
+# Check working changes
 ptrk patch diff
 
-# Re-apply
-ptrk build clean
-ptrk build setup ENV_NAME
+# Re-prepare workspace (patches auto-applied)
+ptrk device prepare
+ptrk device build
 ```
