@@ -253,9 +253,11 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           FileUtils.mkdir_p(build_config_dir)
           File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
 
-          # Apply Mrbgemfile (now a public command)
+          # Apply Mrbgemfile directly (as it's called by build command)
+          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
+          mrbgemfile_content = File.read("Mrbgemfile")
           capture_stdout do
-            Picotorokko::Commands::Device.start(["apply_mrbgemfile", "--env", env_name])
+            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
           end
 
           # Verify build_config was modified
@@ -300,9 +302,11 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           FileUtils.mkdir_p(build_config_dir)
           File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
 
-          # Apply Mrbgemfile (now a public command)
+          # Apply Mrbgemfile directly (as it's called by build command)
+          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
+          mrbgemfile_content = File.read("Mrbgemfile")
           capture_stdout do
-            Picotorokko::Commands::Device.start(["apply_mrbgemfile", "--env", env_name])
+            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
           end
 
           # Verify all mrbgems are in build_config
@@ -348,8 +352,10 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           FileUtils.mkdir_p(build_config_dir)
           File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
 
+          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
+          mrbgemfile_content = File.read("Mrbgemfile")
           capture_stdout do
-            Picotorokko::Commands::Device.start(["apply_mrbgemfile", "--env", env_name])
+            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
           end
 
           build_config_path = File.join(build_config_dir, "default.rb")

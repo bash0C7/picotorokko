@@ -151,18 +151,6 @@ module Picotorokko
         tasks
       end
 
-      # Apply Mrbgemfile to build_config files
-      # Parses Mrbgemfile and applies gem definitions to all build_config/*.rb files
-      # @rbs () -> void
-      desc "apply_mrbgemfile", "Apply Mrbgemfile to build_config"
-      option :env, default: "current", desc: "Environment name"
-      def apply_mrbgemfile
-        env_name = options[:env]
-        actual_env = resolve_env_name(env_name)
-        validate_and_get_r2p2_path(actual_env)
-        apply_mrbgemfile_internal(actual_env)
-      end
-
       # Transparently delegate undefined commands to R2P2-ESP32 Rakefile
       #
       # Implements Ruby's method_missing to provide transparent delegation of unknown
@@ -257,32 +245,10 @@ module Picotorokko
         return unless File.exist?(mrbgemfile_path)
 
         mrbgemfile_content = File.read(mrbgemfile_path)
-        apply_to_build_configs(mrbgemfile_content, env_name)
-      end
-
-      # Apply mrbgems to all build_config/*.rb files in R2P2-ESP32 build directory
-      # @rbs (String, String) -> void
-      def apply_to_build_configs(mrbgemfile_content, env_name)
-        # Get R2P2-ESP32 path from build environment
         actual_env = resolve_env_name(env_name)
         r2p2_path = validate_and_get_r2p2_path(actual_env)
 
-        build_config_dir = File.join(r2p2_path, "build_config")
-        return unless Dir.exist?(build_config_dir)
-
-        Dir.glob(File.join(build_config_dir, "*.rb")).each do |config_file|
-          config_name = File.basename(config_file, ".rb")
-          dsl = MrbgemsDSL.new(mrbgemfile_content, config_name)
-          gems = dsl.gems
-
-          next if gems.empty?
-
-          content = File.read(config_file)
-          modified = BuildConfigApplier.apply(content, gems)
-          File.write(config_file, modified)
-        end
-
-        puts "  ✓ Applied Mrbgemfile to R2P2-ESP32/build_config/"
+        MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
       end
 
       # 利用可能なR2P2-ESP32タスクを表示
