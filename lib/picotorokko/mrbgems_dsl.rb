@@ -29,9 +29,16 @@ module Picotorokko
       self
     end
 
-    # @rbs (**Hash[Symbol, String]) -> void
-    def gem(**params)
-      source_type, source = detect_source_type(params)
+    # @rbs (String | nil, **Hash[Symbol, String]) -> void
+    def gem(path_or_name = nil, **params)
+      # If first arg is a string (path), treat as path gem
+      if path_or_name && params.empty?
+        source_type = :path
+        source = path_or_name
+      else
+        source_type, source = detect_source_type(params)
+      end
+
       gem_spec = {
         source_type: source_type,
         source: source,

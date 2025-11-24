@@ -267,7 +267,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           config_content = File.read(build_config_path)
           assert_match(/# === BEGIN Mrbgemfile generated ===/, config_content)
           assert_match(/# === END Mrbgemfile generated ===/, config_content)
-          assert_match(%r{conf\.gem.*"mrbgems/app"}, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
         ensure
           Dir.chdir(original_dir)
         end
@@ -291,6 +291,14 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
             Picotorokko::Commands::Mrbgems.start(["generate", "lib2"])
           end
 
+          # Add mrbgems to Mrbgemfile
+          mrbgemfile = File.read("Mrbgemfile")
+          new_mrbgemfile = mrbgemfile.gsub(
+            "  conf.gem \"mrbgems/app\"",
+            "  conf.gem \"mrbgems/app\"\n  conf.gem \"mrbgems/lib1\"\n  conf.gem \"mrbgems/lib2\""
+          )
+          File.write("Mrbgemfile", new_mrbgemfile)
+
           # Setup build directory
           env_name = "20240101_120000"
           r2p2_info = { "commit" => "abc1234", "timestamp" => "20240101_120000" }
@@ -313,9 +321,9 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           build_config_path = File.join(build_config_dir, "default.rb")
           config_content = File.read(build_config_path)
 
-          assert_match(%r{conf\.gem.*"mrbgems/app"}, config_content)
-          assert_match(%r{conf\.gem.*"mrbgems/lib1"}, config_content)
-          assert_match(%r{conf\.gem.*"mrbgems/lib2"}, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/lib1"}, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/lib2"}, config_content)
         ensure
           Dir.chdir(original_dir)
         end
@@ -361,9 +369,9 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           build_config_path = File.join(build_config_dir, "default.rb")
           config_content = File.read(build_config_path)
 
-          assert_match(/conf\.gem.*:core.*"mruby-string-ext"/, config_content)
-          assert_match(/conf\.gem.*:core.*"mruby-array"/, config_content)
-          assert_match(%r{conf\.gem.*"mrbgems/app"}, config_content)
+          assert_match(%r{conf\.gem\s+core:\s+"mruby-string-ext"}, config_content)
+          assert_match(%r{conf\.gem\s+core:\s+"mruby-array"}, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
         ensure
           Dir.chdir(original_dir)
         end
