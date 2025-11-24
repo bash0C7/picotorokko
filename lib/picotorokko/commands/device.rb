@@ -70,7 +70,7 @@ module Picotorokko
         validate_and_get_r2p2_path(actual_env)
 
         # Apply Mrbgemfile if it exists
-        apply_mrbgemfile(actual_env)
+        apply_mrbgemfile_internal(actual_env)
 
         if setup_required
           puts "First build detected, running setup_esp32..."
@@ -105,7 +105,7 @@ module Picotorokko
         validate_and_get_r2p2_path(actual_env)
 
         # Apply Mrbgemfile if it exists
-        apply_mrbgemfile(actual_env)
+        apply_mrbgemfile_internal(actual_env)
 
         if setup_required
           puts "First build detected, running setup_esp32..."
@@ -149,6 +149,18 @@ module Picotorokko
       option :env, default: "current", desc: "Environment name"
       def help
         tasks
+      end
+
+      # Apply Mrbgemfile to build_config files
+      # Parses Mrbgemfile and applies gem definitions to all build_config/*.rb files
+      # @rbs () -> void
+      desc "apply_mrbgemfile", "Apply Mrbgemfile to build_config"
+      option :env, default: "current", desc: "Environment name"
+      def apply_mrbgemfile
+        env_name = options[:env]
+        actual_env = resolve_env_name(env_name)
+        validate_and_get_r2p2_path(actual_env)
+        apply_mrbgemfile_internal(actual_env)
       end
 
       # Transparently delegate undefined commands to R2P2-ESP32 Rakefile
@@ -237,10 +249,10 @@ module Picotorokko
         nil
       end
 
-      # Apply Mrbgemfile if it exists
+      # Internal helper: Apply Mrbgemfile if it exists
       # Reads Mrbgemfile and applies mrbgems to build_config files
       # @rbs (String) -> void
-      def apply_mrbgemfile(env_name)
+      def apply_mrbgemfile_internal(env_name)
         mrbgemfile_path = File.join(Picotorokko::Env.project_root, "Mrbgemfile")
         return unless File.exist?(mrbgemfile_path)
 

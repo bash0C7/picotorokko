@@ -253,9 +253,10 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           FileUtils.mkdir_p(build_config_dir)
           File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
 
-          # Apply Mrbgemfile directly (using send for private method)
-          device_cmd = Picotorokko::Commands::Device.new
-          device_cmd.send(:apply_mrbgemfile, env_name)
+          # Apply Mrbgemfile (now a public command)
+          capture_stdout do
+            Picotorokko::Commands::Device.start(["apply_mrbgemfile", "--env", env_name])
+          end
 
           # Verify build_config was modified
           build_config_path = File.join(build_config_dir, "default.rb")
@@ -299,9 +300,10 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           FileUtils.mkdir_p(build_config_dir)
           File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
 
-          # Apply Mrbgemfile (using send for private method)
-          device_cmd = Picotorokko::Commands::Device.new
-          device_cmd.send(:apply_mrbgemfile, env_name)
+          # Apply Mrbgemfile (now a public command)
+          capture_stdout do
+            Picotorokko::Commands::Device.start(["apply_mrbgemfile", "--env", env_name])
+          end
 
           # Verify all mrbgems are in build_config
           build_config_path = File.join(build_config_dir, "default.rb")
@@ -346,8 +348,9 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           FileUtils.mkdir_p(build_config_dir)
           File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
 
-          device_cmd = Picotorokko::Commands::Device.new
-          device_cmd.send(:apply_mrbgemfile, env_name)
+          capture_stdout do
+            Picotorokko::Commands::Device.start(["apply_mrbgemfile", "--env", env_name])
+          end
 
           build_config_path = File.join(build_config_dir, "default.rb")
           config_content = File.read(build_config_path)
