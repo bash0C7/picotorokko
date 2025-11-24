@@ -53,8 +53,8 @@ class PatchCommandTest < PicotorokkoTestCase
             Picotorokko::Commands::Patch.start(["list"])
           end
 
-          assert_match(/R2P2-ESP32\/config\.h/, output)
-          assert_match(/R2P2-ESP32\/src\/main\.c/, output)
+          assert_match(%r{R2P2-ESP32/config\.h}, output)
+          assert_match(%r{R2P2-ESP32/src/main\.c}, output)
         end
       end
     end
