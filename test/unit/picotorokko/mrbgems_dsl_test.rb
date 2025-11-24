@@ -47,7 +47,9 @@ class PicotorokkoMrbgemsDslTest < PicotorokkoTestCase
     assert_equal 1, gems.length
     gem = gems[0]
     assert_equal :path, gem[:source_type]
-    assert_equal "./local-gems/my-sensor", gem[:source]
+    # Relative paths are now converted to absolute paths
+    assert gem[:source].end_with?("local-gems/my-sensor"), "Path should end with local-gems/my-sensor"
+    assert gem[:source].start_with?("/"), "Path should be absolute"
     assert_nil gem[:branch]
     assert_nil gem[:ref]
   end
@@ -222,5 +224,118 @@ class PicotorokkoMrbgemsDslTest < PicotorokkoTestCase
     gem = gems[0]
     assert_equal "develop", gem[:branch]
     assert_equal "abc1234", gem[:ref]
+  end
+
+  test "relative path is converted to absolute path" do
+    project_root = "/home/user/testproject"
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem "mrbgems/mylib"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp", project_root: project_root).gems
+
+    assert_equal 1, gems.length
+    gem = gems[0]
+    assert_equal :path, gem[:source_type]
+    assert_equal "/home/user/testproject/mrbgems/mylib", gem[:source]
+  end
+
+  test "relative path with dot-slash is converted to absolute path" do
+    project_root = "/home/user/testproject"
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem path: "./local-gems/sensor"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp", project_root: project_root).gems
+
+    assert_equal 1, gems.length
+    gem = gems[0]
+    assert_equal :path, gem[:source_type]
+    assert_equal "/home/user/testproject/local-gems/sensor", gem[:source]
+  end
+
+  test "absolute path remains unchanged" do
+    project_root = "/home/user/testproject"
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem path: "/absolute/path/to/gem"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp", project_root: project_root).gems
+
+    assert_equal 1, gems.length
+    gem = gems[0]
+    assert_equal :path, gem[:source_type]
+    assert_equal "/absolute/path/to/gem", gem[:source]
+  end
+
+  test "relative paths are expanded when project_root is not provided" do
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem "mrbgems/app"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp").gems
+
+    assert_equal 1, gems.length
+    gem = gems[0]
+    assert_equal :path, gem[:source_type]
+    # Should be expanded from current directory
+    assert gem[:source].start_with?("/"), "Path should be absolute"
+    assert gem[:source].end_with?("mrbgems/app"), "Path should end with mrbgems/app"
+  end
+
+  test "github source is not affected by path conversion" do
+    project_root = "/home/user/testproject"
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem github: "picoruby/mygem"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp", project_root: project_root).gems
+
+    assert_equal 1, gems.length
+    gem = gems[0]
+    assert_equal :github, gem[:source_type]
+    assert_equal "picoruby/mygem", gem[:source]
+  end
+
+  test "core source is not affected by path conversion" do
+    project_root = "/home/user/testproject"
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem core: "sprintf"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp", project_root: project_root).gems
+
+    assert_equal 1, gems.length
+    gem = gems[0]
+    assert_equal :core, gem[:source_type]
+    assert_equal "sprintf", gem[:source]
+  end
+
+  test "git source is not affected by path conversion" do
+    project_root = "/home/user/testproject"
+    dsl_code = <<-RUBY
+      mrbgems do |conf|
+        conf.gem git: "https://example.com/gem.git"
+      end
+    RUBY
+
+    gems = Picotorokko::MrbgemsDSL.new(dsl_code, "xtensa-esp", project_root: project_root).gems
+
+    assert_equal 1, gems.length
+    gem = gems[0]
+    assert_equal :git, gem[:source_type]
+    assert_equal "https://example.com/gem.git", gem[:source]
   end
 end

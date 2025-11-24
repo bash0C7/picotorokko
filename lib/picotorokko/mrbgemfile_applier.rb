@@ -34,7 +34,9 @@ module Picotorokko
     # @rbs (String) -> void
     def apply_to_config(config_file)
       config_name = File.basename(config_file, ".rb")
-      dsl = MrbgemsDSL.new(@mrbgemfile_content, config_name)
+      # Use Env.project_root to resolve relative paths in Mrbgemfile
+      project_root = Picotorokko::Env.project_root
+      dsl = MrbgemsDSL.new(@mrbgemfile_content, config_name, project_root: project_root)
       gems = dsl.gems
 
       return if gems.empty?
