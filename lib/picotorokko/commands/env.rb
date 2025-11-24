@@ -723,7 +723,7 @@ module Picotorokko
         FileUtils.cp_r(env_path, build_path)
         puts "  ✓ Environment copied to #{build_path}"
 
-        # Copy storage/home/ to R2P2-ESP32 build directory
+        # Copy storage/home/ to R2P2-ESP32 for build
         storage_src = File.join(Picotorokko::Env.project_root, "storage", "home")
         if Dir.exist?(storage_src)
           r2p2_path = File.join(build_path, "R2P2-ESP32")
@@ -734,14 +734,15 @@ module Picotorokko
           puts "  ✓ Copied storage/home/ to R2P2-ESP32"
         end
 
-        # Copy mrbgems/ to R2P2-ESP32 build directory
+        # Copy mrbgems/ to nested picoruby path for build
         mrbgems_src = File.join(Picotorokko::Env.project_root, "mrbgems")
         if Dir.exist?(mrbgems_src)
           r2p2_path = File.join(build_path, "R2P2-ESP32")
-          mrbgems_dst = File.join(r2p2_path, "mrbgems")
+          mrbgems_dst = File.join(r2p2_path, "components", "picoruby-esp32", "picoruby", "mrbgems")
+          FileUtils.mkdir_p(File.dirname(mrbgems_dst))
           FileUtils.rm_rf(mrbgems_dst)
           FileUtils.cp_r(mrbgems_src, mrbgems_dst)
-          puts "  ✓ Copied mrbgems/ to R2P2-ESP32"
+          puts "  ✓ Copied mrbgems/ to nested picoruby path"
         end
 
         # Apply patches
@@ -754,9 +755,6 @@ module Picotorokko
         puts "  Applying patches..."
 
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
-          patch_repo_dir = File.join(Picotorokko::Env.patch_dir, repo)
-          next unless Dir.exist?(patch_repo_dir)
-
           case repo
           when "R2P2-ESP32"
             work_path = File.join(build_path, "R2P2-ESP32")
@@ -768,9 +766,19 @@ module Picotorokko
 
           next unless Dir.exist?(work_path)
 
-          # Apply patches
-          Picotorokko::PatchApplier.apply_patches_to_directory(patch_repo_dir, work_path)
-          puts "    Applied #{repo}"
+          # Apply patches from .ptrk_env/patch/{repo}/
+          patch_repo_dir = File.join(Picotorokko::Env.patch_dir, repo)
+          if Dir.exist?(patch_repo_dir)
+            Picotorokko::PatchApplier.apply_patches_to_directory(patch_repo_dir, work_path)
+            puts "    Applied #{repo} (from .ptrk_env/patch)"
+          end
+
+          # Apply patches from project root patch/{repo}/
+          project_patch_dir = File.join(Picotorokko::Env.project_root, "patch", repo)
+          if Dir.exist?(project_patch_dir)
+            Picotorokko::PatchApplier.apply_patches_to_directory(project_patch_dir, work_path)
+            puts "    Applied #{repo} (from project patch)"
+          end
         end
 
         puts "  ✓ Patches applied"
