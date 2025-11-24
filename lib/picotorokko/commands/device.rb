@@ -418,14 +418,23 @@ module Picotorokko
       # Apply patches from patch/ directory to build
       # @rbs (String) -> void
       def apply_patches_to_build(r2p2_path)
-        patch_dir = Picotorokko::Env.patch_dir
-        return unless Dir.exist?(patch_dir)
+        # Apply patches from .ptrk_env/patch/ (stored patches)
+        stored_patch_dir = Picotorokko::Env.patch_dir
+        apply_patches_from_dir(stored_patch_dir, r2p2_path) if Dir.exist?(stored_patch_dir)
 
+        # Apply patches from project root patch/ directory
+        project_patch_dir = File.join(Picotorokko::Env.project_root, "patch")
+        apply_patches_from_dir(project_patch_dir, r2p2_path) if Dir.exist?(project_patch_dir)
+
+        puts "  \u2713 Applied patches"
+      end
+
+      # Apply patches from a specific directory
+      # @rbs (String, String) -> void
+      def apply_patches_from_dir(patch_dir, r2p2_path)
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
           apply_repo_patches(patch_dir, repo, r2p2_path)
         end
-
-        puts "  \u2713 Applied patches"
       end
 
       # Apply patches for a single repository
