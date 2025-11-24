@@ -67,9 +67,10 @@ ptrk device flash
 ptrk device monitor
 ```
 
-The mrbgem is automatically registered in:
-- `patch/picoruby/build_config/xtensa-esp.rb`
-- `patch/picoruby-esp32/CMakeLists.txt`
+The mrbgem is automatically registered during build via:
+- `ptrk device build` → `apply_mrbgemfile_internal` → `MrbgemfileApplier`
+- Mrbgemfile is parsed and gem definitions are injected into R2P2-ESP32/build_config/*.rb
+- C sources in `mrbgems/{gem}/src/*.c` are compiled by the R2P2-ESP32 build system
 
 ## Directory Structure
 

@@ -190,5 +190,198 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
         end
       end
     end
+
+    test "mrbgems directory is created in project and can be copied to build path" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          # Create a mock environment with R2P2-ESP32 structure
+          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
+          initializer.initialize_project
+
+          Dir.chdir("testapp")
+
+          # Verify mrbgems directory exists in project
+          assert Dir.exist?("mrbgems"), "mrbgems directory should be created"
+          assert Dir.exist?("mrbgems/app"), "default app mrbgem should exist"
+
+          # Test that mrbgems can be copied to a nested picoruby path
+          env_name = "20240101_120000"
+          build_dir = File.join(".ptrk_build", env_name)
+          mrbgems_src = File.join(Dir.pwd, "mrbgems")
+          mrbgems_dst = File.join(build_dir, "R2P2-ESP32", "components", "picoruby-esp32", "picoruby", "mrbgems")
+
+          FileUtils.mkdir_p(File.dirname(mrbgems_dst))
+          FileUtils.cp_r(mrbgems_src, mrbgems_dst)
+
+          # Verify copy worked
+          assert Dir.exist?(mrbgems_dst), "mrbgems should be copied to nested picoruby path"
+          assert Dir.exist?(File.join(mrbgems_dst, "app")), "app mrbgem should exist in copied path"
+          assert Dir.exist?(File.join(mrbgems_dst, "app", "mrblib")), "app mrblib should exist"
+          assert Dir.exist?(File.join(mrbgems_dst, "app", "src")), "app src should exist"
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "Mrbgemfile is parsed and applied to build_config files" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        Picotorokko::Env.reset_cached_root!
+        begin
+          # Create project with mrbgems
+          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
+          initializer.initialize_project
+
+          Dir.chdir("testapp")
+          Picotorokko::Env.reset_cached_root!
+
+          # Add a custom mrbgem
+          capture_stdout do
+            Picotorokko::Commands::Mrbgems.start(["generate", "mylib"])
+          end
+
+          # Setup build directory structure manually
+          env_name = "20240101_120000"
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20240101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20240101_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20240101_120000" }
+          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+
+          build_config_dir = File.join(".ptrk_build", env_name, "R2P2-ESP32", "build_config")
+          FileUtils.mkdir_p(build_config_dir)
+          File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
+
+          # Apply Mrbgemfile directly (as it's called by build command)
+          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
+          mrbgemfile_content = File.read("Mrbgemfile")
+          capture_stdout do
+            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
+          end
+
+          # Verify build_config was modified
+          build_config_path = File.join(build_config_dir, "default.rb")
+          assert File.exist?(build_config_path), "build_config file should exist"
+
+          config_content = File.read(build_config_path)
+          assert_match(/# === BEGIN Mrbgemfile generated ===/, config_content)
+          assert_match(/# === END Mrbgemfile generated ===/, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "Multiple mrbgems are correctly specified in build_config" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        Picotorokko::Env.reset_cached_root!
+        begin
+          # Create project
+          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
+          initializer.initialize_project
+
+          Dir.chdir("testapp")
+          Picotorokko::Env.reset_cached_root!
+
+          # Generate multiple mrbgems
+          capture_stdout do
+            Picotorokko::Commands::Mrbgems.start(["generate", "lib1"])
+            Picotorokko::Commands::Mrbgems.start(["generate", "lib2"])
+          end
+
+          # Add mrbgems to Mrbgemfile
+          mrbgemfile = File.read("Mrbgemfile")
+          new_mrbgemfile = mrbgemfile.gsub(
+            "  conf.gem \"mrbgems/app\"",
+            "  conf.gem \"mrbgems/app\"\n  conf.gem \"mrbgems/lib1\"\n  conf.gem \"mrbgems/lib2\""
+          )
+          File.write("Mrbgemfile", new_mrbgemfile)
+
+          # Setup build directory
+          env_name = "20240101_120000"
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20240101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20240101_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20240101_120000" }
+          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+
+          build_config_dir = File.join(".ptrk_build", env_name, "R2P2-ESP32", "build_config")
+          FileUtils.mkdir_p(build_config_dir)
+          File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
+
+          # Apply Mrbgemfile directly (as it's called by build command)
+          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
+          mrbgemfile_content = File.read("Mrbgemfile")
+          capture_stdout do
+            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
+          end
+
+          # Verify all mrbgems are in build_config
+          build_config_path = File.join(build_config_dir, "default.rb")
+          config_content = File.read(build_config_path)
+
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/lib1"}, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/lib2"}, config_content)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "Mrbgemfile with core gems and github sources" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        Picotorokko::Env.reset_cached_root!
+        begin
+          # Create project
+          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
+          initializer.initialize_project
+
+          Dir.chdir("testapp")
+          Picotorokko::Env.reset_cached_root!
+
+          # Modify Mrbgemfile to add more source types
+          mrbgemfile = File.read("Mrbgemfile")
+          new_mrbgemfile = mrbgemfile.gsub(
+            "mrbgems do |conf|",
+            "mrbgems do |conf|\n  conf.gem :core => \"mruby-string-ext\"\n  conf.gem :core => \"mruby-array\""
+          )
+          File.write("Mrbgemfile", new_mrbgemfile)
+
+          # Setup build directory
+          env_name = "20240101_120000"
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20240101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20240101_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20240101_120000" }
+          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+
+          build_config_dir = File.join(".ptrk_build", env_name, "R2P2-ESP32", "build_config")
+          FileUtils.mkdir_p(build_config_dir)
+          File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
+
+          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
+          mrbgemfile_content = File.read("Mrbgemfile")
+          capture_stdout do
+            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
+          end
+
+          build_config_path = File.join(build_config_dir, "default.rb")
+          config_content = File.read(build_config_path)
+
+          assert_match(/conf\.gem\s+core:\s+"mruby-string-ext"/, config_content)
+          assert_match(/conf\.gem\s+core:\s+"mruby-array"/, config_content)
+          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
   end
 end
