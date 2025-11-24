@@ -115,28 +115,25 @@ module Picotorokko
 
           changed_files = `git diff --name-only 2>/dev/null`.split("\n")
 
+          # Remove and recreate patch directory for this repo
+          patch_dir = File.join(Picotorokko::Env.patch_dir, repo)
+          FileUtils.rm_rf(patch_dir) if Dir.exist?(patch_dir)
+
           if changed_files.empty?
             puts "  #{repo}: (no changes)"
             return
           end
 
           puts "  #{repo}: #{changed_files.size} file(s)"
+          FileUtils.mkdir_p(patch_dir)
 
           changed_files.each do |file|
-            patch_dir = File.join(Picotorokko::Env.patch_dir, repo)
-            FileUtils.mkdir_p(patch_dir)
-
             file_dir = File.dirname(file)
             FileUtils.mkdir_p(File.join(patch_dir, file_dir)) unless file_dir == "."
 
-            diff_output = `git diff -- #{Shellwords.escape(file)}`
-            patch_file = File.join(patch_dir, file)
-
-            if diff_output.strip.empty?
-              FileUtils.cp(file, patch_file)
-            else
-              File.write(patch_file, diff_output)
-            end
+            source_file = File.join(work_path, file)
+            dest_file = File.join(patch_dir, file)
+            FileUtils.cp(source_file, dest_file)
 
             puts "    Exported: #{repo}/#{file}"
           end
