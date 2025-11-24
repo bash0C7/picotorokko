@@ -207,6 +207,117 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
       end
     end
 
+    test "FIX: storage/home and mrbgems should be at build env level, not in R2P2-ESP32" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+
+          # Create project
+          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
+          initializer.initialize_project
+          Dir.chdir("myapp")
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+
+          # Add files to storage and mrbgems
+          File.write("storage/home/app.rb", "puts 'Hello'")
+          File.write("storage/home/config.yml", "key: value")
+          FileUtils.mkdir_p("mrbgems/my_gem")
+          File.write("mrbgems/my_gem/gembox", "MRuby::GemBox.new")
+
+          # Set environment
+          env_name = "20251123_200000"
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+
+          # Create .ptrk_env structure
+          env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
+          r2p2_path = File.join(env_path, "R2P2-ESP32")
+          FileUtils.mkdir_p(r2p2_path)
+
+          # Setup build environment
+          device_cmd = Picotorokko::Commands::Device.new
+          capture_stdout do
+            device_cmd.send(:setup_build_environment_for_device, env_name)
+          end
+
+          # Verify correct directory structure at build env level
+          build_path = Picotorokko::Env.get_build_path(env_name)
+
+          # ✅ Should have storage/home at build env level
+          storage_at_env_level = File.join(build_path, "storage", "home", "app.rb")
+          assert File.exist?(storage_at_env_level),
+            "storage/home should be copied to .ptrk_build/{env}/ level, not R2P2-ESP32"
+
+          # ✅ Should have mrbgems at build env level
+          mrbgems_at_env_level = File.join(build_path, "mrbgems", "my_gem", "gembox")
+          assert File.exist?(mrbgems_at_env_level),
+            "mrbgems should be copied to .ptrk_build/{env}/ level, not R2P2-ESP32"
+
+          # ✅ Should also be available in R2P2-ESP32 for build
+          storage_in_r2p2 = File.join(build_path, "R2P2-ESP32", "storage", "home", "app.rb")
+          assert File.exist?(storage_in_r2p2),
+            "storage/home should also be available in R2P2-ESP32 subdirectory"
+
+          mrbgems_in_r2p2 = File.join(build_path, "R2P2-ESP32", "mrbgems", "my_gem", "gembox")
+          assert File.exist?(mrbgems_in_r2p2),
+            "mrbgems should also be available in R2P2-ESP32 subdirectory"
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
+    test "FIX: patch directory from project root should be applied to build" do
+      original_dir = Dir.pwd
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir)
+        begin
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+
+          # Create project
+          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
+          initializer.initialize_project
+          Dir.chdir("myapp")
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+
+          # Create patch file for R2P2-ESP32 from project root patch dir
+          FileUtils.mkdir_p("patch/R2P2-ESP32/custom")
+          File.write("patch/R2P2-ESP32/custom/config.h", "#define CUSTOM_VALUE 42")
+
+          # Set environment
+          env_name = "20251123_210000"
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+
+          # Create .ptrk_env structure
+          env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
+          r2p2_path = File.join(env_path, "R2P2-ESP32")
+          FileUtils.mkdir_p(r2p2_path)
+
+          # Setup build environment
+          device_cmd = Picotorokko::Commands::Device.new
+          capture_stdout do
+            device_cmd.send(:setup_build_environment_for_device, env_name)
+          end
+
+          # Verify patch was applied from project root
+          build_path = Picotorokko::Env.get_build_path(env_name)
+          patch_applied = File.join(build_path, "R2P2-ESP32", "custom", "config.h")
+          assert File.exist?(patch_applied),
+            "patch files from project root patch/ should be applied to build"
+          assert_equal "#define CUSTOM_VALUE 42", File.read(patch_applied)
+        ensure
+          Dir.chdir(original_dir)
+        end
+      end
+    end
+
     test "KNOWN ISSUE: actual rake execution fails without proper Rakefile" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|

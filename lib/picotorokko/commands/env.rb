@@ -723,25 +723,38 @@ module Picotorokko
         FileUtils.cp_r(env_path, build_path)
         puts "  ✓ Environment copied to #{build_path}"
 
-        # Copy storage/home/ to R2P2-ESP32 build directory
+        # Copy storage/home/ to both build env level and R2P2-ESP32
         storage_src = File.join(Picotorokko::Env.project_root, "storage", "home")
         if Dir.exist?(storage_src)
+          # Copy to build env level
+          storage_dst_env = File.join(build_path, "storage", "home")
+          FileUtils.mkdir_p(File.dirname(storage_dst_env))
+          FileUtils.rm_rf(storage_dst_env)
+          FileUtils.cp_r(storage_src, storage_dst_env)
+          puts "  ✓ Copied storage/home/ to build env level"
+
+          # Copy to R2P2-ESP32 subdirectory
           r2p2_path = File.join(build_path, "R2P2-ESP32")
-          storage_dst = File.join(r2p2_path, "storage", "home")
-          FileUtils.mkdir_p(File.dirname(storage_dst))
-          FileUtils.rm_rf(storage_dst)
-          FileUtils.cp_r(storage_src, storage_dst)
-          puts "  ✓ Copied storage/home/ to R2P2-ESP32"
+          storage_dst_r2p2 = File.join(r2p2_path, "storage", "home")
+          FileUtils.mkdir_p(File.dirname(storage_dst_r2p2))
+          FileUtils.rm_rf(storage_dst_r2p2)
+          FileUtils.cp_r(storage_src, storage_dst_r2p2)
         end
 
-        # Copy mrbgems/ to R2P2-ESP32 build directory
+        # Copy mrbgems/ to both build env level and R2P2-ESP32
         mrbgems_src = File.join(Picotorokko::Env.project_root, "mrbgems")
         if Dir.exist?(mrbgems_src)
+          # Copy to build env level
+          mrbgems_dst_env = File.join(build_path, "mrbgems")
+          FileUtils.rm_rf(mrbgems_dst_env)
+          FileUtils.cp_r(mrbgems_src, mrbgems_dst_env)
+          puts "  ✓ Copied mrbgems/ to build env level"
+
+          # Copy to R2P2-ESP32 subdirectory
           r2p2_path = File.join(build_path, "R2P2-ESP32")
-          mrbgems_dst = File.join(r2p2_path, "mrbgems")
-          FileUtils.rm_rf(mrbgems_dst)
-          FileUtils.cp_r(mrbgems_src, mrbgems_dst)
-          puts "  ✓ Copied mrbgems/ to R2P2-ESP32"
+          mrbgems_dst_r2p2 = File.join(r2p2_path, "mrbgems")
+          FileUtils.rm_rf(mrbgems_dst_r2p2)
+          FileUtils.cp_r(mrbgems_src, mrbgems_dst_r2p2)
         end
 
         # Apply patches
@@ -754,9 +767,6 @@ module Picotorokko
         puts "  Applying patches..."
 
         %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
-          patch_repo_dir = File.join(Picotorokko::Env.patch_dir, repo)
-          next unless Dir.exist?(patch_repo_dir)
-
           case repo
           when "R2P2-ESP32"
             work_path = File.join(build_path, "R2P2-ESP32")
@@ -768,9 +778,19 @@ module Picotorokko
 
           next unless Dir.exist?(work_path)
 
-          # Apply patches
-          Picotorokko::PatchApplier.apply_patches_to_directory(patch_repo_dir, work_path)
-          puts "    Applied #{repo}"
+          # Apply patches from .ptrk_env/patch/{repo}/
+          patch_repo_dir = File.join(Picotorokko::Env.patch_dir, repo)
+          if Dir.exist?(patch_repo_dir)
+            Picotorokko::PatchApplier.apply_patches_to_directory(patch_repo_dir, work_path)
+            puts "    Applied #{repo} (from .ptrk_env/patch)"
+          end
+
+          # Apply patches from project root patch/{repo}/
+          project_patch_dir = File.join(Picotorokko::Env.project_root, "patch", repo)
+          if Dir.exist?(project_patch_dir)
+            Picotorokko::PatchApplier.apply_patches_to_directory(project_patch_dir, work_path)
+            puts "    Applied #{repo} (from project patch)"
+          end
         end
 
         puts "  ✓ Patches applied"
