@@ -70,7 +70,7 @@ module Picotorokko
         validate_and_get_r2p2_path(actual_env)
 
         # Apply Mrbgemfile if it exists
-        apply_mrbgemfile(actual_env)
+        apply_mrbgemfile_internal(actual_env)
 
         if setup_required
           puts "First build detected, running setup_esp32..."
@@ -105,7 +105,7 @@ module Picotorokko
         validate_and_get_r2p2_path(actual_env)
 
         # Apply Mrbgemfile if it exists
-        apply_mrbgemfile(actual_env)
+        apply_mrbgemfile_internal(actual_env)
 
         if setup_required
           puts "First build detected, running setup_esp32..."
@@ -237,40 +237,18 @@ module Picotorokko
         nil
       end
 
-      # Apply Mrbgemfile if it exists
+      # Internal helper: Apply Mrbgemfile if it exists
       # Reads Mrbgemfile and applies mrbgems to build_config files
       # @rbs (String) -> void
-      def apply_mrbgemfile(env_name)
+      def apply_mrbgemfile_internal(env_name)
         mrbgemfile_path = File.join(Picotorokko::Env.project_root, "Mrbgemfile")
         return unless File.exist?(mrbgemfile_path)
 
         mrbgemfile_content = File.read(mrbgemfile_path)
-        apply_to_build_configs(mrbgemfile_content, env_name)
-      end
-
-      # Apply mrbgems to all build_config/*.rb files in R2P2-ESP32 build directory
-      # @rbs (String, String) -> void
-      def apply_to_build_configs(mrbgemfile_content, env_name)
-        # Get R2P2-ESP32 path from build environment
         actual_env = resolve_env_name(env_name)
         r2p2_path = validate_and_get_r2p2_path(actual_env)
 
-        build_config_dir = File.join(r2p2_path, "build_config")
-        return unless Dir.exist?(build_config_dir)
-
-        Dir.glob(File.join(build_config_dir, "*.rb")).each do |config_file|
-          config_name = File.basename(config_file, ".rb")
-          dsl = MrbgemsDSL.new(mrbgemfile_content, config_name)
-          gems = dsl.gems
-
-          next if gems.empty?
-
-          content = File.read(config_file)
-          modified = BuildConfigApplier.apply(content, gems)
-          File.write(config_file, modified)
-        end
-
-        puts "  ✓ Applied Mrbgemfile to R2P2-ESP32/build_config/"
+        MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
       end
 
       # 利用可能なR2P2-ESP32タスクを表示
