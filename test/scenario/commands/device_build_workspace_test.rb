@@ -187,6 +187,35 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         end
       end
     end
+
+    test "validate_and_get_r2p2_path returns path with R2P2-ESP32 subdirectory" do
+      Dir.mktmpdir do |tmpdir|
+        with_fresh_project_root do
+          Dir.chdir(tmpdir)
+
+          # Setup environment
+          setup_complete_test_environment("test-env")
+
+          with_esp_env_mocking do |_mock|
+            capture_stdout do
+              Picotorokko::Commands::Device.start(["build", "--env", "test-env"])
+            end
+          end
+
+          # Get expected path with R2P2-ESP32 subdirectory
+          build_path = Picotorokko::Env.get_build_path("test-env")
+          expected_r2p2_path = File.join(build_path, "R2P2-ESP32")
+
+          # Call validate_and_get_r2p2_path via device command
+          device_cmd = Picotorokko::Commands::Device.new
+          actual_r2p2_path = device_cmd.send(:validate_and_get_r2p2_path, "test-env")
+
+          # Should return path including R2P2-ESP32 subdirectory
+          assert_equal expected_r2p2_path, actual_r2p2_path,
+                       "validate_and_get_r2p2_path should return path with R2P2-ESP32 subdirectory"
+        end
+      end
+    end
   end
 
   private
