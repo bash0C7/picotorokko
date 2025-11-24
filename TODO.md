@@ -21,43 +21,44 @@
 
 ### [TODO-BUG-1] R2P2-ESP32 Path Inconsistency in device build
 
-**Status**: 🔍 DISCOVERED DURING MANUAL TESTING
+**Status**: ✅ COMPLETED (commit f39ac28)
 
 **Issue**: `ptrk device build` fails with "R2P2-ESP32 not found in build environment"
 
 **Root Cause**:
 - `clone_env_repository` clones R2P2-ESP32 directly to `.ptrk_env/{env_name}/` (R2P2-ESP32 content directly, no subdirectory)
-- `setup_build_environment` copies `.ptrk_env/{env_name}/` to `.ptrk_build/{env_name}/`
-- `device.rb:validate_and_get_r2p2_path` expects `.ptrk_build/{env_name}/R2P2-ESP32/` subdirectory
-- **Path structure mismatch**: expects nested R2P2-ESP32 dir but gets R2P2-ESP32 content directly
+- `setup_build_environment` was using `File.join(build_path, "R2P2-ESP32")` which doesn't exist
 
-**Error Location**: `lib/picotorokko/commands/device.rb:290-291`
-```ruby
-r2p2_path = File.join(build_path, "R2P2-ESP32")  # ← expects subdirectory
-raise "Error: R2P2-ESP32 not found" unless Dir.exist?(r2p2_path)
+**Fix Applied**:
+1. Modified `setup_build_environment` to use `build_path` directly (not `build_path/R2P2-ESP32`)
+2. Modified `apply_patches_to_build` to use correct paths
+3. Changed build order: ENV → **Patch** → Storage → mrbgems (patches first, then user content)
+4. Added comprehensive tests in `test/scenario/commands/device_build_workspace_test.rb`
+
+**Correct Directory Structure** (verified):
+```
+.ptrk_env/{env}/              # R2P2-ESP32 content directly (git clone target)
+├── Rakefile
+├── components/
+│   └── picoruby-esp32/
+│       └── picoruby/
+└── storage/home/
+
+.ptrk_build/{env}/            # Copy of .ptrk_env/{env}/ with patches/storage/mrbgems applied
+├── Rakefile
+├── components/
+│   └── picoruby-esp32/
+│       └── picoruby/
+│           └── mrbgems/      # ← User's mrbgems copied here
+├── storage/home/             # ← User's storage/home copied here
+└── (patch files applied)     # ← From project-root/patch/R2P2-ESP32/
 ```
 
-**Fix**: Change to use `build_path` directly
-```ruby
-r2p2_path = build_path  # R2P2-ESP32 content is already copied here
-```
-
-**Impact**: Blocking manual E2E verification flow
-
-**Fix Applied**: ✅ COMPLETED (commit pending)
-- Modified `device.rb:validate_and_get_r2p2_path` to use `build_path` directly
-- Removed incorrect `File.join(build_path, "R2P2-ESP32")` path construction
-
-**Verification Results** (Manual E2E Test):
-- ✅ Environment setup successful: `ptrk env set --latest` creates `.ptrk_env/{env}/` with full 3-level submodule structure
-- ✅ Build directory creation: `.ptrk_build/{env}/` correctly copies from `.ptrk_env/{env}/`
-- ✅ Directory structure: 3-level hierarchy confirmed:
-  - Level 1: `.ptrk_build/{env}/` (R2P2-ESP32 root)
-  - Level 2: `.ptrk_build/{env}/components/picoruby-esp32/` (picoruby-esp32)
-  - Level 3: `.ptrk_build/{env}/components/picoruby-esp32/picoruby/` (picoruby)
-- ✅ Push safety: `.git remote -v` shows `no_push` for push URLs in `.ptrk_env/{env}/`
-- ✅ Device build command: Now executes setup_esp32 (previously blocked)
-- ⚠️ Note: Build fails with OpenSSL library error (environment-dependent, not tool issue)
+**Build Order** (ENV → Patch → Storage → mrbgems):
+1. Copy `.ptrk_env/{env}/` → `.ptrk_build/{env}/`
+2. Apply patches from `patch/R2P2-ESP32/` (so user's storage isn't overwritten)
+3. Copy `storage/home/` → `.ptrk_build/{env}/storage/home/`
+4. Copy `mrbgems/` → `.ptrk_build/{env}/components/picoruby-esp32/picoruby/mrbgems/`
 
 ---
 
@@ -246,6 +247,47 @@ end
 - Created `test/scenario/phase5_e2e_test.rb` with 5 scenario tests
 - Covers project structure creation, environment setup, build directory structure, mrbgems scaffold, and storage/home verification
 - Tests use simulated environments without network operations
+
+---
+
+## Workflow Clarification Notes
+
+### [TODO-WORKFLOW-1] ptrk patch Workflow Documentation
+
+**Status**: ✅ COMPLETED (commit e651f90)
+
+**Issue**: User confusion about patch workflow - where to edit and how patches are applied.
+
+**Clarified Workflow**:
+1. **Recommended**: Create patch files directly in `project-root/patch/{repo}/`
+2. **Advanced**: Edit in `.ptrk_build/{env}/` → export with `ptrk env patch_export`
+3. **No explicit apply command**: Patches are automatically applied during `ptrk device build`
+
+**Key Points**:
+- Build workspace (`.ptrk_build/`) is **reset on each build** - always export before rebuilding
+- `patch_export` is for **saving work**, not applying patches
+- Build order ensures user's `storage/home` is not overwritten by patches
+
+**Documentation**: See `.claude/docs/build-workspace-guide.md` "Patch Workflow" section
+
+### [TODO-WORKFLOW-2] ptrk mrbgems End-to-End Verification
+
+**Status**: 📋 PLANNED
+
+**Issue**: Need comprehensive verification that mrbgems workflow works from user perspective.
+
+**Verification Items**:
+- [ ] `ptrk mrbgems generate` creates correct directory structure
+- [ ] Generated mrbgem is copied to nested picoruby path during build
+- [ ] C sources in `mrbgems/{gem}/src/*.c` are compiled into PicoRuby runtime
+- [ ] Mrbgemfile parsing and `build_config/*.rb` modification works correctly
+- [ ] Multiple mrbgems can coexist in the same project
+
+**Context**:
+- mrbgems location: `project-root/mrbgems/` → copied to `.ptrk_build/{env}/components/picoruby-esp32/picoruby/mrbgems/`
+- CMakeLists.txt integration for C sources (future enhancement)
+
+**Test Coverage**: `test/scenario/mrbgems_workflow_test.rb` exists but may need expansion
 
 ---
 
