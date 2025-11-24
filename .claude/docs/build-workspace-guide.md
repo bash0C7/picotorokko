@@ -164,6 +164,50 @@ Patches can come from two sources and are applied in order:
 
 Both sources overlay files onto the build target in the same order.
 
+## Patch Workflow
+
+### Recommended Workflow
+
+The simplest workflow is to **create patch files directly** in the project root:
+
+```bash
+# 1. Create patch file directly
+mkdir -p patch/R2P2-ESP32/custom
+echo '#define MY_VALUE 42' > patch/R2P2-ESP32/custom/config.h
+
+# 2. Build applies patches automatically
+ptrk device build
+```
+
+### Using patch_export (Advanced)
+
+For iterative development in the build environment:
+
+```bash
+# 1. Build to create workspace
+ptrk device build
+
+# 2. Edit files directly in build workspace
+vim .ptrk_build/my-env/custom/config.h
+
+# 3. Export changes to patch directory
+ptrk env patch_export my-env
+
+# Note: Build workspace is reset on each build!
+# Always export before rebuilding.
+```
+
+### Why No Explicit `apply` Command?
+
+There is no `ptrk patch apply` command because:
+
+- **Automatic application**: Patches are applied during `ptrk device build`
+- **Build order**: ENV → **Patch** → Storage → mrbgems
+- **Idempotent**: Each build starts fresh, applying all patches
+
+The `patch_export` command exists for **saving work** from the build environment,
+not for applying patches (which happens automatically).
+
 ### Directory Change Pattern
 
 Always use `Dir.chdir` with a block to ensure the original directory is restored:
