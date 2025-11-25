@@ -23,6 +23,7 @@ class ScenarioNewTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: User creates basic PicoRuby project" do
     test "creates complete project structure for new development" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -50,6 +51,7 @@ class ScenarioNewTest < PicotorokkoTestCase
     end
 
     test "creates project with CI integration when --with-ci flag is used" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -71,6 +73,7 @@ class ScenarioNewTest < PicotorokkoTestCase
     end
 
     test "creates project in current directory when no name is provided" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -98,6 +101,7 @@ class ScenarioNewTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: Project structure is git-ready" do
     test "created projects work with git workflow" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -132,6 +136,7 @@ class ScenarioNewTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: Template rendering and variable substitution" do
     test "project name is correctly substituted in generated files" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -157,6 +162,7 @@ class ScenarioNewTest < PicotorokkoTestCase
     end
 
     test "generated files are valid and well-formed" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)

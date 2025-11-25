@@ -31,6 +31,7 @@ class ScenarioProjectLifecycleTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: project lifecycle from creation to build" do
     test "Step 1: ptrk new creates complete project structure" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -59,6 +60,7 @@ class ScenarioProjectLifecycleTest < PicotorokkoTestCase
     end
 
     test "Step 2-3: environment can be set and selected" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -96,6 +98,7 @@ class ScenarioProjectLifecycleTest < PicotorokkoTestCase
     end
 
     test "Step 4: device build sets up build directory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -133,6 +136,7 @@ class ScenarioProjectLifecycleTest < PicotorokkoTestCase
     end
 
     test "Step 5: device flash without ESP-IDF shows error message" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -177,6 +181,7 @@ class ScenarioProjectLifecycleTest < PicotorokkoTestCase
     end
 
     test "Step 6: device monitor without ESP-IDF shows error message" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)

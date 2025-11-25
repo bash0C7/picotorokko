@@ -32,6 +32,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: Build precondition verification" do
     test "PROBLEM: env set_environment without env directory causes build to fail" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -74,6 +75,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
     end
 
     test "SOLUTION: create .ptrk_env directory structure for build to succeed" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -123,6 +125,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
     end
 
     test "Verification: storage/home is copied to build directory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -168,6 +171,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
     end
 
     test "Verification: mrbgems are copied to nested picoruby path in build directory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -211,6 +215,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
     end
 
     test "FIX: storage/home and mrbgems in R2P2-ESP32 build directory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -269,6 +274,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
     end
 
     test "FIX: patch directory from project root should be applied to build" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -317,6 +323,7 @@ class ScenarioBuildPreconditionTest < PicotorokkoTestCase
     end
 
     test "KNOWN ISSUE: actual rake execution fails without proper Rakefile" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)

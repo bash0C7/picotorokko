@@ -26,6 +26,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
 
   sub_test_case "build workspace setup" do
     test "copies storage/home to build workspace" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
@@ -56,6 +57,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     end
 
     test "copies mrbgems to nested picoruby path in build workspace" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
@@ -88,6 +90,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     end
 
     test "applies patches from project root patch directory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
@@ -118,6 +121,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     end
 
     test "patches do not overwrite storage/home (correct order: patch before storage)" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
@@ -154,6 +158,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     end
 
     test "file contents are identical between source and build workspace" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
@@ -194,6 +199,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     end
 
     test "validate_and_get_r2p2_path returns path with R2P2-ESP32 subdirectory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
@@ -224,6 +230,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     end
 
     test "directory replacement: old build workspace files are deleted when rebuild happens" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)

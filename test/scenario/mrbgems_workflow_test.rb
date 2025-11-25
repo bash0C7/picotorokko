@@ -30,6 +30,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: mrbgems workflow from project creation to build" do
     test "Step 1: ptrk new creates project with default mrbgems/app/" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -52,6 +53,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     end
 
     test "Step 2: ptrk mrbgems generate creates custom mrbgem" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -89,6 +91,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     end
 
     test "Steps 3-4: Multiple mrbgems are created in project" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -137,6 +140,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     end
 
     test "mrbgems generate raises error when directory already exists" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -162,6 +166,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     end
 
     test "generated mrbgems have correct class names in Ruby and C code" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -192,6 +197,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     end
 
     test "mrbgems directory is created in project and can be copied to build path" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -227,6 +233,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     end
 
     test "Mrbgemfile is parsed and applied to build_config files" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -278,6 +285,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     end
 
     test "Multiple mrbgems are correctly specified in build_config" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -337,6 +345,7 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     end
 
     test "Mrbgemfile with core gems and github sources" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)

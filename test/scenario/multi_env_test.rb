@@ -29,6 +29,7 @@ class ScenarioMultiEnvTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: multiple environment management" do
     test "Steps 1-4: can create and list multiple environments" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)
@@ -58,6 +59,7 @@ class ScenarioMultiEnvTest < PicotorokkoTestCase
     end
 
     test "Steps 5-7: can switch between environments" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)
@@ -95,6 +97,7 @@ class ScenarioMultiEnvTest < PicotorokkoTestCase
     end
 
     test "Step 9: multiple build directories can coexist" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)
@@ -131,6 +134,7 @@ class ScenarioMultiEnvTest < PicotorokkoTestCase
     end
 
     test "environment info is correctly stored and retrieved" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)

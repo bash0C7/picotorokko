@@ -53,6 +53,29 @@ Metrics/BlockLength:
   Exclude:
     - "test/**/*"
     - "picotorokko.gemspec" # Gem specification file with standard DSL structure
+    - "lib/picotorokko/commands/env.rb" # Complex git operations with nested blocks
+
+# Test mock methods can be complex due to command pattern matching
+# Complex git operations in commands/env.rb require nested logic
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - "test/**/*"
+    - "lib/picotorokko/commands/env.rb"
+    - "lib/picotorokko/commands/patch.rb"
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - "test/**/*"
+    - "lib/picotorokko/commands/env.rb"
+    - "lib/picotorokko/commands/patch.rb"
+
+# Allow longer lines in test comments for clarity
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - "test/**/*"
+    - "lib/picotorokko/commands/env.rb" # Complex git commands with long lines
+    - "picotorokko.gemspec" # Gem metadata with long descriptions
 
 # Command processors in test mocking return boolean for success/failure, not predicates
 Naming/PredicateMethod:

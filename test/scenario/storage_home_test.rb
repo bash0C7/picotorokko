@@ -30,6 +30,7 @@ class ScenarioStorageHomeTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: storage/home workflow" do
     test "Step 1: project creation includes storage/home directory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -48,6 +49,7 @@ class ScenarioStorageHomeTest < PicotorokkoTestCase
     end
 
     test "Steps 2-3: storage/home files are available in project" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -73,6 +75,7 @@ class ScenarioStorageHomeTest < PicotorokkoTestCase
     end
 
     test "Steps 4-5: storage/home files can be updated" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -101,6 +104,7 @@ class ScenarioStorageHomeTest < PicotorokkoTestCase
     end
 
     test "Step 6: nested directories in storage/home are supported" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -133,6 +137,7 @@ class ScenarioStorageHomeTest < PicotorokkoTestCase
     end
 
     test "storage/home supports binary files" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)

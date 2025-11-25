@@ -177,10 +177,18 @@ module Picotorokko
 
         Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info,
                                          notes: "Environment created")
+
+        # Clone repositories with specified commits
+        clone_env_repository(env_name, {
+                               "R2P2-ESP32" => r2p2_info,
+                               "picoruby-esp32" => esp32_info,
+                               "picoruby" => picoruby_info
+                             })
+
         puts "✓ Environment '#{env_name}' created"
       end
 
-      no_commands do # rubocop:disable Metrics/BlockLength
+      no_commands do
         # Create environment with timestamp-based name and fetch latest repos
         # @rbs () -> void
         def set_latest
@@ -232,10 +240,6 @@ module Picotorokko
           checkout_cmd = "cd #{Shellwords.escape(r2p2_path)} && git checkout #{Shellwords.escape(r2p2_commit)}"
           raise "Checkout failed: R2P2-ESP32 to commit #{r2p2_commit}" unless system(checkout_cmd)
 
-          # Initialize and fetch all nested submodules recursively
-          submodule_cmd = "cd #{Shellwords.escape(r2p2_path)} && git submodule update --init --recursive --jobs 4"
-          raise "Submodule update failed for R2P2-ESP32" unless system(submodule_cmd)
-
           # Checkout picoruby-esp32 to specified commit
           esp32_commit = repos_info["picoruby-esp32"]["commit"]
           esp32_path = File.join(r2p2_path, "components", "picoruby-esp32")
@@ -252,10 +256,14 @@ module Picotorokko
           git_add = "cd #{Shellwords.escape(r2p2_path)} && git add components/picoruby-esp32"
           raise "Failed to stage submodule changes" unless system(git_add)
 
-          # Amend commit with env-name (skip gpg signing to avoid signing server issues)
-          git_amend = "cd #{Shellwords.escape(r2p2_path)} && " \
-                      "git commit --amend --no-gpg-sign -m #{Shellwords.escape("ptrk env: #{env_name}")}"
-          raise "Failed to amend commit" unless system(git_amend)
+          # Create new commit with submodule updates (skip gpg signing to avoid signing server issues)
+          git_commit = "cd #{Shellwords.escape(r2p2_path)} && " \
+                       "git commit --no-gpg-sign -m #{Shellwords.escape("ptrk env: #{env_name}")}"
+          raise "Failed to create commit" unless system(git_commit)
+
+          # Initialize and fetch all nested submodules recursively (after all checkouts and commit)
+          final_submodule_cmd = "cd #{Shellwords.escape(r2p2_path)} && git submodule update --init --recursive --jobs 4"
+          raise "Final submodule update failed for R2P2-ESP32" unless system(final_submodule_cmd)
 
           # Disable push on all repos
           disable_push = "git remote set-url --push origin no_push"
@@ -598,16 +606,70 @@ module Picotorokko
         def fetch_latest_repos
           require "tmpdir"
 
-          repos_info = {}
-          Picotorokko::Env::REPOS.each do |repo_name, repo_url|
-            puts "  Checking #{repo_name}..."
-            commit = Picotorokko::Env.fetch_remote_commit(repo_url, "HEAD")
-            raise "Failed to fetch commit for #{repo_name}" if commit.nil?
+          Dir.mktmpdir do |tmpdir|
+            # Fetch R2P2-ESP32 latest HEAD
+            r2p2_url = Picotorokko::Env::REPOS["R2P2-ESP32"]
+            r2p2_dir = File.join(tmpdir, "R2P2-ESP32")
 
-            repos_info[repo_name] = fetch_repo_info(repo_name, repo_url)
+            puts "  Checking R2P2-ESP32..."
+            cmd = "git clone --depth 1 #{Shellwords.escape(r2p2_url)} #{Shellwords.escape(r2p2_dir)} 2>/dev/null"
+            raise "Failed to clone R2P2-ESP32" unless system(cmd)
+
+            Dir.chdir(r2p2_dir) do
+              # Get R2P2-ESP32 commit info
+              r2p2_commit = `git rev-parse --short=7 HEAD`.strip
+              raise "Failed to get R2P2-ESP32 commit hash" if r2p2_commit.empty?
+
+              r2p2_timestamp = `git show -s --format=%ci HEAD`.strip
+              raise "Failed to get R2P2-ESP32 timestamp" if r2p2_timestamp.empty?
+
+              r2p2_info = {
+                "commit" => r2p2_commit,
+                "timestamp" => Time.parse(r2p2_timestamp).strftime("%Y%m%d_%H%M%S")
+              }
+              puts "    ✓ R2P2-ESP32: #{r2p2_commit} (#{r2p2_info["timestamp"]})"
+
+              # Get picoruby-esp32 commit from R2P2-ESP32's submodule reference
+              puts "  Checking picoruby-esp32 (from R2P2-ESP32 submodule reference)..."
+              esp32_update = "git submodule update --init --depth 1 components/picoruby-esp32 2>/dev/null"
+              raise "Failed to initialize picoruby-esp32 submodule" unless system(esp32_update)
+
+              esp32_commit = `git -C components/picoruby-esp32 rev-parse --short=7 HEAD`.strip
+              raise "Failed to get picoruby-esp32 commit hash" if esp32_commit.empty?
+
+              esp32_timestamp = `git -C components/picoruby-esp32 show -s --format=%ci HEAD`.strip
+              raise "Failed to get picoruby-esp32 timestamp" if esp32_timestamp.empty?
+
+              esp32_info = {
+                "commit" => esp32_commit,
+                "timestamp" => Time.parse(esp32_timestamp).strftime("%Y%m%d_%H%M%S")
+              }
+              puts "    ✓ picoruby-esp32: #{esp32_commit} (#{esp32_info["timestamp"]})"
+
+              # Get picoruby commit from picoruby-esp32's submodule reference
+              puts "  Checking picoruby (from picoruby-esp32 submodule reference)..."
+              picoruby_update = "git -C components/picoruby-esp32 submodule update --init --depth 1 picoruby 2>/dev/null"
+              raise "Failed to initialize picoruby submodule" unless system(picoruby_update)
+
+              picoruby_commit = `git -C components/picoruby-esp32/picoruby rev-parse --short=7 HEAD`.strip
+              raise "Failed to get picoruby commit hash" if picoruby_commit.empty?
+
+              picoruby_timestamp = `git -C components/picoruby-esp32/picoruby show -s --format=%ci HEAD`.strip
+              raise "Failed to get picoruby timestamp" if picoruby_timestamp.empty?
+
+              picoruby_info = {
+                "commit" => picoruby_commit,
+                "timestamp" => Time.parse(picoruby_timestamp).strftime("%Y%m%d_%H%M%S")
+              }
+              puts "    ✓ picoruby: #{picoruby_commit} (#{picoruby_info["timestamp"]})"
+
+              return {
+                "R2P2-ESP32" => r2p2_info,
+                "picoruby-esp32" => esp32_info,
+                "picoruby" => picoruby_info
+              }
+            end
           end
-
-          repos_info
         end
       end
 

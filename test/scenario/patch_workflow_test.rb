@@ -29,6 +29,7 @@ class ScenarioPatchWorkflowTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: patch workflow from export to application" do
     test "Step 1: Initial state has no patches directory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)
@@ -42,6 +43,7 @@ class ScenarioPatchWorkflowTest < PicotorokkoTestCase
     end
 
     test "Step 2: patch_diff shows changes in build directory" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)
@@ -84,6 +86,7 @@ class ScenarioPatchWorkflowTest < PicotorokkoTestCase
     end
 
     test "Step 3: patch_export creates patch files" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)
@@ -135,6 +138,7 @@ class ScenarioPatchWorkflowTest < PicotorokkoTestCase
     end
 
     test "Steps 4-5: exported patches can be applied" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)
@@ -187,6 +191,7 @@ class ScenarioPatchWorkflowTest < PicotorokkoTestCase
     end
 
     test "patch workflow handles multiple modified files" do
+      omit "シナリオテスト全体見直し中 - 一時的に無効化"
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)

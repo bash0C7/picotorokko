@@ -202,21 +202,48 @@ class CommandsEnvTest < PicotorokkoTestCase
         Dir.chdir(tmpdir) do
           FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
 
-          capture_stdout do
-            Picotorokko::Commands::Env.start(
-              ["set", "20251121_170000", "--R2P2-ESP32", "picoruby/R2P2-ESP32",
-               "--picoruby-esp32", "picoruby/picoruby-esp32", "--picoruby", "picoruby/picoruby"]
-            )
+          # Mock Kernel#system to prevent actual git operations
+          original_system = Kernel.instance_method(:system)
+          Kernel.module_eval do
+            define_method(:system) do |cmd, *_args|
+              # Create directory structure for mocked git operations
+              if cmd.to_s.include?("git clone") && cmd =~ /git clone.*\s(\S+)\s+2>/
+                target = Regexp.last_match(1)
+                FileUtils.mkdir_p(target)
+                FileUtils.mkdir_p(File.join(target, ".git"))
+              end
+              if cmd.to_s.include?("git submodule update")
+                if cmd.include?("components/picoruby-esp32")
+                  FileUtils.mkdir_p("components/picoruby-esp32/.git")
+                elsif cmd.include?("picoruby") && cmd.include?("-C")
+                  FileUtils.mkdir_p("components/picoruby-esp32/picoruby/.git")
+                end
+              end
+              true
+            end
           end
 
-          env_config = Picotorokko::Env.get_environment("20251121_170000")
-          assert_not_nil(env_config)
-          # Verify source URLs are stored correctly
-          assert_match(%r{https://github\.com/picoruby/R2P2-ESP32\.git},
-                       env_config["R2P2-ESP32"]["source"])
-          assert_match(%r{https://github\.com/picoruby/picoruby-esp32\.git},
-                       env_config["picoruby-esp32"]["source"])
-          assert_match(%r{https://github\.com/picoruby/picoruby\.git}, env_config["picoruby"]["source"])
+          begin
+            capture_stdout do
+              Picotorokko::Commands::Env.start(
+                ["set", "20251121_170000", "--R2P2-ESP32", "picoruby/R2P2-ESP32",
+                 "--picoruby-esp32", "picoruby/picoruby-esp32", "--picoruby", "picoruby/picoruby"]
+              )
+            end
+
+            env_config = Picotorokko::Env.get_environment("20251121_170000")
+            assert_not_nil(env_config)
+            # Verify source URLs are stored correctly
+            assert_match(%r{https://github\.com/picoruby/R2P2-ESP32\.git},
+                         env_config["R2P2-ESP32"]["source"])
+            assert_match(%r{https://github\.com/picoruby/picoruby-esp32\.git},
+                         env_config["picoruby-esp32"]["source"])
+            assert_match(%r{https://github\.com/picoruby/picoruby\.git}, env_config["picoruby"]["source"])
+          ensure
+            Kernel.module_eval do
+              define_method(:system, original_system)
+            end
+          end
         end
       end
     end
@@ -226,18 +253,45 @@ class CommandsEnvTest < PicotorokkoTestCase
         Dir.chdir(tmpdir) do
           FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
 
-          capture_stdout do
-            Picotorokko::Commands::Env.start(
-              ["set", "20251121_140000", "--R2P2-ESP32", "myorg/R2P2-ESP32",
-               "--picoruby-esp32", "myorg/picoruby-esp32", "--picoruby", "myorg/picoruby"]
-            )
+          # Mock Kernel#system to prevent actual git operations
+          original_system = Kernel.instance_method(:system)
+          Kernel.module_eval do
+            define_method(:system) do |cmd, *_args|
+              # Create directory structure for mocked git operations
+              if cmd.to_s.include?("git clone") && cmd =~ /git clone.*\s(\S+)\s+2>/
+                target = Regexp.last_match(1)
+                FileUtils.mkdir_p(target)
+                FileUtils.mkdir_p(File.join(target, ".git"))
+              end
+              if cmd.to_s.include?("git submodule update")
+                if cmd.include?("components/picoruby-esp32")
+                  FileUtils.mkdir_p("components/picoruby-esp32/.git")
+                elsif cmd.include?("picoruby") && cmd.include?("-C")
+                  FileUtils.mkdir_p("components/picoruby-esp32/picoruby/.git")
+                end
+              end
+              true
+            end
           end
 
-          env_config = Picotorokko::Env.get_environment("20251121_140000")
-          assert_not_nil(env_config)
-          # Verify fork URLs
-          assert_match(%r{https://github\.com/myorg/R2P2-ESP32\.git},
-                       env_config["R2P2-ESP32"]["source"])
+          begin
+            capture_stdout do
+              Picotorokko::Commands::Env.start(
+                ["set", "20251121_140000", "--R2P2-ESP32", "myorg/R2P2-ESP32",
+                 "--picoruby-esp32", "myorg/picoruby-esp32", "--picoruby", "myorg/picoruby"]
+              )
+            end
+
+            env_config = Picotorokko::Env.get_environment("20251121_140000")
+            assert_not_nil(env_config)
+            # Verify fork URLs
+            assert_match(%r{https://github\.com/myorg/R2P2-ESP32\.git},
+                         env_config["R2P2-ESP32"]["source"])
+          ensure
+            Kernel.module_eval do
+              define_method(:system, original_system)
+            end
+          end
         end
       end
     end
@@ -266,21 +320,48 @@ class CommandsEnvTest < PicotorokkoTestCase
             end
           end
 
-          capture_stdout do
-            Picotorokko::Commands::Env.start(
-              ["set", "20251121_180000", "--R2P2-ESP32", "path:#{r2p2_path}",
-               "--picoruby-esp32", "path:#{esp32_path}", "--picoruby", "path:#{picoruby_path}"]
-            )
+          # Mock Kernel#system to handle clone_env_repository
+          original_system = Kernel.instance_method(:system)
+          Kernel.module_eval do
+            define_method(:system) do |cmd, *_args|
+              # Create directory structure for mocked git operations
+              if cmd.to_s.include?("git clone") && cmd =~ /git clone.*\s(\S+)\s+2>/
+                target = Regexp.last_match(1)
+                FileUtils.mkdir_p(target)
+                FileUtils.mkdir_p(File.join(target, ".git"))
+              end
+              if cmd.to_s.include?("git submodule update")
+                if cmd.include?("components/picoruby-esp32")
+                  FileUtils.mkdir_p("components/picoruby-esp32/.git")
+                elsif cmd.include?("picoruby") && cmd.include?("-C")
+                  FileUtils.mkdir_p("components/picoruby-esp32/picoruby/.git")
+                end
+              end
+              true
+            end
           end
 
-          env_config = Picotorokko::Env.get_environment("20251121_180000")
-          assert_not_nil(env_config)
-          # Verify path sources
-          assert_equal("path:#{r2p2_path}", env_config["R2P2-ESP32"]["source"])
-          assert_equal("path:#{esp32_path}", env_config["picoruby-esp32"]["source"])
-          assert_equal("path:#{picoruby_path}", env_config["picoruby"]["source"])
-          # Verify commits were fetched from repos
-          assert_match(/^[a-f0-9]{7}$/, env_config["R2P2-ESP32"]["commit"])
+          begin
+            capture_stdout do
+              Picotorokko::Commands::Env.start(
+                ["set", "20251121_180000", "--R2P2-ESP32", "path:#{r2p2_path}",
+                 "--picoruby-esp32", "path:#{esp32_path}", "--picoruby", "path:#{picoruby_path}"]
+              )
+            end
+
+            env_config = Picotorokko::Env.get_environment("20251121_180000")
+            assert_not_nil(env_config)
+            # Verify path sources
+            assert_equal("path:#{r2p2_path}", env_config["R2P2-ESP32"]["source"])
+            assert_equal("path:#{esp32_path}", env_config["picoruby-esp32"]["source"])
+            assert_equal("path:#{picoruby_path}", env_config["picoruby"]["source"])
+            # Verify commits were fetched from repos
+            assert_match(/^[a-f0-9]{7}$/, env_config["R2P2-ESP32"]["commit"])
+          ensure
+            Kernel.module_eval do
+              define_method(:system, original_system)
+            end
+          end
         end
       end
     end
@@ -309,19 +390,46 @@ class CommandsEnvTest < PicotorokkoTestCase
             end
           end
 
-          capture_stdout do
-            Picotorokko::Commands::Env.start(
-              ["set", "20251121_190000", "--R2P2-ESP32", "path:#{r2p2_path}:abc1234",
-               "--picoruby-esp32", "path:#{esp32_path}:def5678", "--picoruby", "path:#{picoruby_path}:fade012"]
-            )
+          # Mock Kernel#system to handle clone_env_repository
+          original_system = Kernel.instance_method(:system)
+          Kernel.module_eval do
+            define_method(:system) do |cmd, *_args|
+              # Create directory structure for mocked git operations
+              if cmd.to_s.include?("git clone") && cmd =~ /git clone.*\s(\S+)\s+2>/
+                target = Regexp.last_match(1)
+                FileUtils.mkdir_p(target)
+                FileUtils.mkdir_p(File.join(target, ".git"))
+              end
+              if cmd.to_s.include?("git submodule update")
+                if cmd.include?("components/picoruby-esp32")
+                  FileUtils.mkdir_p("components/picoruby-esp32/.git")
+                elsif cmd.include?("picoruby") && cmd.include?("-C")
+                  FileUtils.mkdir_p("components/picoruby-esp32/picoruby/.git")
+                end
+              end
+              true
+            end
           end
 
-          env_config = Picotorokko::Env.get_environment("20251121_190000")
-          assert_not_nil(env_config)
-          # Verify explicit commits are stored
-          assert_equal("abc1234", env_config["R2P2-ESP32"]["commit"])
-          assert_equal("def5678", env_config["picoruby-esp32"]["commit"])
-          assert_equal("fade012", env_config["picoruby"]["commit"])
+          begin
+            capture_stdout do
+              Picotorokko::Commands::Env.start(
+                ["set", "20251121_190000", "--R2P2-ESP32", "path:#{r2p2_path}:abc1234",
+                 "--picoruby-esp32", "path:#{esp32_path}:def5678", "--picoruby", "path:#{picoruby_path}:fade012"]
+              )
+            end
+
+            env_config = Picotorokko::Env.get_environment("20251121_190000")
+            assert_not_nil(env_config)
+            # Verify explicit commits are stored
+            assert_equal("abc1234", env_config["R2P2-ESP32"]["commit"])
+            assert_equal("def5678", env_config["picoruby-esp32"]["commit"])
+            assert_equal("fade012", env_config["picoruby"]["commit"])
+          ensure
+            Kernel.module_eval do
+              define_method(:system, original_system)
+            end
+          end
         end
       end
     end
@@ -1120,6 +1228,15 @@ class CommandsEnvTest < PicotorokkoTestCase
                   FileUtils.mkdir_p(target)
                   FileUtils.mkdir_p(File.join(target, ".git"))
                 end
+                # Create subdirectories for submodule paths
+                if cmd.to_s.include?("git submodule update")
+                  # For submodule commands like: git submodule update --init --depth 1 components/picoruby-esp32 2>/dev/null
+                  if cmd.include?("components/picoruby-esp32")
+                    FileUtils.mkdir_p("components/picoruby-esp32/.git")
+                  elsif cmd.include?("picoruby") && cmd.include?("-C")
+                    FileUtils.mkdir_p("components/picoruby-esp32/picoruby/.git")
+                  end
+                end
                 true # Mock successful git operations
               end
             end
@@ -1129,9 +1246,9 @@ class CommandsEnvTest < PicotorokkoTestCase
             Kernel.module_eval do
               define_method(:`) do |cmd|
                 case cmd
-                when /git rev-parse/
-                  "mock123\n"
-                when /git show -s --format=%ci/
+                when /git.*rev-parse/
+                  "abc5678\n"
+                when /git.*show -s --format=%ci/
                   "2025-11-21 15:00:00 +0900\n"
                 else
                   ""
@@ -1195,6 +1312,14 @@ class CommandsEnvTest < PicotorokkoTestCase
                   FileUtils.mkdir_p(target)
                   FileUtils.mkdir_p(File.join(target, ".git"))
                 end
+                # Create subdirectories for submodule paths
+                if cmd.to_s.include?("git submodule update")
+                  if cmd.include?("components/picoruby-esp32")
+                    FileUtils.mkdir_p("components/picoruby-esp32/.git")
+                  elsif cmd.include?("picoruby") && cmd.include?("-C")
+                    FileUtils.mkdir_p("components/picoruby-esp32/picoruby/.git")
+                  end
+                end
                 true
               end
             end
@@ -1204,9 +1329,9 @@ class CommandsEnvTest < PicotorokkoTestCase
             Kernel.module_eval do
               define_method(:`) do |cmd|
                 case cmd
-                when /git rev-parse/
+                when /git.*rev-parse/
                   "abc1234\n"
-                when /git show -s --format=%ci/
+                when /git.*show -s --format=%ci/
                   "2025-11-21 16:30:00 +0900\n"
                 else
                   ""
@@ -1341,6 +1466,20 @@ class CommandsEnvTest < PicotorokkoTestCase
                   FileUtils.mkdir_p(target)
                   FileUtils.mkdir_p(File.join(target, ".git"))
                 end
+                # Create subdirectories for submodule paths
+                if cmd.to_s.include?("git submodule update")
+                  if cmd.include?("components/picoruby-esp32")
+                    FileUtils.mkdir_p("components/picoruby-esp32/.git")
+                  elsif cmd.include?("picoruby") && cmd.include?("-C")
+                    FileUtils.mkdir_p("components/picoruby-esp32/picoruby/.git")
+                  end
+                end
+                # Create required directory structure for git operations
+                # Extract the directory from cd command
+                if cmd.to_s.include?("cd ") && cmd.to_s.include?("git ") && (cmd =~ /^cd\s+"([^"]+)"/)
+                  work_dir = Regexp.last_match(1)
+                  FileUtils.mkdir_p(work_dir)
+                end
                 true
               end
             end
@@ -1376,10 +1515,12 @@ class CommandsEnvTest < PicotorokkoTestCase
             git_add = executed_commands.find { |c| c.include?("git add") && c.include?("picoruby-esp32") }
             assert_not_nil git_add, "Should stage submodule changes"
 
-            # Verify git commit --amend with env-name
-            git_amend = executed_commands.find { |c| c.include?("git commit --amend") }
-            assert_not_nil git_amend, "Should amend commit with env-name"
-            assert_match(/20251121_180000/, git_amend, "Should include env_name in commit message")
+            # Verify git commit with env-name
+            git_commit = executed_commands.find do |c|
+              c.include?("git commit") && c.include?("--no-gpg-sign") && c.include?("ptrk")
+            end
+            assert_not_nil git_commit, "Should create new commit with env-name"
+            assert_match(/20251121_180000/, git_commit, "Should include env_name in commit message")
 
             # Verify disable push on all repos
             disable_push_cmds = executed_commands.select { |c| c.include?("git remote set-url --push origin no_push") }
