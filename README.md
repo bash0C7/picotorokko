@@ -75,12 +75,12 @@ Creates a new PicoRuby project with:
 #### Environment Management
 
 ```bash
-ptrk env set --latest           # Fetch latest versions with timestamp name
-ptrk env current [NAME]         # Get or set current environment
-ptrk env list                   # List all environments
-ptrk env set <NAME>             # Create/update environment
-ptrk env show [NAME]            # Display environment details (default: current)
-ptrk env reset [NAME]           # Reset environment (default: current)
+ptrk env set --latest                  # Fetch latest versions with timestamp name
+ptrk env set <NAME>                    # Create environment with auto-fetched repos
+ptrk env set <NAME> --current          # Set environment as current (creates if missing)
+ptrk env list                          # List all environments
+ptrk env show [NAME]                   # Display environment details (default: current)
+ptrk env remove [NAME]                 # Remove environment (default: current)
 ```
 
 **Note**: Commands that accept `[NAME]` use the current environment when omitted.
@@ -126,7 +126,7 @@ ptrk device tasks               # Show R2P2-ESP32 available tasks
 
 All device commands use the current environment by default. Use `--env NAME` to specify a different environment.
 
-**Note**: `ptrk device build` automatically runs `prepare` if the build workspace doesn't exist, but preserves existing workspaces to avoid losing your changes.
+**Note**: `ptrk device build` automatically runs `prepare` if the build workspace doesn't exist. The `prepare` command always recreates the build workspace to ensure a clean state with patches applied.
 
 #### mrbgem Management
 
@@ -200,7 +200,7 @@ For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONT
 
 - **Project Templates**: Auto-generate `.rubocop.yml` and enhanced `CLAUDE.md` with PicoRuby development guides
 - **Environment Management**: Define, list, and manage multiple PicoRuby build environments with version control
-- **Current Environment Tracking**: `ptrk env current` sets the active environment for all device commands
+- **Current Environment Tracking**: `ptrk env set <NAME> --current` sets the active environment for all device commands
 - **Environment Metadata Capture**: `ptrk env set --latest` records the newest repository commits in `.picoruby-env.yml`
 - **RuboCop Configuration Generation**: Auto-generates PicoRuby-specific RuboCop config from RBS files
 - **Smart Build Detection**: Detects `Gemfile` and uses appropriate Rake invocation (bundle exec vs rake)

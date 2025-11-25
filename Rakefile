@@ -189,7 +189,7 @@ end
 desc "Run CI: all tests + RuboCop + coverage validation"
 task ci: ["test:all_internal", :rubocop, :coverage_validation] do
   # Run device tests after main tests (coverage accumulates)
-  sh "bundle exec rake test:device_internal 2>&1 | grep -E '^(Started|Finished|[0-9]+ tests)' || true"
+  sh "bundle exec rake test:device_internal"
   puts "\n✓ CI passed! All tests + RuboCop + coverage validated."
 end
 

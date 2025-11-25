@@ -29,7 +29,7 @@ module Picotorokko
 
         if environments.empty?
           puts "No environments defined yet."
-          puts "Run 'pra env latest' to create one automatically"
+          puts "Run 'ptrk env set --latest' to create one automatically"
         else
           puts "Available environments:"
           environments.each do |env_name, env_config|
@@ -621,13 +621,11 @@ module Picotorokko
           tmp_repo = File.join(tmpdir, repo_name)
           puts "    Cloning to get timestamp..."
 
-          # Shallow clone（高速化のため）
           cmd = "git clone --depth 1 #{Shellwords.escape(repo_url)} #{Shellwords.escape(tmp_repo)} 2>/dev/null"
           unless system(cmd)
             raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd.sub(" 2>/dev/null", "")}"
           end
 
-          # コミットハッシュとタイムスタンプ取得
           Dir.chdir(tmp_repo) do
             short_hash = `git rev-parse --short=7 HEAD`.strip
             raise "Failed to get commit hash from #{repo_name}" if short_hash.empty?
