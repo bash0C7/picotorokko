@@ -159,7 +159,7 @@ module Picotorokko
 
         # Remove .ptrk_env/{env_name}/ directory
         env_dir = File.join(project_root, ENV_DIR, env_name)
-        FileUtils.rm_rf(env_dir) if Dir.exist?(env_dir)
+        FileUtils.rm_rf(env_dir)
       end
 
       # Get current environment name from config
@@ -214,7 +214,6 @@ module Picotorokko
         cmd = "git clone --filter=blob:none #{Shellwords.escape(repo_url)} #{Shellwords.escape(dest_path)}"
         executor.execute(cmd)
 
-        # 指定コミットにチェックアウト
         cmd = "git checkout #{Shellwords.escape(commit)}"
         executor.execute(cmd, dest_path)
       end

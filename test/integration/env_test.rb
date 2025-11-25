@@ -404,7 +404,10 @@ class EnvTest < Test::Unit::TestCase
       picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250101_120000" }
 
       # 環境を作成
-      Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info, notes: "Test environment")
+      Picotorokko::Env.set_environment(
+        "20251121_120000", r2p2_info, esp32_info, picoruby_info,
+        notes: "Test environment"
+      )
 
       # 環境が存在することを確認
       env = Picotorokko::Env.get_environment("20251121_120000")

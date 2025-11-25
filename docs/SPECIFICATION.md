@@ -694,12 +694,13 @@ ptrk patch export
 **Operation**:
 1. Load environment definition from `.picoruby-env.yml`
 2. Verify `.ptrk_env/{ENV_NAME}/` exists (readonly cache)
-3. Copy `.ptrk_env/{ENV_NAME}/` to `.ptrk_build/{ENV_NAME}/` (if not exists)
-4. Copy `storage/home/` to `.ptrk_build/{ENV_NAME}/R2P2-ESP32/storage/home/`
-5. Copy `mrbgems/` to `.ptrk_build/{ENV_NAME}/R2P2-ESP32/mrbgems/`
-6. Apply patches from `.ptrk_env/{ENV_NAME}/patch/` and `project-root/patch/`
+3. Delete existing `.ptrk_build/{ENV_NAME}/` if it exists
+4. Copy `.ptrk_env/{ENV_NAME}/` to `.ptrk_build/{ENV_NAME}/`
+5. Copy `storage/home/` to `.ptrk_build/{ENV_NAME}/R2P2-ESP32/storage/home/`
+6. Copy `mrbgems/` to `.ptrk_build/{ENV_NAME}/R2P2-ESP32/mrbgems/`
+7. Apply patches from `.ptrk_env/{ENV_NAME}/patch/` and `project-root/patch/`
 
-**Note**: This command preserves existing `.ptrk_build/` directories and does not reset them.
+**Note**: This command always recreates the build workspace to ensure a clean state with patches applied.
 
 **Example**:
 ```bash
@@ -726,7 +727,7 @@ ptrk device prepare
 1. Run `ptrk device prepare` if `.ptrk_build/{ENV_NAME}/` doesn't exist
 2. Execute `rake build` in `.ptrk_build/{ENV_NAME}/R2P2-ESP32/`
 
-**Note**: Build preserves existing workspace to avoid losing your changes. Use `ptrk patch export` to save changes as patches.
+**Note**: To preserve changes before prepare recreates the workspace, use `ptrk patch export` to save them as patches.
 
 **Example**:
 ```bash
@@ -776,21 +777,19 @@ ptrk device build --env 20251122_103000 # Use specific environment
 ### Scenario 1: Initial Setup and Build
 
 ```bash
-# 1. Fetch latest repository versions
-ptrk env set --latest
+# 1. Fetch latest repository versions and set as current
+ptrk env set --latest --current
 # => Fetching latest from GitHub...
 #    Created environment: 20251122_103000
+#    ✓ Current environment set to: 20251122_103000
 
-# 2. Set as current environment
-ptrk env current 20251122_103000
-
-# 3. Build firmware
+# 2. Build firmware
 ptrk device build
 
-# 4. Flash to device
+# 3. Flash to device
 ptrk device flash
 
-# 5. Monitor serial output
+# 4. Monitor serial output
 ptrk device monitor
 
 # Ctrl+C to exit
@@ -805,11 +804,11 @@ ptrk env set --latest
 #    Created environment: 20251122_143500
 
 # 2. Set as current and build
-ptrk env current 20251122_143500
+ptrk env set 20251122_143500 --current
 ptrk device build
 
 # 3. If issues found, revert to previous environment
-ptrk env current 20251121_103000
+ptrk env set 20251121_103000 --current
 ptrk device build
 ```
 
@@ -829,11 +828,11 @@ ptrk patch diff
 ptrk patch export
 
 # 5. Git commit
-git add .ptrk_env/*/patch/ storage/home/
-git commit -m "Update patches and storage"
+git add patch/ storage/home/
+git commit -m "Update patches and application code"
 
 # 6. Test application in another environment
-ptrk env current 20251121_103000
+ptrk env set 20251121_103000 --current
 ptrk device prepare  # patches auto-applied
 ptrk device build
 ```

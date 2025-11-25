@@ -234,7 +234,6 @@ module Picotorokko
 
       # @rbs (Symbol, bool) -> bool
       def respond_to_missing?(method_name, include_private = false)
-        # Thorの内部メソッド以外は全てR2P2タスクとして扱う可能性がある
         !method_name.to_s.start_with?("_") || super
       end
 
@@ -247,7 +246,6 @@ module Picotorokko
         value
       end
 
-      # --env option を args から抽出
       # @rbs (Array[untyped]) -> (String | nil)
       def parse_env_from_args(args)
         return nil if args.empty?
@@ -274,7 +272,6 @@ module Picotorokko
         MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
       end
 
-      # 利用可能なR2P2-ESP32タスクを表示
       # @rbs (String) -> void
       def show_available_tasks(env_name)
         actual_env = resolve_env_name(env_name)
@@ -286,7 +283,6 @@ module Picotorokko
         Picotorokko::Env.execute_with_esp_env(rake_cmd, r2p2_path)
       end
 
-      # R2P2-ESP32のRakefileにタスクを委譲
       # @rbs (String, String) -> void
       def delegate_to_r2p2(command, env_name)
         actual_env = resolve_env_name(env_name)
@@ -295,11 +291,9 @@ module Picotorokko
         # Build appropriate rake command (with or without bundler)
         rake_cmd = build_rake_command(r2p2_path, command)
 
-        # ESP-IDF環境でR2P2-ESP32のrakeタスクを実行
         Picotorokko::Env.execute_with_esp_env(rake_cmd, r2p2_path)
       end
 
-      # 環境名を解決（currentの場合は実環境名に変換）
       # @rbs (String) -> String
       def resolve_env_name(env_name)
         return env_name unless env_name == "current"
@@ -330,7 +324,6 @@ module Picotorokko
         r2p2_path
       end
 
-      # Rakefileから利用可能なタスクを取得
       # @rbs (String) -> Array[String]
       def available_rake_tasks(r2p2_path)
         rakefile_path = File.join(r2p2_path, "Rakefile")
