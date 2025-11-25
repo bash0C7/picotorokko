@@ -9,6 +9,9 @@ class EnvTest < Test::Unit::TestCase
     @tmpdir = Dir.mktmpdir
     Dir.chdir(@tmpdir)
 
+    # プロジェクトルートをリセット（tmpdir を指すように）
+    Picotorokko::Env.reset_cached_root!
+
     # 各テスト前にENV_FILEをクリーンアップ
     FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
   end
@@ -387,6 +390,163 @@ class EnvTest < Test::Unit::TestCase
       actual_command = mock_executor.calls[1][:command]
       assert_not_match(/LDFLAGS/, actual_command)
       assert_not_match(/CPPFLAGS/, actual_command)
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
+    end
+  end
+
+  # remove_environment のテスト
+  sub_test_case "remove_environment" do
+    test "removes environment definition from yaml" do
+      r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+      esp32_info = { "commit" => "def5678", "timestamp" => "20250101_120000" }
+      picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250101_120000" }
+
+      # 環境を作成
+      Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info, notes: "Test environment")
+
+      # 環境が存在することを確認
+      env = Picotorokko::Env.get_environment("20251121_120000")
+      assert_not_nil(env)
+
+      # 削除
+      Picotorokko::Env.remove_environment("20251121_120000")
+
+      # 削除されたことを確認
+      env = Picotorokko::Env.get_environment("20251121_120000")
+      assert_nil(env)
+    end
+
+    test "removes ptrk_env directory" do
+      env_dir = File.join(Picotorokko::Env::ENV_DIR, "20251121_120000")
+      FileUtils.mkdir_p(env_dir)
+      File.write(File.join(env_dir, "test.txt"), "test content")
+
+      assert_true(Dir.exist?(env_dir))
+
+      Picotorokko::Env.remove_environment("20251121_120000")
+
+      assert_false(Dir.exist?(env_dir))
+    end
+
+    test "clears current setting when environment is active" do
+      r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+      esp32_info = { "commit" => "def5678", "timestamp" => "20250101_120000" }
+      picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250101_120000" }
+
+      # 環境を作成してcurrentに設定
+      Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info)
+      Picotorokko::Env.set_current_env("20251121_120000")
+
+      # currentが設定されていることを確認
+      assert_equal("20251121_120000", Picotorokko::Env.get_current_env)
+
+      # 削除
+      Picotorokko::Env.remove_environment("20251121_120000")
+
+      # currentがnilになったことを確認
+      assert_nil(Picotorokko::Env.get_current_env)
+    end
+
+    test "does not affect current when removing different environment" do
+      r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+      esp32_info = { "commit" => "def5678", "timestamp" => "20250101_120000" }
+      picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250101_120000" }
+
+      # 2つの環境を作成
+      Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info)
+      Picotorokko::Env.set_environment("20251121_120001", r2p2_info, esp32_info, picoruby_info)
+
+      # 最初の環境をcurrentに設定
+      Picotorokko::Env.set_current_env("20251121_120000")
+
+      # 2番目の環境を削除
+      Picotorokko::Env.remove_environment("20251121_120001")
+
+      # currentはそのままであることを確認
+      assert_equal("20251121_120000", Picotorokko::Env.get_current_env)
+
+      # 削除された環境が存在しないことを確認
+      assert_nil(Picotorokko::Env.get_environment("20251121_120001"))
+
+      # 最初の環境はまだ存在することを確認
+      assert_not_nil(Picotorokko::Env.get_environment("20251121_120000"))
+    end
+  end
+
+  # fetch_remote_default_branch のテスト
+  sub_test_case "fetch_remote_default_branch" do
+    test "parses symref output to extract default branch name" do
+      # git ls-remote --symref出力のシミュレーション
+      symref_output = "ref: refs/heads/master\tHEAD\n37b922bc4e7fa9083891c8a328c41733dfddef00\tHEAD\n"
+
+      # mock executorをセット
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      # git ls-remote --symrefコマンドをmock
+      repo_url = "https://github.com/picoruby/R2P2-ESP32.git"
+      cmd = "git ls-remote --symref #{Shellwords.escape(repo_url)} HEAD"
+      mock_executor.set_result(cmd, stdout: symref_output, stderr: "")
+
+      result = Picotorokko::Env.fetch_remote_default_branch(repo_url)
+
+      assert_equal("master", result)
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
+    end
+
+    test "handles main as default branch" do
+      # main ブランチの場合
+      symref_output = "ref: refs/heads/main\tHEAD\na1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6\tHEAD\n"
+
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      repo_url = "https://github.com/example/repo.git"
+      cmd = "git ls-remote --symref #{Shellwords.escape(repo_url)} HEAD"
+      mock_executor.set_result(cmd, stdout: symref_output, stderr: "")
+
+      result = Picotorokko::Env.fetch_remote_default_branch(repo_url)
+
+      assert_equal("main", result)
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
+    end
+
+    test "returns nil when symref output is invalid" do
+      # 不正な出力形式
+      symref_output = "invalid output format\n"
+
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      repo_url = "https://github.com/example/repo.git"
+      cmd = "git ls-remote --symref #{Shellwords.escape(repo_url)} HEAD"
+      mock_executor.set_result(cmd, stdout: symref_output, stderr: "")
+
+      result = Picotorokko::Env.fetch_remote_default_branch(repo_url)
+
+      assert_nil(result)
+
+      # Reset to production executor
+      Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
+    end
+
+    test "returns nil when network error occurs" do
+      mock_executor = Picotorokko::MockExecutor.new
+      Picotorokko::Env.set_executor(mock_executor)
+
+      repo_url = "https://github.com/example/invalid.git"
+      cmd = "git ls-remote --symref #{Shellwords.escape(repo_url)} HEAD"
+      mock_executor.set_result(cmd, stdout: "", stderr: "fatal: unable to access...", fail: true)
+
+      result = Picotorokko::Env.fetch_remote_default_branch(repo_url)
+
+      assert_nil(result)
 
       # Reset to production executor
       Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)

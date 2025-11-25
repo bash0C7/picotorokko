@@ -57,7 +57,7 @@ class DevicePrepareTest < PicotorokkoTestCase
       end
     end
 
-    test "does not reset existing build directory" do
+    test "deletes and recreates existing build directory" do
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
           Picotorokko::Env.instance_variable_set(:@project_root, nil)
@@ -86,14 +86,16 @@ class DevicePrepareTest < PicotorokkoTestCase
           user_file = File.join(build_path, "R2P2-ESP32", "user_modification.txt")
           File.write(user_file, "user content")
 
-          # Second prepare should not reset
+          # Second prepare should delete and recreate
           output = capture_stdout do
             Picotorokko::Commands::Device.start(["prepare"])
           end
 
-          assert_match(/already exists/, output)
-          assert File.exist?(user_file), "User modification should be preserved"
-          assert_equal "user content", File.read(user_file)
+          assert_match(/Preparing build environment/, output)
+          assert_match(/Build environment prepared/, output)
+          assert !File.exist?(user_file), "User modification should be deleted"
+          assert Dir.exist?(build_path), "Build directory should be recreated"
+          assert Dir.exist?(File.join(build_path, "R2P2-ESP32")), "R2P2-ESP32 should be recreated"
         end
       end
     end

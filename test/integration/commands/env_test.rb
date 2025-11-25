@@ -366,13 +366,79 @@ class CommandsEnvTest < PicotorokkoTestCase
         end
       end
     end
-  end
 
-  # env reset コマンドのテスト
-  sub_test_case "env reset command" do
-    test "removes and recreates environment" do
+    test "sets environment as current when --current option specified" do
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
+          Picotorokko::Env.reset_cached_root!
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Create environment with --current
+          stub_git_operations do |_context|
+            output = capture_stdout do
+              Picotorokko::Commands::Env.start(
+                ["set", "20251121_200000", "--current"]
+              )
+            end
+
+            # Verify environment was created
+            env_config = Picotorokko::Env.get_environment("20251121_200000")
+            assert_not_nil(env_config)
+
+            # Verify it was set as current
+            assert_equal("20251121_200000", Picotorokko::Env.get_current_env)
+            assert_match(/set to: 20251121_200000/, output)
+          end
+        end
+      end
+    end
+
+    test "sets existing environment as current with --current option" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          Picotorokko::Env.reset_cached_root!
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Create an environment first
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250101_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250101_120000" }
+          Picotorokko::Env.set_environment("20251121_210000", r2p2_info, esp32_info, picoruby_info)
+
+          # Use --current to set it
+          output = capture_stdout do
+            Picotorokko::Commands::Env.start(["set", "20251121_210000", "--current"])
+          end
+
+          # Verify it was set as current
+          assert_equal("20251121_210000", Picotorokko::Env.get_current_env)
+          assert_match(/set to: 20251121_210000/, output)
+        end
+      end
+    end
+
+    test "raises error when --current specified without env name" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          Picotorokko::Env.reset_cached_root!
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          assert_raise(RuntimeError) do
+            capture_stdout do
+              Picotorokko::Commands::Env.start(["set", "--current"])
+            end
+          end
+        end
+      end
+    end
+  end
+
+  # env remove コマンドのテスト
+  sub_test_case "env remove command" do
+    test "removes environment definition completely" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          Picotorokko::Env.reset_cached_root!
           FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
 
           # Create environment with initial data
@@ -383,41 +449,76 @@ class CommandsEnvTest < PicotorokkoTestCase
           Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info,
                                            notes: "Original environment")
 
-          # Reset the environment
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["reset", "20251121_120000"])
-          end
-
-          # Verify environment still exists
+          # Verify environment exists before removal
           env_config = Picotorokko::Env.get_environment("20251121_120000")
           assert_not_nil(env_config)
-          # Original data should be gone (recreated with placeholder)
-          assert_equal("placeholder", env_config["R2P2-ESP32"]["commit"])
+
+          # Remove the environment
+          capture_stdout do
+            Picotorokko::Commands::Env.start(["remove", "20251121_120000"])
+          end
+
+          # Verify environment is completely removed
+          env_config = Picotorokko::Env.get_environment("20251121_120000")
+          assert_nil(env_config)
         end
       end
     end
 
-    test "preserves environment name after reset" do
+    test "removes ptrk_env directory when environment is removed" do
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
+          Picotorokko::Env.reset_cached_root!
           FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
 
-          # Create initial environment
+          # Create environment and directory
           r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
           esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
           picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
 
-          Picotorokko::Env.set_environment("20251121_160000", r2p2_info, esp32_info, picoruby_info)
+          Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info)
 
-          # Reset
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["reset", "20251121_160000"])
+          # Create associated directory
+          env_dir = File.join(Picotorokko::Env::ENV_DIR, "20251121_120000")
+          FileUtils.mkdir_p(env_dir)
+          File.write(File.join(env_dir, "test.txt"), "test")
+
+          assert_true(Dir.exist?(env_dir))
+
+          # Remove the environment
+          capture_stdout do
+            Picotorokko::Commands::Env.start(["remove", "20251121_120000"])
           end
 
-          # Check that environment still exists with same name
-          env_config = Picotorokko::Env.get_environment("20251121_160000")
-          assert_not_nil(env_config)
-          assert_match(/20251121_160000/, output)
+          # Verify directory is also removed
+          assert_false(Dir.exist?(env_dir))
+        end
+      end
+    end
+
+    test "clears current setting when removing active environment" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          Picotorokko::Env.reset_cached_root!
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Create and set as current
+          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
+          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
+          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
+
+          Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info)
+          Picotorokko::Env.set_current_env("20251121_120000")
+
+          assert_equal("20251121_120000", Picotorokko::Env.get_current_env)
+
+          # Remove the environment
+          capture_stdout do
+            Picotorokko::Commands::Env.start(["remove", "20251121_120000"])
+          end
+
+          # Verify current is cleared
+          assert_nil(Picotorokko::Env.get_current_env)
         end
       end
     end
@@ -425,11 +526,12 @@ class CommandsEnvTest < PicotorokkoTestCase
     test "raises error when environment does not exist" do
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir) do
+          Picotorokko::Env.reset_cached_root!
           FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
 
           assert_raise(RuntimeError) do
             capture_stdout do
-              Picotorokko::Commands::Env.start(["reset", "non-existent"])
+              Picotorokko::Commands::Env.start(["remove", "non-existent"])
             end
           end
         end
@@ -498,118 +600,6 @@ class CommandsEnvTest < PicotorokkoTestCase
           copied_file = File.join(build_path, "R2P2-ESP32", "test.txt")
           assert File.exist?(copied_file), "Should copy content from .ptrk_env to .ptrk_build"
           assert_equal "test content", File.read(copied_file)
-        end
-      end
-    end
-  end
-
-  # env current コマンドのテスト
-  sub_test_case "env current command" do
-    test "sets current environment when ENV_NAME is provided" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          # Create test environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info)
-
-          # Set current environment
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["current", "20251121_120000"])
-          end
-
-          # Verify current environment is set
-          assert_equal "20251121_120000", Picotorokko::Env.get_current_env
-          assert_match(/20251121_120000/, output)
-        end
-      end
-    end
-
-    test "shows current environment when no ENV_NAME is provided" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          # Create and set current environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("20251121_150000", r2p2_info, esp32_info, picoruby_info)
-          Picotorokko::Env.set_current_env("20251121_150000")
-
-          # Show current environment
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["current"])
-          end
-
-          assert_match(/20251121_150000/, output)
-        end
-      end
-    end
-
-    test "raises error when setting non-existent environment as current" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          assert_raise(RuntimeError) do
-            capture_stdout do
-              Picotorokko::Commands::Env.start(["current", "99999999_999999"])
-            end
-          end
-        end
-      end
-    end
-
-    test "shows message when no current environment is set" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["current"])
-          end
-
-          assert_match(/No current environment set/i, output)
-        end
-      end
-    end
-
-    test "generates .rubocop.yml with inherit_from when setting current environment" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          # Create test environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("20251122_120000", r2p2_info, esp32_info, picoruby_info)
-
-          # Create rubocop config in env directory
-          rubocop_dir = File.join(Picotorokko::Env::ENV_DIR, "20251122_120000", "rubocop")
-          FileUtils.mkdir_p(rubocop_dir)
-          File.write(File.join(rubocop_dir, ".rubocop-picoruby.yml"), "# test")
-
-          # Set current environment
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["current", "20251122_120000"])
-          end
-
-          # Verify .rubocop.yml was created in project root
-          rubocop_yml = File.join(tmpdir, ".rubocop.yml")
-          assert File.exist?(rubocop_yml), "Should create .rubocop.yml in project root"
-
-          # Verify inherit_from references the env's rubocop config
-          content = File.read(rubocop_yml)
-          assert_match(/inherit_from:/, content)
-          assert_match(%r{\.ptrk_env/20251122_120000/rubocop/\.rubocop-picoruby\.yml}, content)
         end
       end
     end
@@ -758,154 +748,6 @@ class CommandsEnvTest < PicotorokkoTestCase
     test "validate_env_name! rejects names with spaces" do
       assert_raise(RuntimeError) do
         Picotorokko::Env.validate_env_name!("env name")
-      end
-    end
-  end
-
-  # env patch operations (patch_export, patch_apply, patch_diff)
-  sub_test_case "env patch operations" do
-    test "exports patches with patch_export command" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          # Create test environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info)
-
-          # Create build directory with git repository
-          # Phase 4.1: Build path uses env_name instead of env_hash
-          build_path = Picotorokko::Env.get_build_path("20251121_120000")
-
-          # Initialize git repository with changes
-          r2p2_work = File.join(build_path, "R2P2-ESP32")
-          FileUtils.mkdir_p(r2p2_work)
-          Dir.chdir(r2p2_work) do
-            system("git init > /dev/null 2>&1")
-            system('git config user.email "test@example.com" > /dev/null 2>&1')
-            system('git config user.name "Test User" > /dev/null 2>&1')
-            File.write("test.txt", "initial")
-            system("git add . > /dev/null 2>&1")
-            system('git commit -m "initial" > /dev/null 2>&1')
-            File.write("test.txt", "modified")
-          end
-
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["patch_export", "20251121_120000"])
-          end
-
-          # Verify output
-          assert_match(/Exporting patches from: 20251121_120000/, output)
-          assert_match(/✓ Patches exported/, output)
-
-          # Verify patch directory was created
-          patch_dir = File.join(Picotorokko::Env::PATCH_DIR, "R2P2-ESP32")
-          assert_true(Dir.exist?(patch_dir))
-        end
-      end
-    end
-
-    test "exports patches with submodule-like paths" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
-
-          # Create test environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("20251121_130000", r2p2_info, esp32_info, picoruby_info)
-
-          # Create build directory with git repository
-          build_path = Picotorokko::Env.get_build_path("20251121_130000")
-
-          # Initialize git repository with submodule-like path
-          r2p2_work = File.join(build_path, "R2P2-ESP32")
-          FileUtils.mkdir_p(r2p2_work)
-          Dir.chdir(r2p2_work) do
-            system("git init -b main > /dev/null 2>&1")
-            system('git config user.email "test@example.com" > /dev/null 2>&1')
-            system('git config user.name "Test User" > /dev/null 2>&1')
-            system("git config commit.gpgsign false > /dev/null 2>&1")
-
-            # Create file in submodule-like path
-            FileUtils.mkdir_p("components/picoruby-esp32")
-            File.write("components/picoruby-esp32/test.c", "initial content")
-            system("git add . > /dev/null 2>&1")
-            system('git commit -m "initial" > /dev/null 2>&1')
-
-            # Modify file in submodule-like path
-            File.write("components/picoruby-esp32/test.c", "modified content")
-          end
-
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["patch_export", "20251121_130000"])
-          end
-
-          # Verify output
-          assert_match(/Exporting patches from: 20251121_130000/, output)
-          assert_match(/✓ Patches exported/, output)
-
-          # Verify patch file was created with correct path structure
-          patch_file = File.join(Picotorokko::Env::PATCH_DIR, "R2P2-ESP32",
-                                 "components", "picoruby-esp32", "test.c")
-          assert_true(File.exist?(patch_file), "Patch file should be created at #{patch_file}")
-
-          # Verify patch content
-          patch_content = File.read(patch_file)
-          assert_match(/-initial content/, patch_content)
-          assert_match(/\+modified content/, patch_content)
-        end
-      end
-    end
-
-    test "shows patch differences with patch_diff command" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          # Create test environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info)
-
-          # Create build directory with git repository
-          # Phase 4.1: Build path uses env_name instead of env_hash
-          build_path = Picotorokko::Env.get_build_path("20251121_120000")
-
-          r2p2_work = File.join(build_path, "R2P2-ESP32")
-          FileUtils.mkdir_p(r2p2_work)
-
-          # Initialize git repository
-          Dir.chdir(r2p2_work) do
-            system("git init > /dev/null 2>&1")
-            system('git config user.email "test@example.com" > /dev/null 2>&1')
-            system('git config user.name "Test User" > /dev/null 2>&1')
-            File.write("test.txt", "initial")
-            system("git add . > /dev/null 2>&1")
-            system('git commit -m "initial" > /dev/null 2>&1')
-          end
-
-          # Create patch directory
-          patch_dir = File.join(Picotorokko::Env::PATCH_DIR, "R2P2-ESP32")
-          FileUtils.mkdir_p(patch_dir)
-          File.write(File.join(patch_dir, "patch.txt"), "patched content")
-
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["patch_diff", "20251121_120000"])
-          end
-
-          # Verify output
-          assert_match(/=== Patch Differences ===/, output)
-          assert_match(/Stored patches:/, output)
-        end
       end
     end
   end
@@ -1066,90 +908,6 @@ class CommandsEnvTest < PicotorokkoTestCase
           assert info.key?("R2P2-ESP32")
           assert info.key?("picoruby-esp32")
           assert_false info.key?("picoruby")
-        end
-      end
-    end
-  end
-
-  sub_test_case "branch coverage: patch_export error handling" do
-    test "patch_export raises error when environment not found" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          assert_raise(RuntimeError) do
-            capture_stdout do
-              Picotorokko::Commands::Env.start(["patch_export", "nonexistent"])
-            end
-          end
-        end
-      end
-    end
-
-    test "patch_export raises error when build directory not found" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          # Create environment definition but no build directory
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("no-build-env", r2p2_info, esp32_info, picoruby_info)
-
-          assert_raise(RuntimeError) do
-            capture_stdout do
-              Picotorokko::Commands::Env.start(["patch_export", "no-build-env"])
-            end
-          end
-        end
-      end
-    end
-  end
-
-  sub_test_case "branch coverage: reset notes ternary logic" do
-    test "reset preserves original notes when present" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info,
-                                           notes: "Important notes")
-
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["reset", "20251121_120000"])
-          end
-
-          config = Picotorokko::Env.get_environment("20251121_120000")
-          assert_match(/Important notes/, config["notes"])
-          assert_match(/reset at/, config["notes"])
-        end
-      end
-    end
-
-    test "reset with empty notes generates reset message only" do
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
-
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-
-          Picotorokko::Env.set_environment("20251121_120000", r2p2_info, esp32_info, picoruby_info, notes: "")
-
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["reset", "20251121_120000"])
-          end
-
-          config = Picotorokko::Env.get_environment("20251121_120000")
-          assert_match(/^Reset at/, config["notes"])
-          assert_no_match(/\n/, config["notes"]) # Single line only
         end
       end
     end

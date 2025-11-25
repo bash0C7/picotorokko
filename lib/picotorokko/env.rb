@@ -141,6 +141,27 @@ module Picotorokko
         save_env_file(data)
       end
 
+      # Remove environment definition and associated directory
+      # @rbs (String) -> void
+      def remove_environment(env_name)
+        # Remove from YAML
+        data = load_env_file
+        environments = data["environments"] || {}
+        environments.delete(env_name)
+        data["environments"] = environments
+
+        # Clear current setting if this environment is active
+        if data["current"] == env_name
+          data["current"] = nil
+        end
+
+        save_env_file(data)
+
+        # Remove .ptrk_env/{env_name}/ directory
+        env_dir = File.join(project_root, ENV_DIR, env_name)
+        FileUtils.rm_rf(env_dir) if Dir.exist?(env_dir)
+      end
+
       # Get current environment name from config
       # @rbs () -> String?
       def get_current_env
@@ -165,6 +186,23 @@ module Picotorokko
         return nil if output.empty?
 
         output.split.first[0..6] # 7-digit commit hash
+      end
+
+      # Fetch default branch name from remote repository using --symref
+      # @rbs (String) -> String | nil
+      def fetch_remote_default_branch(repo_url)
+        cmd = "git ls-remote --symref #{Shellwords.escape(repo_url)} HEAD"
+        stdout, = executor.execute(cmd)
+        return nil if stdout.empty?
+
+        # Parse first line: "ref: refs/heads/<branch>\tHEAD"
+        first_line = stdout.split("\n").first
+        return nil unless first_line&.include?("ref: refs/heads/")
+
+        # Extract branch name between "refs/heads/" and the tab character
+        first_line.match(%r{ref: refs/heads/([^\t]+)})&.captures&.first
+      rescue StandardError
+        nil
       end
 
       # Clone repository to specified path and checkout commit

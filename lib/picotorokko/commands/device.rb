@@ -122,9 +122,9 @@ module Picotorokko
         puts "\u2713 Completed build → flash → monitor"
       end
 
-      # Prepare build environment without resetting existing changes
+      # Prepare build environment (deletes and recreates if already exists)
       # @rbs () -> void
-      desc "prepare", "Prepare build environment (preserves existing changes)"
+      desc "prepare", "Prepare build environment"
       option :env, default: "current", desc: "Environment name"
       def prepare
         env_name = options[:env]
@@ -132,12 +132,8 @@ module Picotorokko
 
         build_path = Picotorokko::Env.get_build_path(actual_env)
 
-        if Dir.exist?(build_path)
-          puts "Build environment already exists: #{actual_env}"
-          puts "  Location: #{build_path}"
-          puts "  (Use 'ptrk device reset' to force reset)"
-          return
-        end
+        # Delete existing build directory
+        FileUtils.rm_rf(build_path)
 
         puts "Preparing build environment: #{actual_env}"
         prepare_build_environment(actual_env)

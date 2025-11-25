@@ -42,30 +42,6 @@ module Picotorokko
         end
       end
 
-      # Get or set current environment
-      # @rbs (String?) -> void
-      desc "current [ENV_NAME]", "Get or set current environment"
-      def current(env_name = nil)
-        if env_name
-          # Set current environment
-          env_config = Picotorokko::Env.get_environment(env_name)
-          raise "Environment '#{env_name}' not found" if env_config.nil?
-
-          Picotorokko::Env.set_current_env(env_name)
-          sync_project_rubocop_yml(env_name)
-          puts "✓ Current environment set to: #{env_name}"
-        else
-          # Show current environment
-          current_env = Picotorokko::Env.get_current_env
-          if current_env
-            puts "Current environment: #{current_env}"
-          else
-            puts "No current environment set."
-            puts "Use 'ptrk env current ENV_NAME' to set one."
-          end
-        end
-      end
-
       # Display environment definition from .picoruby-env.yml
       # @rbs (String?) -> void
       desc "show [ENV_NAME]", "Display environment definition from .picoruby-env.yml"
@@ -153,10 +129,30 @@ module Picotorokko
       option :"picoruby-esp32", type: :string, desc: "org/repo or path:// for picoruby-esp32"
       option :picoruby, type: :string, desc: "org/repo or path:// for picoruby"
       option :latest, type: :boolean, desc: "Use timestamp for env name and fetch latest"
+      option :current, type: :boolean, desc: "Set environment as current"
       def set(env_name = nil)
         # Handle --latest option: generate timestamp-based env_name
         if options[:latest]
           set_latest
+          return
+        end
+
+        # Handle --current option
+        if options[:current]
+          raise "Error: ENV_NAME is required when using --current" if env_name.nil?
+
+          Picotorokko::Env.validate_env_name!(env_name)
+
+          env_config = Picotorokko::Env.get_environment(env_name)
+          if env_config.nil?
+            # Environment doesn't exist, create it with auto-fetch
+            auto_fetch_environment(env_name)
+          end
+
+          # Set as current
+          Picotorokko::Env.set_current_env(env_name)
+          sync_project_rubocop_yml(env_name)
+          puts "✓ Current environment set to: #{env_name}"
           return
         end
 
@@ -518,10 +514,10 @@ module Picotorokko
         end
       end
 
-      # Remove and recreate environment definition with new timestamps
+      # Remove environment definition and associated directory
       # @rbs (String) -> void
-      desc "reset [ENV_NAME]", "Remove and recreate environment definition"
-      def reset(env_name = nil)
+      desc "remove [ENV_NAME]", "Remove environment definition and directory"
+      def remove(env_name = nil)
         env_name ||= Picotorokko::Env.get_current_env
         raise "No environment specified and no current environment set" if env_name.nil?
 
@@ -531,68 +527,9 @@ module Picotorokko
         env_config = Picotorokko::Env.get_environment(env_name)
         raise "Error: Environment definition '#{env_name}' not found in .picoruby-env.yml" if env_config.nil?
 
-        # Store original metadata before removal
-        original_notes = env_config["notes"]
-
-        # Remove and recreate with new timestamps
-        r2p2_info = { "commit" => "placeholder", "timestamp" => Time.now.strftime("%Y%m%d_%H%M%S") }
-        esp32_info = { "commit" => "placeholder", "timestamp" => Time.now.strftime("%Y%m%d_%H%M%S") }
-        picoruby_info = { "commit" => "placeholder", "timestamp" => Time.now.strftime("%Y%m%d_%H%M%S") }
-
-        notes = original_notes.to_s.empty? ? "Reset at #{Time.now}" : "#{original_notes} (reset at #{Time.now})"
-
-        Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info, notes: notes)
-        puts "✓ Environment definition '#{env_name}' has been reset"
-      end
-
-      # Export working changes from build environment to patch directory
-      # @rbs (String) -> void
-      desc "patch_export [ENV_NAME]", "Export changes from build environment to patch directory"
-      def patch_export(env_name = nil)
-        env_name ||= Picotorokko::Env.get_current_env
-        raise "No environment specified and no current environment set" if env_name.nil?
-
-        env_config = Picotorokko::Env.get_environment(env_name)
-        raise "Error: Environment '#{env_name}' not found" if env_config.nil?
-
-        # Phase 4.1: Build path uses env_name directly
-        build_path = Picotorokko::Env.get_build_path(env_name)
-        raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
-
-        puts "Exporting patches from: #{env_name}"
-
-        %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
-          work_path = resolve_work_path(repo, build_path)
-          next unless Dir.exist?(work_path)
-
-          export_repo_changes(repo, work_path)
-        end
-
-        puts "\u2713 Patches exported"
-      end
-
-      # Display differences between working changes and stored patches
-      # @rbs (String) -> void
-      desc "patch_diff [ENV_NAME]", "Display differences between working changes and stored patches"
-      def patch_diff(env_name = nil)
-        env_name ||= Picotorokko::Env.get_current_env
-        raise "No environment specified and no current environment set" if env_name.nil?
-
-        env_config = Picotorokko::Env.get_environment(env_name)
-        raise "Error: Environment '#{env_name}' not found" if env_config.nil?
-
-        # Phase 4.1: Build path uses env_name directly
-        build_path = Picotorokko::Env.get_build_path(env_name)
-        raise "Error: Build environment not found: #{env_name}" unless Dir.exist?(build_path)
-
-        puts "=== Patch Differences ===\n"
-
-        %w[R2P2-ESP32 picoruby-esp32 picoruby].each do |repo|
-          patch_repo_dir = File.join(Picotorokko::Env.patch_dir, repo)
-          work_path = resolve_work_path(repo, build_path)
-
-          show_repo_diff(repo, patch_repo_dir, work_path)
-        end
+        # Remove environment definition and directory
+        Picotorokko::Env.remove_environment(env_name)
+        puts "✓ Environment '#{env_name}' has been removed"
       end
 
       # Fetch latest commit versions from all default repositories
@@ -839,87 +776,6 @@ module Picotorokko
         puts "Notes: #{env_config["notes"]}" unless env_config["notes"].to_s.empty?
       end
 
-      # @rbs (String, String) -> (String | nil)
-      def resolve_work_path(repo, build_path)
-        case repo
-        when "R2P2-ESP32"
-          File.join(build_path, "R2P2-ESP32")
-        when "picoruby-esp32"
-          File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32")
-        when "picoruby"
-          File.join(build_path, "R2P2-ESP32", "components", "picoruby-esp32", "picoruby")
-        end
-      end
-
-      # @rbs (String, String) -> void
-      def export_repo_changes(repo, work_path)
-        Dir.chdir(work_path) do
-          # Skip if not a git repository
-          unless Dir.exist?(".git")
-            puts "  #{repo}: (not a git repository)"
-            return
-          end
-
-          changed_files = `git diff --name-only 2>/dev/null`.split("\n")
-
-          if changed_files.empty?
-            puts "  #{repo}: (no changes)"
-            return
-          end
-
-          puts "  #{repo}: #{changed_files.size} file(s)"
-
-          changed_files.each do |file|
-            patch_dir = File.join(Picotorokko::Env.patch_dir, repo)
-            FileUtils.mkdir_p(patch_dir)
-
-            file_dir = File.dirname(file)
-            FileUtils.mkdir_p(File.join(patch_dir, file_dir)) unless file_dir == "."
-
-            diff_output = `git diff -- #{Shellwords.escape(file)}`
-            patch_file = File.join(patch_dir, file)
-
-            if diff_output.strip.empty?
-              FileUtils.cp(file, patch_file)
-            else
-              File.write(patch_file, diff_output)
-            end
-
-            puts "    Exported: #{repo}/#{file}"
-          end
-        end
-      end
-
-      # @rbs (String, String, (String | nil)) -> void
-      def show_repo_diff(repo, patch_repo_dir, work_path)
-        puts "#{repo}:"
-
-        if Dir.exist?(work_path)
-          Dir.chdir(work_path) do
-            changed = `git diff --name-only 2>/dev/null`.split("\n")
-            if changed.empty?
-              puts "  (no working changes)"
-            else
-              puts "  Working changes: #{changed.join(", ")}"
-            end
-          end
-        end
-
-        if Dir.exist?(patch_repo_dir)
-          patch_files = Dir.glob("#{patch_repo_dir}/**/*").reject do |p|
-            File.directory?(p) || File.basename(p) == ".keep"
-          end
-          if patch_files.empty?
-            puts "  (no stored patches)"
-          else
-            puts "  Stored patches: #{patch_files.map { |p| p.sub("#{patch_repo_dir}/", "") }.join(", ")}"
-          end
-        else
-          puts "  (no patches directory)"
-        end
-
-        puts
-      end
       # rubocop:enable Metrics/ClassLength
     end
   end
