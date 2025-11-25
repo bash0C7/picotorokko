@@ -37,8 +37,6 @@ class CommandsCliTest < PicotorokkoTestCase
                         "cache command should NOT be registered"
     assert_not_includes cli_class.commands.keys, "build",
                         "build command should NOT be registered"
-    assert_not_includes cli_class.commands.keys, "patch",
-                        "patch command should NOT be registered"
     assert_not_includes cli_class.commands.keys, "ci",
                         "ci command should NOT be registered"
   end

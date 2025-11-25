@@ -615,60 +615,78 @@ ptrk env set specific \
 
 ### 🔀 Patch Management Commands
 
-#### `ptrk patch export [ENV_NAME]`
+#### `ptrk patch list`
 
-**Description**: Export changes from `build/{env}/` to `patch/`
-
-**Arguments**:
-- `ENV_NAME` - Environment name (default: `current`)
+**Description**: List available patches in the current environment
 
 **Operation**:
-1. Execute `git diff --name-only` in `build/{env}/R2P2-ESP32/`
-2. For each file:
-   - Recreate directory structure in `patch/R2P2-ESP32/`
-   - Save diff between `git show HEAD:{file}` and `build/{env}/{file}` to `patch/`
-3. Same process for `components/picoruby-esp32/` and `picoruby/`
+1. List patches from `.ptrk_env/{current}/patch/` (stored patches)
+2. List patches from `project-root/patch/` (project-level patches)
 
 **Example**:
 ```bash
-# After editing build/current/R2P2-ESP32/storage/home/custom.rb
-
-ptrk patch export
-# => Exporting changes from build/current/
-#    patch/R2P2-ESP32/storage/home/custom.rb (created)
-#    patch/picoruby-esp32/ (no changes)
-#    patch/picoruby/ (no changes)
-#    Done!
+ptrk patch list
+# => Stored patches in .ptrk_env/20251122_103000/patch/:
+#    R2P2-ESP32/main/main.c
+#    picoruby-esp32/mrbgem.yml
+#
+#    Project patches in patch/:
+#    R2P2-ESP32/storage/home/custom.rb
 ```
 
 ---
 
-#### `ptrk patch diff [ENV_NAME]`
+#### `ptrk patch diff`
 
-**Description**: Display diff between current changes in `build/{env}/` and existing patches
+**Description**: Display diff between current changes in `.ptrk_build/{env}/` and existing patches
 
-**Arguments**:
-- `ENV_NAME` - Environment name (default: `current`)
+**Operation**:
+1. Execute `git diff` in `.ptrk_build/{env}/R2P2-ESP32/` to show working changes
+2. Compare with patches in `.ptrk_env/{env}/patch/` and `project-root/patch/`
 
-**Output Example**:
+**Example**:
+```bash
+# After editing .ptrk_build/20251122_103000/R2P2-ESP32/main/main.c
+
+ptrk patch diff
+# => Showing diff in .ptrk_build/20251122_103000/R2P2-ESP32:
+#    M main/main.c
+#
+#    diff --git a/main/main.c b/main/main.c
+#    +++ modified content
 ```
-=== R2P2-ESP32 ===
-diff --git a/storage/home/custom.rb (working) vs (patch/)
-+ (new addition)
-- (planned deletion)
-  (changes displayed)
 
-=== picoruby-esp32 ===
-(no changes)
+---
+
+#### `ptrk patch export`
+
+**Description**: Export changes from `.ptrk_build/{env}/` to `.ptrk_env/{env}/patch/`
+
+**Operation**:
+1. Execute `git diff --name-only` in `.ptrk_build/{env}/R2P2-ESP32/`
+2. For each modified file:
+   - Generate patch file using `git diff`
+   - Save to `.ptrk_env/{env}/patch/R2P2-ESP32/{file}.patch`
+3. Same process for `components/picoruby-esp32/` and `picoruby/`
+
+**Example**:
+```bash
+# After editing .ptrk_build/20251122_103000/R2P2-ESP32/main/main.c
+
+ptrk patch export
+# => Exporting changes from .ptrk_build/20251122_103000/
+#    ✓ Exported R2P2-ESP32/main/main.c.patch
+#    ✓ No changes in picoruby-esp32/
+#    ✓ No changes in picoruby/
 ```
 
 ---
 
 ### 🏗️ Build and Device Commands
 
-#### `ptrk device build [--env ENV_NAME]`
+#### `ptrk device prepare [--env ENV_NAME]`
 
-**Description**: Setup build environment in `.ptrk_build/` from environment cache and build firmware
+**Description**: Prepare build workspace in `.ptrk_build/` from environment cache without building
 
 **Arguments**:
 - `--env ENV_NAME` - Environment name (default: current environment)
@@ -676,23 +694,46 @@ diff --git a/storage/home/custom.rb (working) vs (patch/)
 **Operation**:
 1. Load environment definition from `.picoruby-env.yml`
 2. Verify `.ptrk_env/{ENV_NAME}/` exists (readonly cache)
-3. Copy `.ptrk_env/{ENV_NAME}/` to `.ptrk_build/{ENV_NAME}/`
+3. Copy `.ptrk_env/{ENV_NAME}/` to `.ptrk_build/{ENV_NAME}/` (if not exists)
 4. Copy `storage/home/` to `.ptrk_build/{ENV_NAME}/R2P2-ESP32/storage/home/`
 5. Copy `mrbgems/` to `.ptrk_build/{ENV_NAME}/R2P2-ESP32/mrbgems/`
-6. Apply patches from `patch/` directory automatically
-7. Execute `rake build` in `.ptrk_build/{ENV_NAME}/R2P2-ESP32/`
+6. Apply patches from `.ptrk_env/{ENV_NAME}/patch/` and `project-root/patch/`
 
-**Note**: Patches are applied automatically during build. Use `ptrk env patch_export` to save changes.
+**Note**: This command preserves existing `.ptrk_build/` directories and does not reset them.
+
+**Example**:
+```bash
+ptrk device prepare
+# => Preparing build workspace: 20251122_103000
+#    Copying environment to build directory...
+#    ✓ Environment copied to .ptrk_build/20251122_103000
+#    Copying storage/home/...
+#    Applying patches from .ptrk_env/20251122_103000/patch/...
+#    Applying patches from patch/...
+#    ✓ Build workspace prepared
+```
+
+---
+
+#### `ptrk device build [--env ENV_NAME]`
+
+**Description**: Build firmware (automatically runs `prepare` if build workspace doesn't exist)
+
+**Arguments**:
+- `--env ENV_NAME` - Environment name (default: current environment)
+
+**Operation**:
+1. Run `ptrk device prepare` if `.ptrk_build/{ENV_NAME}/` doesn't exist
+2. Execute `rake build` in `.ptrk_build/{ENV_NAME}/R2P2-ESP32/`
+
+**Note**: Build preserves existing workspace to avoid losing your changes. Use `ptrk patch export` to save changes as patches.
 
 **Example**:
 ```bash
 ptrk device build              # Uses current environment
 ptrk device build --env 20251122_103000 # Use specific environment
 # => Building: 20251122_103000
-#    Copying environment to build directory...
-#    ✓ Environment copied to .ptrk_build/20251122_103000
-#    Copying storage/home/...
-#    Applying patches...
+#    (Preparing workspace if needed...)
 #    ✓ Build completed
 ```
 
@@ -775,19 +816,26 @@ ptrk device build
 ### Scenario 3: Patch Management
 
 ```bash
-# 1. Make changes in .ptrk_build/{env}/R2P2-ESP32/
+# 1. Prepare build workspace
+ptrk device prepare
+
+# 2. Make changes in .ptrk_build/{env}/R2P2-ESP32/
 # (edit files)
 
-# 2. Export changes to patch
-ptrk env patch_export
+# 3. Review changes
+ptrk patch diff
 
-# 3. Git commit
-git add patch/ storage/home/
+# 4. Export changes to patch
+ptrk patch export
+
+# 5. Git commit
+git add .ptrk_env/*/patch/ storage/home/
 git commit -m "Update patches and storage"
 
-# 4. Test application in another environment
+# 6. Test application in another environment
 ptrk env current 20251121_103000
-ptrk device build  # patches auto-applied
+ptrk device prepare  # patches auto-applied
+ptrk device build
 ```
 
 ---
@@ -820,10 +868,14 @@ ptrk device build --env 20251122_103000
 ### Patches Not Applied
 
 ```bash
-# Check diff
-ptrk env patch_diff
+# List available patches
+ptrk patch list
 
-# Rebuild (patches auto-applied)
+# Check working changes
+ptrk patch diff
+
+# Re-prepare workspace (patches auto-applied)
+ptrk device prepare
 ptrk device build
 ```
 

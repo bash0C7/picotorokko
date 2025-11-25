@@ -29,6 +29,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
 
           # Setup environment with storage/home
           setup_complete_test_environment("test-env")
@@ -58,6 +59,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
 
           # Setup environment
           setup_complete_test_environment("test-env")
@@ -89,6 +91,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
 
           # Setup environment
           setup_complete_test_environment("test-env")
@@ -118,6 +121,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
 
           # Setup environment
           setup_complete_test_environment("test-env")
@@ -153,6 +157,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
 
           # Setup environment
           setup_complete_test_environment("test-env")
@@ -192,6 +197,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
 
           # Setup environment
           setup_complete_test_environment("test-env")

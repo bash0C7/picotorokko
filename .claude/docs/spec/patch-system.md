@@ -2,48 +2,21 @@
 
 The patch system allows git-managed changes to be persisted and applied across environments.
 
+**Important**: Patches are automatically applied during `ptrk device build` or `ptrk device prepare`. There is no explicit `apply` command.
+
 ---
 
-## `ptrk patch export [ENV_NAME]`
+## `ptrk patch list`
 
-**Description**: Export changes from `build/{env}/` to `patch/`
-
-**Arguments**:
-- `ENV_NAME` - Environment name (default: `current`)
-
-**Operation**:
-1. Execute `git diff --name-only` in `build/{env}/R2P2-ESP32/`
-2. For each file:
-   - Recreate directory structure in `patch/R2P2-ESP32/`
-   - Save diff between `git show HEAD:{file}` and `build/{env}/{file}` to `patch/`
-3. Same process for `components/picoruby-esp32/` and `picoruby/`
+**Description**: List all patch files in the project
 
 **Example**:
 ```bash
-# After editing build/current/R2P2-ESP32/storage/home/custom.rb
-
-ptrk patch export
-# => Exporting changes from build/current/
-#    patch/R2P2-ESP32/storage/home/custom.rb (created)
-#    patch/picoruby-esp32/ (no changes)
-#    patch/picoruby/ (no changes)
-#    Done!
+ptrk patch list
+# => Patches:
+#      R2P2-ESP32/config.h
+#      R2P2-ESP32/src/main.c
 ```
-
----
-
-## `ptrk patch apply [ENV_NAME]`
-
-**Description**: Apply `patch/` to `build/{env}/`
-
-**Arguments**:
-- `ENV_NAME` - Environment name (default: `current`)
-
-**Operation**:
-1. Read all files under `patch/R2P2-ESP32/`
-2. Copy to corresponding paths in `build/{env}/R2P2-ESP32/`
-3. Create directory structure if different
-4. Same process for `components/picoruby-esp32/` and `picoruby/`
 
 ---
 
@@ -54,16 +27,73 @@ ptrk patch export
 **Arguments**:
 - `ENV_NAME` - Environment name (default: `current`)
 
-**Output Example**:
+**Example**:
+```bash
+ptrk patch diff
+# => === Patch Differences ===
+#    Environment: 20251124_120000
+#
+#    R2P2-ESP32:
+#      Working changes: config.h
+#      Stored patches: config.h, src/main.c
 ```
-=== R2P2-ESP32 ===
-diff --git a/storage/home/custom.rb (working) vs (patch/)
-+ (new addition)
-- (planned deletion)
-  (changes displayed)
 
-=== picoruby-esp32 ===
-(no changes)
+---
+
+## `ptrk patch export [ENV_NAME]`
+
+**Description**: Export changes from `.ptrk_build/{env}/` to `patch/`
+
+**Arguments**:
+- `ENV_NAME` - Environment name (default: `current`)
+
+**Operation**:
+1. Execute `git diff --name-only` in `.ptrk_build/{env}/R2P2-ESP32/`
+2. For each modified file:
+   - Recreate directory structure in `patch/R2P2-ESP32/`
+   - Save diff to patch file
+3. Same process for `components/picoruby-esp32/` and `picoruby/`
+
+**Example**:
+```bash
+# After editing .ptrk_build/{env}/R2P2-ESP32/config.h
+
+ptrk patch export
+# => Exporting patches from: 20251124_120000
+#      R2P2-ESP32: 1 file(s)
+#        Exported: R2P2-ESP32/config.h
+#    ✓ Patches exported
+```
+
+---
+
+## Workflow
+
+### Recommended: Iterative Development
+
+```bash
+# 1. Prepare build environment
+ptrk device prepare
+
+# 2. Edit files in .ptrk_build/{env}/R2P2-ESP32/
+vim .ptrk_build/{env}/R2P2-ESP32/config.h
+
+# 3. Export changes
+ptrk patch export
+
+# 4. Build (does not reset)
+ptrk device build
+```
+
+### Alternative: Direct Creation
+
+```bash
+# Create patch file directly
+mkdir -p patch/R2P2-ESP32
+echo '#define VALUE 42' > patch/R2P2-ESP32/config.h
+
+# Build applies patches automatically
+ptrk device build
 ```
 
 ---

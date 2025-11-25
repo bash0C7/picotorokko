@@ -101,16 +101,23 @@ This command fetches the latest commits from all PicoRuby repositories and clone
 #### Patch Management
 
 ```bash
-ptrk env patch_export [NAME]    # Export changes to patches (default: current)
-ptrk env patch_diff [NAME]      # Show diff between working changes and patches
+ptrk patch list                 # List available patches in current environment
+ptrk patch diff                 # Show diff between build workspace and patches
+ptrk patch export               # Export build workspace changes to patches
 ```
 
-**Note**: Patches are automatically applied during `ptrk device build`.
+**Workflow**:
+1. Use `ptrk device prepare` to create/prepare the build workspace
+2. Make changes directly in `.ptrk_build/{env}/R2P2-ESP32/`
+3. Use `ptrk patch diff` to review your changes
+4. Use `ptrk patch export` to save changes as patches
+5. Patches are automatically applied from both `.ptrk_env/patch/` and `project-root/patch/` during device prepare
 
 #### Device Operations
 
 ```bash
-ptrk device build               # Build firmware (uses current env)
+ptrk device prepare             # Prepare build workspace with patches applied
+ptrk device build               # Build firmware (auto-prepares if needed)
 ptrk device flash               # Flash to device
 ptrk device monitor             # Monitor serial output
 ptrk device setup_esp32         # Setup ESP32 environment
@@ -118,6 +125,8 @@ ptrk device tasks               # Show R2P2-ESP32 available tasks
 ```
 
 All device commands use the current environment by default. Use `--env NAME` to specify a different environment.
+
+**Note**: `ptrk device build` automatically runs `prepare` if the build workspace doesn't exist, but preserves existing workspaces to avoid losing your changes.
 
 #### mrbgem Management
 
