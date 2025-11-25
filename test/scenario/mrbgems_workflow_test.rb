@@ -269,7 +269,8 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           config_content = File.read(build_config_path)
           assert_match(/# === BEGIN Mrbgemfile generated ===/, config_content)
           assert_match(/# === END Mrbgemfile generated ===/, config_content)
-          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
+          # Paths are now absolute, so check that it ends with mrbgems/app
+          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/app"}, config_content)
         ensure
           Dir.chdir(original_dir)
         end
@@ -325,9 +326,10 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
           build_config_path = File.join(build_config_dir, "default.rb")
           config_content = File.read(build_config_path)
 
-          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
-          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/lib1"}, config_content)
-          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/lib2"}, config_content)
+          # Paths are now absolute, so check that they end with the expected paths
+          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/app"}, config_content)
+          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/lib1"}, config_content)
+          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/lib2"}, config_content)
         ensure
           Dir.chdir(original_dir)
         end
@@ -377,7 +379,8 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
 
           assert_match(/conf\.gem\s+core:\s+"mruby-string-ext"/, config_content)
           assert_match(/conf\.gem\s+core:\s+"mruby-array"/, config_content)
-          assert_match(%r{conf\.gem\s+(?:path|core):\s+"mrbgems/app"}, config_content)
+          # Paths are now absolute, so check that it ends with mrbgems/app
+          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/app"}, config_content)
         ensure
           Dir.chdir(original_dir)
         end

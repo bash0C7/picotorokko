@@ -5,10 +5,11 @@ module Picotorokko
   # Converts Mrbgemfile syntax into structured gem specifications
   # @rbs < Object
   class MrbgemsDSL
-    # @rbs (String, String) -> void
-    def initialize(dsl_code, config_name)
+    # @rbs (String, String, ?project_root: String?) -> void
+    def initialize(dsl_code, config_name, project_root: nil)
       @dsl_code = dsl_code
       @config_name = config_name
+      @project_root = project_root || Dir.pwd
       @gems = []
       @build_config_files = []
     end
@@ -38,6 +39,9 @@ module Picotorokko
       else
         source_type, source = detect_source_type(params)
       end
+
+      # Convert relative paths to absolute paths for :path type gems
+      source = resolve_path(source) if source_type == :path
 
       gem_spec = {
         source_type: source_type,
@@ -74,6 +78,16 @@ module Picotorokko
       else
         raise ArgumentError, "Unknown source type in gem specification: #{params.keys.inspect}"
       end
+    end
+
+    # Convert relative paths to absolute paths based on project_root
+    # @rbs (String) -> String
+    def resolve_path(path)
+      # Return as-is if already absolute
+      return path if path.start_with?("/")
+
+      # Expand relative path from project_root
+      File.expand_path(path, @project_root)
     end
   end
 end
