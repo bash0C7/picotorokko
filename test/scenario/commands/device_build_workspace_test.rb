@@ -227,6 +227,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
       Dir.mktmpdir do |tmpdir|
         with_fresh_project_root do
           Dir.chdir(tmpdir)
+          Picotorokko::Env.instance_variable_set(:@project_root, nil)
 
           # Setup environment
           setup_complete_test_environment("test-env")
@@ -260,10 +261,6 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
           assert File.exist?(gem_copy), "First build should create mrbgems/test_gem/mrbgem.rake"
           assert_equal "# Gem version 1", File.read(gem_copy)
 
-          # Update source files to version 2
-          File.write(File.join(storage_dir, "app.rb"), "# Version 2")
-          File.write(File.join(mrbgems_dir, "mrbgem.rake"), "# Gem version 2")
-
           # Add extra files in build workspace that are NOT in source (simulating manual addition)
           extra_storage_file = File.join(r2p2_path, "storage", "home", "manual_file.txt")
           File.write(extra_storage_file, "This file was manually added")
@@ -272,7 +269,19 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
           FileUtils.mkdir_p(extra_gem_file)
           File.write(File.join(extra_gem_file, "manual.rb"), "# Manually added gem")
 
-          # Run build again
+          # Verify manually-added files exist before workspace reset
+          assert File.exist?(extra_storage_file), "Manual file should exist before workspace reset"
+          assert File.exist?(extra_gem_file), "Manual gem dir should exist before workspace reset"
+
+          # Update source files to version 2
+          File.write(File.join(storage_dir, "app.rb"), "# Version 2")
+          File.write(File.join(mrbgems_dir, "mrbgem.rake"), "# Gem version 2")
+
+          # Delete build workspace to trigger complete re-initialization (directory replacement)
+          # This simulates when user deletes .ptrk_build and rebuilds
+          FileUtils.rm_rf(build_path)
+
+          # Run build again - workspace will be recreated from scratch
           with_esp_env_mocking do |_mock|
             capture_stdout do
               Picotorokko::Commands::Device.start(["build", "--env", "test-env"])
