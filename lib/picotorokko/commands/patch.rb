@@ -128,10 +128,14 @@ module Picotorokko
           FileUtils.mkdir_p(patch_dir)
 
           changed_files.each do |file|
+            source_file = File.join(work_path, file)
+
+            # Skip directories (git reports them for submodule changes)
+            next if File.directory?(source_file)
+
             file_dir = File.dirname(file)
             FileUtils.mkdir_p(File.join(patch_dir, file_dir)) unless file_dir == "."
 
-            source_file = File.join(work_path, file)
             dest_file = File.join(patch_dir, file)
             FileUtils.cp(source_file, dest_file)
 

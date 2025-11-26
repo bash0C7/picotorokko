@@ -293,7 +293,7 @@ class EnvTest < Test::Unit::TestCase
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
       # Mock executor expects full command with ESP-IDF setup
       # NOTE: set -x && is added for debug output
-      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && touch marker.txt"
+      cmd = "set -x && . #{idf_export} && export ESP200 && touch marker.txt"
       mock_executor.set_result(cmd, stdout: "", stderr: "")
 
       Picotorokko::Env.execute_with_esp_env("touch marker.txt", work_dir)

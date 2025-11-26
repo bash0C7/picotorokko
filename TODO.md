@@ -648,7 +648,7 @@ RUBY_DEBUG_OPEN=true bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
 
 ```ruby
 class E2EMonitor
-  def initialize(port, baud = 115200)
+  def initialize(port, baud = 150000)
     @port = SerialPort.new(port, baud)
     @port.read_timeout = 250  # ms (CHECK_ALIVE_FLAG_TIMEOUT)
     @port.flow_control = SerialPort::NONE

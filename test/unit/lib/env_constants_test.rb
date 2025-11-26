@@ -49,9 +49,9 @@ class EnvConstantsTest < PicotorokkoTestCase
                  "ENV_FILE should be .ptrk_env/.picoruby-env.yml"
 
     # Patch directory
-    expected_patch = File.join(Picotorokko::Env::PROJECT_ROOT, ".ptrk_env", "patch")
+    expected_patch = File.join(Picotorokko::Env::PROJECT_ROOT, "patch")
     assert_equal expected_patch, Picotorokko::Env::PATCH_DIR,
-                 "PATCH_DIR should be .ptrk_env/patch"
+                 "PATCH_DIR should be patch/"
   end
 
   def test_build_path_uses_env_name

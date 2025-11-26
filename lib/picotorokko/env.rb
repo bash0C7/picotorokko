@@ -74,7 +74,7 @@ module Picotorokko
       # Get patch directory path for storing repository changes
       # @rbs () -> String
       def patch_dir
-        File.join(project_root, ENV_DIR, "patch")
+        File.join(project_root, "patch")
       end
 
       # Get storage home directory path
@@ -441,7 +441,7 @@ module Picotorokko
         # Prepare shell command with ESP-IDF environment setup
         # set -x enables command echoing for debugging
         esp_env_command = "set -x && #{openssl_setup}. #{Shellwords.escape(idf_export_script)} && " \
-                          "export ESPBAUD=115200 && #{command}"
+                          "export ESPBAUD=150000 && #{command}"
 
         executor.execute(esp_env_command, working_dir)
       end

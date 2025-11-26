@@ -147,11 +147,7 @@ module Picotorokko
       files_to_copy = [
         ".rubocop.yml",
         "Mrbgemfile",
-        "patch/README.md",
         "storage/home/.gitkeep",
-        "patch/R2P2-ESP32/.gitkeep",
-        "patch/picoruby-esp32/.gitkeep",
-        "patch/picoruby/.gitkeep",
         ".ptrk_env/.gitkeep"
       ]
 

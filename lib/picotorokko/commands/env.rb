@@ -769,18 +769,11 @@ module Picotorokko
 
           next unless Dir.exist?(work_path)
 
-          # Apply patches from .ptrk_env/patch/{repo}/
+          # Apply patches from patch/{repo}/
           patch_repo_dir = File.join(Picotorokko::Env.patch_dir, repo)
           if Dir.exist?(patch_repo_dir)
             Picotorokko::PatchApplier.apply_patches_to_directory(patch_repo_dir, work_path)
-            puts "    Applied #{repo} (from .ptrk_env/patch)"
-          end
-
-          # Apply patches from project root patch/{repo}/
-          project_patch_dir = File.join(Picotorokko::Env.project_root, "patch", repo)
-          if Dir.exist?(project_patch_dir)
-            Picotorokko::PatchApplier.apply_patches_to_directory(project_patch_dir, work_path)
-            puts "    Applied #{repo} (from project patch)"
+            puts "    Applied #{repo}"
           end
         end
 

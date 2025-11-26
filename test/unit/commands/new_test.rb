@@ -185,7 +185,7 @@ class UnitCommandsNewTest < PicotorokkoTestCase
       end
     end
 
-    test "creates .gitkeep files in important directories" do
+    test "creates empty patch directory structure" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -194,31 +194,15 @@ class UnitCommandsNewTest < PicotorokkoTestCase
           initializer = Picotorokko::ProjectInitializer.new("test-project", {})
           initializer.initialize_project
 
-          # Check for .gitkeep files
+          # Check that patch directories are created
+          assert Dir.exist?("test-project/patch")
+          assert Dir.exist?("test-project/patch/R2P2-ESP32")
+          assert Dir.exist?("test-project/patch/picoruby-esp32")
+          assert Dir.exist?("test-project/patch/picoruby")
+
+          # Check for .gitkeep files in other directories
           assert File.exist?("test-project/.ptrk_env/.gitkeep")
           assert File.exist?("test-project/storage/home/.gitkeep")
-          assert File.exist?("test-project/patch/R2P2-ESP32/.gitkeep")
-          assert File.exist?("test-project/patch/picoruby-esp32/.gitkeep")
-          assert File.exist?("test-project/patch/picoruby/.gitkeep")
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "creates patch README with instructions" do
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Initialize a project
-          initializer = Picotorokko::ProjectInitializer.new("test-project", {})
-          initializer.initialize_project
-
-          # Check patch README exists and has content (with UTF-8 encoding)
-          patch_readme = File.read("test-project/patch/README.md", encoding: "UTF-8")
-          assert_match(/[Pp]atch/, patch_readme)
-          assert_match(/export|apply/i, patch_readme)
         ensure
           Dir.chdir(original_dir)
         end
