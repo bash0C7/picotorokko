@@ -107,8 +107,8 @@ module Picotorokko
       # @rbs (String, String) -> void
       def export_repo_changes(repo, work_path)
         Dir.chdir(work_path) do
-          # Skip if not a git repository
-          unless Dir.exist?(".git")
+          # Skip if not a git repository (check both file and directory for submodules)
+          unless File.exist?(".git")
             puts "  #{repo}: (not a git repository)"
             return
           end
