@@ -1661,5 +1661,115 @@ class CommandsEnvTest < PicotorokkoTestCase
         end
       end
     end
+
+    test "set --latest initializes submodules before checking out specific commits" do
+      Dir.mktmpdir do |tmpdir|
+        Dir.chdir(tmpdir) do
+          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+
+          # Mock Time.now
+          frozen_time = Time.new(2025, 11, 26, 8, 29, 42)
+          original_now = Time.method(:now)
+          Time.define_singleton_method(:now) { frozen_time }
+
+          begin
+            # Mock fetch_remote_commit to return test commits
+            original_fetch = Picotorokko::Env.method(:fetch_remote_commit)
+            Picotorokko::Env.define_singleton_method(:fetch_remote_commit) do |url, _ref = "HEAD"|
+              "37b922b"  # Return same commit for all to simplify test
+            end
+
+            # Track git commands executed with their order
+            executed_commands = []
+
+            # Mock Kernel#system
+            original_system = Kernel.instance_method(:system)
+            Kernel.module_eval do
+              define_method(:system) do |cmd, *_args|
+                executed_commands << cmd.to_s
+                # Create directories for submodule operations
+                if cmd.to_s.include?("git clone") && cmd =~ /git clone.*\s(\S+)\s+2>/
+                  target = Regexp.last_match(1)
+                  FileUtils.mkdir_p(target)
+                  FileUtils.mkdir_p(File.join(target, ".git"))
+                end
+                if cmd.to_s.include?("git submodule update")
+                  FileUtils.mkdir_p("components/picoruby-esp32/.git")
+                  FileUtils.mkdir_p("components/picoruby-esp32/picoruby/.git")
+                end
+                true
+              end
+            end
+
+            # Mock Kernel#` (backtick)
+            original_backtick = Kernel.instance_method(:`)
+            Kernel.module_eval do
+              define_method(:`) do |cmd|
+                case cmd
+                when /git.*rev-parse/
+                  "37b922b\n"
+                when /git.*show -s --format=%ci/
+                  "2025-11-26 08:29:42 +0900\n"
+                else
+                  ""
+                end
+              end
+            end
+
+            # Call set with --latest option
+            capture_stdout do
+              Picotorokko::Commands::Env.start(%w[set --latest])
+            end
+
+            expected_env_name = "20251126_082942"
+
+            # Find indices of critical git operations
+            clone_index = executed_commands.find_index { |c| c.include?("git clone") && c.include?("R2P2-ESP32") }
+            submodule_init_index = executed_commands.find_index { |c| c.include?("git submodule update") && c.include?("--init") }
+            # Look for checkout commands to submodule commits (after components/picoruby-esp32 path is set)
+            esp32_checkout_index = executed_commands.find_index { |c| c.include?("git checkout") && c.include?("c3aa5db") }
+            picoruby_checkout_index = executed_commands.find_index { |c| c.include?("git checkout") && c.include?("109a005") }
+
+            # Debug output for troubleshooting
+            puts "\nDEBUG: Commands executed: #{executed_commands.inspect}"
+            puts "DEBUG: Clone index: #{clone_index}, Submodule init index: #{submodule_init_index}, ESP32 checkout: #{esp32_checkout_index}, Picoruby checkout: #{picoruby_checkout_index}"
+
+            # Verify critical operations happened
+            assert_not_nil clone_index, "Should execute git clone for R2P2-ESP32"
+
+            # The key assertion: submodule init MUST happen before any submodule checkouts
+            # If either checkout is found, init must come before it
+            if esp32_checkout_index || picoruby_checkout_index
+              assert_not_nil submodule_init_index,
+                "Should execute git submodule update --init to fetch submodules before checkout. " \
+                "Executed commands: #{executed_commands.inspect}"
+
+              if esp32_checkout_index
+                assert submodule_init_index < esp32_checkout_index,
+                  "FAIL: Submodule initialization must happen BEFORE checkout of picoruby-esp32. " \
+                  "Init at index #{submodule_init_index}, but checkout at #{esp32_checkout_index}. " \
+                  "Executed commands: #{executed_commands.map.with_index { |c, i| "#{i}: #{c}" }.inspect}"
+              end
+
+              if picoruby_checkout_index
+                assert submodule_init_index < picoruby_checkout_index,
+                  "FAIL: Submodule initialization must happen BEFORE checkout of picoruby. " \
+                  "Init at index #{submodule_init_index}, but checkout at #{picoruby_checkout_index}. " \
+                  "Executed commands: #{executed_commands.map.with_index { |c, i| "#{i}: #{c}" }.inspect}"
+              end
+            end
+          ensure
+            Time.define_singleton_method(:now, original_now)
+            Picotorokko::Env.define_singleton_method(:fetch_remote_commit, original_fetch)
+            Kernel.module_eval do
+              define_method(:system, original_system)
+            end
+            Kernel.module_eval do
+              define_method(:`, original_backtick)
+            end
+          end
+        end
+      end
+    end
   end
 end

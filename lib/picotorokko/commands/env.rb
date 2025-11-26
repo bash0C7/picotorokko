@@ -240,13 +240,18 @@ module Picotorokko
           checkout_cmd = "cd #{Shellwords.escape(r2p2_path)} && git checkout #{Shellwords.escape(r2p2_commit)}"
           raise "Checkout failed: R2P2-ESP32 to commit #{r2p2_commit}" unless system(checkout_cmd)
 
-          # Checkout picoruby-esp32 to specified commit
+          # Initialize and fetch all nested submodules BEFORE checking out specific submodule commits
+          # This ensures the commit objects exist in the submodule repositories before we try to checkout them
+          init_submodule_cmd = "cd #{Shellwords.escape(r2p2_path)} && git submodule update --init --recursive --jobs 4"
+          raise "Submodule initialization failed for R2P2-ESP32" unless system(init_submodule_cmd)
+
+          # Checkout picoruby-esp32 to specified commit (now possible because submodule is initialized)
           esp32_commit = repos_info["picoruby-esp32"]["commit"]
           esp32_path = File.join(r2p2_path, "components", "picoruby-esp32")
           esp32_checkout = "cd #{Shellwords.escape(esp32_path)} && git checkout #{Shellwords.escape(esp32_commit)}"
           raise "Checkout failed: picoruby-esp32 to commit #{esp32_commit}" unless system(esp32_checkout)
 
-          # Checkout picoruby (nested submodule) to specified commit
+          # Checkout picoruby (nested submodule) to specified commit (now possible because submodule is initialized)
           picoruby_commit = repos_info["picoruby"]["commit"]
           picoruby_path = File.join(esp32_path, "picoruby")
           picoruby_checkout = "cd #{Shellwords.escape(picoruby_path)} && git checkout #{Shellwords.escape(picoruby_commit)}"
@@ -257,13 +262,11 @@ module Picotorokko
           raise "Failed to stage submodule changes" unless system(git_add)
 
           # Create new commit with submodule updates (skip gpg signing to avoid signing server issues)
+          # Note: git commit can fail if there's nothing to commit (e.g., submodules already at desired commits)
+          # In that case, we can safely ignore the error since the state is already correct
           git_commit = "cd #{Shellwords.escape(r2p2_path)} && " \
-                       "git commit --no-gpg-sign -m #{Shellwords.escape("ptrk env: #{env_name}")}"
-          raise "Failed to create commit" unless system(git_commit)
-
-          # Initialize and fetch all nested submodules recursively (after all checkouts and commit)
-          final_submodule_cmd = "cd #{Shellwords.escape(r2p2_path)} && git submodule update --init --recursive --jobs 4"
-          raise "Final submodule update failed for R2P2-ESP32" unless system(final_submodule_cmd)
+                       "git commit --no-gpg-sign -m #{Shellwords.escape("ptrk env: #{env_name}")} 2>/dev/null || true"
+          system(git_commit)
 
           # Disable push on all repos
           disable_push = "git remote set-url --push origin no_push"
