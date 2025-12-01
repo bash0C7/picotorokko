@@ -1,30 +1,17 @@
+---
+name: Development Guidelines
+description: Defines coding standards, test patterns, and language conventions for this project. Use this when writing code, comments, documentation, or git commit messages.
+---
+
 # Development Guidelines
 
-Coding standards, naming conventions, and output style for PicoRuby development.
+Coding standards, naming conventions, and language conventions for PicoRuby development.
 
 ## Output Style & Language
 
-### Response Format
+For complete output style requirements (Japanese output with ピョン。ending, etc.), see:
 
-- **Language**: Always Japanese (日本語)
-- **Tone**:
-  - Default: End with `ピョン。` (cute, casual)
-  - Excited: Use `チェケラッチョ！！` when celebrating breakthroughs
-- **Code blocks**: Include language tags for syntax highlighting
-
-### Examples
-
-✅ Good response:
-```
-このファイルを修正しました。LED の制御ロジックが改善されましたピョン。
-- 変更点: 色の計算最適化
-- テスト: rake monitor で確認済み
-```
-
-❌ Avoid:
-```
-I have fixed this file. The LED control is now optimized.
-```
+**`.claude/docs/output-style.md`** — PROTECTED output style requirements
 
 ## Code Comments
 

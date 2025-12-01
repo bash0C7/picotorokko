@@ -1,3 +1,8 @@
+---
+name: Documentation Standards
+description: Provides guidelines for maintaining and updating documentation alongside code changes. Use this when implementing features, fixing bugs, or changing APIs that affect user-facing documentation.
+---
+
 # Documentation Standards Skill
 
 This skill guides AI agents on how to maintain and update documentation when making code changes.

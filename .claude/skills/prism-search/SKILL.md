@@ -1,3 +1,8 @@
+---
+name: Prism Pattern Search
+description: Provides AST-based Ruby code search using Prism::Pattern for precise pattern matching. Use this when you need to find specific Ruby code patterns that grep cannot accurately detect (e.g., blocks, method definitions, specific node types).
+---
+
 # Prism::Pattern Ruby コード検索 Skill
 
 ## 概要
