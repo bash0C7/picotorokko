@@ -169,9 +169,9 @@ module Picotorokko
 
     # @rbs () -> void
     def generate_mrbgems
-      # Generate default 'app' mrbgem for device-specific performance tuning
+      # Generate default 'applib' mrbgem for device-specific performance tuning
       # Additional mrbgems are created separately using: ptrk mrbgems generate NAME
-      generate_single_mrbgem("app")
+      generate_single_mrbgem("applib")
     end
 
     # @rbs (String) -> void
@@ -202,7 +202,7 @@ module Picotorokko
       templates = [
         { source: "mrbgem.rake.erb", dest: "mrbgem.rake" },
         { source: "README.md.erb", dest: "README.md" },
-        { source: "mrblib/app.rb", dest: "mrblib/#{c_prefix}.rb" },
+        { source: "mrblib/app.rb.erb", dest: "mrblib/#{c_prefix}.rb" },
         { source: "src/app.c.erb", dest: "src/#{c_prefix}.c" }
       ]
 

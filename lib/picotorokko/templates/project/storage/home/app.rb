@@ -5,4 +5,5 @@
 # Example: Blink LED
 # Note: This is a simple example. Actual pin and methods depend on your ESP32 configuration.
 
-# puts "Hello from " + TEMPLATE_PROJECT_NAME
+puts "Hello from PicoRuby!"
+puts "Applib version: #{Applib.new.version}"
