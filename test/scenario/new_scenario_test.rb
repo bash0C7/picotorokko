@@ -1,6 +1,7 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
+require "open3"
 require_relative "../../lib/picotorokko/commands/new"
 
 class ScenarioNewTest < PicotorokkoTestCase
@@ -23,112 +24,102 @@ class ScenarioNewTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: User creates basic PicoRuby project" do
     test "creates complete project structure for new development" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # User scenario: ptrk new my-app
-          initializer = Picotorokko::ProjectInitializer.new("my-app", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
 
-          # User expectation: Can immediately start developing
-          assert Dir.exist?("my-app")
-          assert Dir.exist?("my-app/storage/home")
-          assert Dir.exist?("my-app/mrbgems/app")
+        # Verify ptrk command succeeded
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # User expectation: Default mrbgem exists
-          assert File.exist?("my-app/mrbgems/app/mrblib/app.rb")
-          assert File.exist?("my-app/mrbgems/app/src/app.c")
+        # User expectation: Can immediately start developing
+        project_dir = File.join(tmpdir, project_id)
+        assert Dir.exist?(project_dir), "project directory should exist at #{project_dir}"
+        assert Dir.exist?(File.join(project_dir, "storage", "home")), "storage/home should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "mrbgems/applib should exist"
 
-          # User expectation: Can read project README
-          readme = File.read("my-app/README.md", encoding: "UTF-8")
-          assert_match(/my-app/, readme)
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # User expectation: Default mrbgem exists
+        assert File.exist?(File.join(project_dir, "mrbgems", "applib", "mrblib", "applib.rb")), "default mrblib should exist"
+        assert File.exist?(File.join(project_dir, "mrbgems", "applib", "src", "applib.c")), "default C source should exist"
+
+        # User expectation: Can read project README
+        readme_path = File.join(project_dir, "README.md")
+        readme = File.read(readme_path, encoding: "UTF-8")
+        assert_match(/#{project_id}/, readme, "README should contain project name")
       end
     end
 
     test "creates project with CI integration when --with-ci flag is used" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # User scenario: ptrk new my-ci-project --with-ci
-          initializer = Picotorokko::ProjectInitializer.new("my-ci-project", { "with-ci" => true })
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id} --with-ci", cwd: tmpdir)
 
-          # User expectation: GitHub Actions workflow exists
-          assert File.exist?("my-ci-project/.github/workflows/esp32-build.yml")
+        # Verify ptrk command succeeded
+        assert status.success?, "ptrk new --with-ci should succeed. Output: #{output}"
 
-          # User expectation: Can view workflow content
-          workflow = File.read("my-ci-project/.github/workflows/esp32-build.yml", encoding: "UTF-8")
-          assert workflow.length.positive?
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # User expectation: GitHub Actions workflow exists
+        project_dir = File.join(tmpdir, project_id)
+        workflow_path = File.join(project_dir, ".github", "workflows", "esp32-build.yml")
+        assert File.exist?(workflow_path), "workflow file should exist at #{workflow_path}"
+
+        # User expectation: Can view workflow content
+        workflow = File.read(workflow_path, encoding: "UTF-8")
+        assert workflow.length.positive?, "workflow content should not be empty"
+        assert_match(/esp32/, workflow.downcase, "workflow should contain esp32 reference")
       end
     end
 
-    test "creates project in current directory when no name is provided" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "creates project with specific project name" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # User scenario: mkdir my-project && cd my-project && ptrk new
-          Dir.mkdir("my-project")
-          Dir.chdir("my-project")
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
 
-          initializer = Picotorokko::ProjectInitializer.new(nil, {})
-          initializer.initialize_project
+        # Verify ptrk command succeeded
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # User expectation: Project structure created in current directory
-          assert File.exist?("README.md")
-          assert File.exist?(".picoruby-env.yml")
-          assert Dir.exist?("mrbgems/app")
+        # User expectation: Project structure created with specified name
+        project_dir = File.join(tmpdir, project_id)
+        assert File.exist?(File.join(project_dir, "README.md")), "README should exist"
+        assert File.exist?(File.join(project_dir, ".picoruby-env.yml")), ".picoruby-env.yml should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "mrbgems/applib should exist"
 
-          # User expectation: Can build in current directory
-          assert Dir.exist?("storage/home")
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # User expectation: Can build with the project
+        assert Dir.exist?(File.join(project_dir, "storage", "home")), "storage/home should exist"
       end
     end
   end
 
   sub_test_case "Scenario: Project structure is git-ready" do
     test "created projects work with git workflow" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # User scenario: Initialize git repo and track project files
-          initializer = Picotorokko::ProjectInitializer.new("git-project", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        _, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed"
 
-          Dir.chdir("git-project")
-          setup_test_git_repo
+        project_dir = File.join(tmpdir, project_id)
+
+        # User scenario: Initialize git repo and track project files
+        Dir.chdir(project_dir) do
+          # Initialize git repo
+          system("git init", out: File::NULL)
+          system("git config user.email 'test@example.com'")
+          system("git config user.name 'Test User'")
+          system("git config commit.gpgsign false")
 
           # User expectation: .gitignore prevents tracking build artifacts
-          ignored = File.read(".gitignore", encoding: "UTF-8")
-          assert_match(%r{\.cache/}, ignored)
-          assert_match(%r{build/}, ignored)
-          assert_match(%r{\.ptrk_env/}, ignored)
+          gitignore = File.read(".gitignore", encoding: "UTF-8")
+          assert_match(%r{\.cache/}, gitignore, ".gitignore should exclude .cache/")
+          assert_match(%r{build/}, gitignore, ".gitignore should exclude build/")
+          assert_match(%r{\.ptrk_env/}, gitignore, ".gitignore should exclude .ptrk_env/")
 
           # User expectation: Can commit project files
-          system("git add .", out: File::NULL)
-          system("git commit -m 'Initial commit'", out: File::NULL)
+          system("git add .")
+          output, status = Open3.capture2e("git commit -m 'Initial commit'")
+          assert status.success?, "git commit should succeed. Output: #{output}"
 
           # User expectation: Build artifacts won't be tracked
           tracked_files = `git ls-tree -r --name-only HEAD`.strip.split("\n")
-          assert(tracked_files.none? { |f| f.start_with?(".cache/") })
-          assert(tracked_files.none? { |f| f.start_with?("build/") })
-        ensure
-          Dir.chdir(original_dir)
+          assert(tracked_files.none? { |f| f.start_with?(".cache/") }, "tracked files should not include .cache/")
+          assert(tracked_files.none? { |f| f.start_with?("build/") }, "tracked files should not include build/")
         end
       end
     end
@@ -136,57 +127,46 @@ class ScenarioNewTest < PicotorokkoTestCase
 
   sub_test_case "Scenario: Template rendering and variable substitution" do
     test "project name is correctly substituted in generated files" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # User scenario: Create project with specific name
-          project_name = "awesome-firmware"
-          initializer = Picotorokko::ProjectInitializer.new(project_name, {})
-          initializer.initialize_project
+        project_id = "awesome-firmware"
+        _, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed"
 
-          # Verify name substitution in key files
-          readme = File.read("awesome-firmware/README.md", encoding: "UTF-8")
-          assert_match(/awesome-firmware/, readme)
+        # Verify name substitution in key files
+        project_dir = File.join(tmpdir, project_id)
+        readme = File.read(File.join(project_dir, "README.md"), encoding: "UTF-8")
+        assert_match(/#{project_id}/, readme, "README should contain project name")
 
-          claude = File.read("awesome-firmware/CLAUDE.md", encoding: "UTF-8")
-          assert_match(/awesome-firmware/, claude)
+        claude = File.read(File.join(project_dir, "CLAUDE.md"), encoding: "UTF-8")
+        assert_match(/#{project_id}/, claude, "CLAUDE.md should contain project name")
 
-          # Verify mrbgem uses project structure
-          assert Dir.exist?("awesome-firmware/mrbgems/app")
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify mrbgem uses project structure
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "mrbgems/applib should exist"
       end
     end
 
     test "generated files are valid and well-formed" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          initializer = Picotorokko::ProjectInitializer.new("valid-project", {})
-          initializer.initialize_project
+        project_id = "valid-project"
+        _, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed"
 
-          # Verify YAML is valid
-          env_yaml = YAML.safe_load_file("valid-project/.picoruby-env.yml")
-          assert env_yaml.is_a?(Hash)
+        project_dir = File.join(tmpdir, project_id)
 
-          # Verify Gemfile is valid Ruby syntax
-          gemfile_path = "valid-project/Gemfile"
-          gemfile_content = File.read(gemfile_path)
-          assert gemfile_content.include?("source")
-          assert gemfile_content.include?("picotorokko")
+        # Verify YAML is valid
+        env_yaml = YAML.safe_load_file(File.join(project_dir, ".picoruby-env.yml"))
+        assert env_yaml.is_a?(Hash), ".picoruby-env.yml should be valid YAML"
 
-          # Verify markdown files exist and contain content
-          readme_path = "valid-project/README.md"
-          assert File.exist?(readme_path)
-          assert File.size(readme_path) > 100, "README should have meaningful content"
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify Gemfile is valid Ruby syntax
+        gemfile_path = File.join(project_dir, "Gemfile")
+        gemfile_content = File.read(gemfile_path)
+        assert gemfile_content.include?("source"), "Gemfile should have source"
+        assert gemfile_content.include?("picotorokko"), "Gemfile should reference picotorokko"
+
+        # Verify markdown files exist and contain content
+        readme_path = File.join(project_dir, "README.md")
+        assert File.exist?(readme_path), "README should exist"
+        assert File.size(readme_path) > 100, "README should have meaningful content"
       end
     end
   end
