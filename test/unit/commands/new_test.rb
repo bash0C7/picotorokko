@@ -283,7 +283,7 @@ class UnitCommandsNewTest < PicotorokkoTestCase
       end
     end
 
-    test "generates default app mrbgem automatically" do
+    test "generates default applib mrbgem automatically" do
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -292,11 +292,11 @@ class UnitCommandsNewTest < PicotorokkoTestCase
           initializer = Picotorokko::ProjectInitializer.new("test-project", {})
           initializer.initialize_project
 
-          # Check that default 'app' mrbgem is created
-          assert Dir.exist?("test-project/mrbgems/app"), "Default 'app' mrbgem should be created"
-          assert File.exist?("test-project/mrbgems/app/mrbgem.rake"), "mrbgem.rake should exist"
-          assert File.exist?("test-project/mrbgems/app/mrblib/app.rb"), "Ruby template should exist"
-          assert File.exist?("test-project/mrbgems/app/src/app.c"), "C template should exist"
+          # Check that default 'applib' mrbgem is created
+          assert Dir.exist?("test-project/mrbgems/applib"), "Default 'applib' mrbgem should be created"
+          assert File.exist?("test-project/mrbgems/applib/mrbgem.rake"), "mrbgem.rake should exist"
+          assert File.exist?("test-project/mrbgems/applib/mrblib/applib.rb"), "Ruby template should exist"
+          assert File.exist?("test-project/mrbgems/applib/src/applib.c"), "C template should exist"
         ensure
           Dir.chdir(original_dir)
         end

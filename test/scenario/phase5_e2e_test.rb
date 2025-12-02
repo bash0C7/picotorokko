@@ -19,18 +19,10 @@ class ScenarioPhase5E2ETest < PicotorokkoTestCase
   end
 
   # 標準出力をキャプチャするヘルパー
-  def capture_stdout
-    original_stdout = $stdout
-    $stdout = StringIO.new
-    yield
-    $stdout.string
-  ensure
-    $stdout = original_stdout
-  end
 
   sub_test_case "Scenario: Phase 5 e2e verification" do
     test "Step 2: ptrk new creates project structure" do
-      omit "シナリオテスト全体見直し中 - 一時的に無効化"
+      omit "Scenario test: awaiting test-suite-wide review"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -52,7 +44,7 @@ class ScenarioPhase5E2ETest < PicotorokkoTestCase
     end
 
     test "Step 6-7: environment can be set and selected" do
-      omit "シナリオテスト全体見直し中 - 一時的に無効化"
+      omit "Scenario test: awaiting test-suite-wide review"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -86,7 +78,7 @@ class ScenarioPhase5E2ETest < PicotorokkoTestCase
     end
 
     test "Verification: build directory structure" do
-      omit "シナリオテスト全体見直し中 - 一時的に無効化"
+      omit "Scenario test: awaiting test-suite-wide review"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -121,7 +113,7 @@ class ScenarioPhase5E2ETest < PicotorokkoTestCase
     end
 
     test "Verification: mrbgems structure" do
-      omit "シナリオテスト全体見直し中 - 一時的に無効化"
+      omit "Scenario test: awaiting test-suite-wide review"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
@@ -147,7 +139,7 @@ class ScenarioPhase5E2ETest < PicotorokkoTestCase
     end
 
     test "Verification: storage/home exists and is writable" do
-      omit "シナリオテスト全体見直し中 - 一時的に無効化"
+      omit "Scenario test: awaiting test-suite-wide review"
       original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
         Dir.chdir(tmpdir)
