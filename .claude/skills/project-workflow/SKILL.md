@@ -1,3 +1,8 @@
+---
+name: Project Workflow & Build System
+description: Guides AI agents through TDD workflow, build system safety, git operations, and TODO management for gem development. Use this when starting development sessions, managing tasks, or needing workflow clarification.
+---
+
 # Project Workflow & Build System
 
 Development workflow, build system permissions, and git safety protocols for PicoRuby development.

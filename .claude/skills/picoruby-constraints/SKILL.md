@@ -1,3 +1,8 @@
+---
+name: PicoRuby Development Constraints
+description: Documents memory limits and stdlib constraints for PicoRuby on ESP32. Use this when writing code that will run on ESP32 hardware or designing features for PicoRuby applications.
+---
+
 # PicoRuby Development Constraints
 
 Memory constraints and stdlib limitations for ESP32 PicoRuby development.
