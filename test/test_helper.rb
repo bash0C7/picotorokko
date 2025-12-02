@@ -179,18 +179,26 @@ class PicotorokkoTestCase < Test::Unit::TestCase
     "test_#{Time.now.to_i}_#{SecureRandom.hex(4)}"
   end
 
-  # Helper: Run ptrk command in playground directory
+  # Helper: Run ptrk command in specified or playground directory
   # Usage:
   #   output, status = run_ptrk_command("new my_project", cwd: playground_dir)
+  #   output, status = run_ptrk_command("env list", cwd: project_dir)
   #   assert status.success?
   def run_ptrk_command(args, cwd: nil)
     require "open3"
 
-    playground_dir = cwd || File.join(Dir.pwd, "playground")
-    FileUtils.mkdir_p(playground_dir)
+    # Use provided cwd, or default to playground directory
+    work_dir = if cwd
+                 FileUtils.mkdir_p(cwd)
+                 cwd
+               else
+                 playground_dir = File.join(Dir.pwd, "playground")
+                 FileUtils.mkdir_p(playground_dir)
+                 playground_dir
+               end
 
     cmd = "bundle exec ptrk #{args}"
-    output, status = Open3.capture2e(cmd, chdir: playground_dir)
+    output, status = Open3.capture2e(cmd, chdir: work_dir)
 
     [output, status]
   end
