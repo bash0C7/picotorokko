@@ -172,6 +172,28 @@ class PicotorokkoTestCase < Test::Unit::TestCase
   ensure
     $stdout = original_stdout
   end
+
+  # Helper: Generate unique project name for scenario tests (hash + epoch)
+  # Usage: project_id = generate_project_id # => "test_1701518400_a1b2c3d4"
+  def generate_project_id
+    "test_#{Time.now.to_i}_#{SecureRandom.hex(4)}"
+  end
+
+  # Helper: Run ptrk command in playground directory
+  # Usage:
+  #   output, status = run_ptrk_command("new my_project", cwd: playground_dir)
+  #   assert status.success?
+  def run_ptrk_command(args, cwd: nil)
+    require "open3"
+
+    playground_dir = cwd || File.join(Dir.pwd, "playground")
+    FileUtils.mkdir_p(playground_dir)
+
+    cmd = "bundle exec ptrk #{args}"
+    output, status = Open3.capture2e(cmd, chdir: playground_dir)
+
+    [output, status]
+  end
 end
 
 # Refinement-based system command mocking for CI compatibility
