@@ -1,13 +1,10 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
-require_relative "../../lib/picotorokko/commands/new"
-require_relative "../../lib/picotorokko/commands/env"
-require_relative "../../lib/picotorokko/commands/device"
 
 class ScenarioProjectLifecycleTest < PicotorokkoTestCase
-  # project lifecycle シナリオテスト
-  # Verify complete project lifecycle from creation to build
+  # project lifecycle scenario tests
+  # Verify complete project lifecycle from creation through setup
 
   def setup
     super
@@ -19,199 +16,134 @@ class ScenarioProjectLifecycleTest < PicotorokkoTestCase
     super
   end
 
-  # 標準出力をキャプチャするヘルパー
-
-  sub_test_case "Scenario: project lifecycle from creation to build" do
-    test "Step 1: ptrk new creates complete project structure" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+  sub_test_case "Scenario: project lifecycle from creation through development" do
+    test "user can create complete project structure with ptrk new" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # User scenario: ptrk new myapp
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Verify complete project structure
-          assert Dir.exist?("myapp"), "Project directory should be created"
-          assert File.exist?("myapp/README.md"), "README.md should be created"
-          assert File.exist?("myapp/.picoruby-env.yml"), "Environment file should be created"
-          assert Dir.exist?("myapp/storage"), "storage/ directory should be created"
-          assert Dir.exist?("myapp/storage/home"), "storage/home/ should be created"
-          assert Dir.exist?("myapp/mrbgems"), "mrbgems/ directory should be created"
-          assert Dir.exist?("myapp/mrbgems/app"), "mrbgems/app/ should be created"
+        project_dir = File.join(tmpdir, project_id)
 
-          # Verify project is ready for development
-          assert File.exist?("myapp/mrbgems/app/mrbgem.rake")
-          assert File.exist?("myapp/mrbgems/app/mrblib/app.rb")
-          assert File.exist?("myapp/mrbgems/app/src/app.c")
-        ensure
-          Dir.chdir(original_dir)
+        # Verify complete project structure
+        assert Dir.exist?(project_dir), "Project directory should be created"
+        assert File.exist?(File.join(project_dir, "README.md")), "README.md should exist"
+        assert File.exist?(File.join(project_dir, ".picoruby-env.yml")), "Environment file should exist"
+        assert Dir.exist?(File.join(project_dir, "storage")), "storage/ directory should exist"
+        assert Dir.exist?(File.join(project_dir, "storage", "home")), "storage/home/ should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems")), "mrbgems/ directory should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "applib mrbgem should exist"
+
+        # Verify project is ready for development
+        assert File.exist?(File.join(project_dir, "mrbgems", "applib", "mrbgem.rake"))
+        assert File.exist?(File.join(project_dir, "mrbgems", "applib", "mrblib", "applib.rb"))
+        assert File.exist?(File.join(project_dir, "mrbgems", "applib", "src", "applib.c"))
+      end
+    end
+
+    test "user can add custom mrbgems to project" do
+      Dir.mktmpdir do |tmpdir|
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
+
+        project_dir = File.join(tmpdir, project_id)
+
+        # Generate additional mrbgems
+        run_ptrk_command("mrbgems generate device_lib", cwd: project_dir)
+        run_ptrk_command("mrbgems generate utils_lib", cwd: project_dir)
+
+        # Verify all mrbgems exist
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib"))
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "device_lib"))
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "utils_lib"))
+
+        # Verify structure of each mrbgem
+        %w[applib device_lib utils_lib].each do |gem|
+          assert File.exist?(File.join(project_dir, "mrbgems", gem, "mrbgem.rake"))
+          assert Dir.exist?(File.join(project_dir, "mrbgems", gem, "mrblib"))
+          assert Dir.exist?(File.join(project_dir, "mrbgems", gem, "src"))
         end
       end
     end
 
-    test "Step 2-3: environment can be set and selected" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "user can add files to storage/home during development" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Setup: Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
-          Dir.chdir("myapp")
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_dir = File.join(tmpdir, project_id)
+        storage_home = File.join(project_dir, "storage", "home")
 
-          # Simulate env set (actual network clone skipped)
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          env_name = "20251123_100000"
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+        # Simulate developer adding files
+        File.write(File.join(storage_home, "app.rb"), "puts 'Hello World'")
+        File.write(File.join(storage_home, "config.yml"), "debug: true")
+        FileUtils.mkdir_p(File.join(storage_home, "lib"))
+        File.write(File.join(storage_home, "lib", "helper.rb"), "def help; end")
 
-          # Set as current environment
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["current", env_name])
-          end
+        # Verify files exist and can be read
+        assert File.exist?(File.join(storage_home, "app.rb"))
+        assert File.exist?(File.join(storage_home, "config.yml"))
+        assert File.exist?(File.join(storage_home, "lib", "helper.rb"))
 
-          # Verify environment is selected
-          assert_match(/Current environment set to: #{env_name}/, output)
+        # Verify content
+        app_content = File.read(File.join(storage_home, "app.rb"))
+        config_content = File.read(File.join(storage_home, "config.yml"))
 
-          # Verify current environment
-          current = Picotorokko::Env.get_current_env
-          assert_equal env_name, current
-        ensure
-          Dir.chdir(original_dir)
-        end
+        assert_match(/Hello World/, app_content)
+        assert_match(/debug/, config_content)
       end
     end
 
-    test "Step 4: device build sets up build directory" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "user can create patches during development" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Setup: Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
-          Dir.chdir("myapp")
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_dir = File.join(tmpdir, project_id)
 
-          # Setup environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          env_name = "20251123_110000"
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+        # User creates patches for customization
+        patch_dir = File.join(project_dir, "patch", "R2P2-ESP32")
+        File.write(File.join(patch_dir, "custom_config.h"), "#define CUSTOM 1")
 
-          # Set as current
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["current", env_name])
-          end
+        # User creates custom build files
+        FileUtils.mkdir_p(File.join(patch_dir, "custom"))
+        File.write(File.join(patch_dir, "custom", "makefile"), "all: custom")
 
-          # Create minimal build structure for testing
-          build_path = Picotorokko::Env.get_build_path(env_name)
-          FileUtils.mkdir_p(File.join(build_path, "R2P2-ESP32", "mrbgems"))
-
-          # Verify build directory exists
-          assert Dir.exist?(build_path), "Build directory should exist"
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify patch structure
+        assert File.exist?(File.join(patch_dir, "custom_config.h"))
+        assert File.exist?(File.join(patch_dir, "custom", "makefile"))
       end
     end
 
-    test "Step 5: device flash without ESP-IDF shows error message" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "project integrates storage, mrbgems, and patches" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Setup: Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
-          Dir.chdir("myapp")
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_dir = File.join(tmpdir, project_id)
 
-          # Setup environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          env_name = "20251123_120000"
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+        # Add to storage/home
+        File.write(File.join(project_dir, "storage", "home", "app.rb"), "# App")
 
-          # Create build directory
-          build_path = Picotorokko::Env.get_build_path(env_name)
-          FileUtils.mkdir_p(File.join(build_path, "R2P2-ESP32"))
+        # Add custom mrbgem
+        run_ptrk_command("mrbgems generate core_lib", cwd: project_dir)
 
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["current", env_name])
-          end
+        # Add patches
+        File.write(File.join(project_dir, "patch", "R2P2-ESP32", "config.h"), "#define X 1")
 
-          # Flash command should fail without ESP-IDF
-          # We verify error is raised (not crash)
-          error = assert_raises(RuntimeError, SystemExit) do
-            capture_stdout do
-              Picotorokko::Commands::Device.start(["flash"])
-            end
-          end
+        # Verify all three work together
+        assert File.exist?(File.join(project_dir, "storage", "home", "app.rb"))
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "core_lib"))
+        assert File.exist?(File.join(project_dir, "patch", "R2P2-ESP32", "config.h"))
 
-          # Error should indicate ESP-IDF or environment issue
-          assert error.message.length.positive?, "Should have error message" if error.is_a?(RuntimeError)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "Step 6: device monitor without ESP-IDF shows error message" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
-
-          # Setup: Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
-          Dir.chdir("myapp")
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
-
-          # Setup environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          env_name = "20251123_130000"
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
-
-          # Create build directory
-          build_path = Picotorokko::Env.get_build_path(env_name)
-          FileUtils.mkdir_p(File.join(build_path, "R2P2-ESP32"))
-
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["current", env_name])
-          end
-
-          # Monitor command shows instruction snippet (doesn't fail)
-          output = capture_stdout do
-            Picotorokko::Commands::Device.start(["monitor"])
-          end
-
-          # Output should contain instruction on how to run monitor
-          assert_match(/To monitor ESP32 serial output/, output)
-          assert_match(/rake monitor/, output)
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify directory structure is complete
+        assert Dir.exist?(File.join(project_dir, "test"))
+        assert File.exist?(File.join(project_dir, "Mrbgemfile"))
+        assert File.exist?(File.join(project_dir, ".rubocop.yml"))
       end
     end
   end
