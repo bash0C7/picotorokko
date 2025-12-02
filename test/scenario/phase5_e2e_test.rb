@@ -1,11 +1,9 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
-require_relative "../../lib/picotorokko/commands/new"
-require_relative "../../lib/picotorokko/commands/env"
 
 class ScenarioPhase5E2ETest < PicotorokkoTestCase
-  # Phase 5 end-to-end verification シナリオテスト
+  # Phase 5 end-to-end verification scenario tests
   # Codify the manual e2e verification performed in Phase 5
 
   def setup
@@ -18,145 +16,97 @@ class ScenarioPhase5E2ETest < PicotorokkoTestCase
     super
   end
 
-  # 標準出力をキャプチャするヘルパー
-
   sub_test_case "Scenario: Phase 5 e2e verification" do
-    test "Step 2: ptrk new creates project structure" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "ptrk new creates project structure" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # ptrk new myapp
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Verify project structure
-          assert Dir.exist?("myapp")
-          assert File.exist?("myapp/README.md")
-          assert File.exist?("myapp/.picoruby-env.yml")
-          assert Dir.exist?("myapp/storage/home")
-          assert Dir.exist?("myapp/mrbgems/app")
-        ensure
-          Dir.chdir(original_dir)
-        end
+        project_dir = File.join(tmpdir, project_id)
+
+        # Verify project structure
+        assert Dir.exist?(project_dir)
+        assert File.exist?(File.join(project_dir, "README.md"))
+        assert File.exist?(File.join(project_dir, ".picoruby-env.yml"))
+        assert Dir.exist?(File.join(project_dir, "storage", "home"))
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib"))
       end
     end
 
-    test "Step 6-7: environment can be set and selected" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "project has mrbgems structure with expected files" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
-          Dir.chdir("myapp")
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_dir = File.join(tmpdir, project_id)
+        applib_gem = File.join(project_dir, "mrbgems", "applib")
 
-          # Simulate env set (actual network operations skipped)
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          env_name = "20251123_150000"
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
+        # Verify mrbgems structure
+        assert Dir.exist?(applib_gem)
+        assert File.exist?(File.join(applib_gem, "mrbgem.rake"))
+        assert File.exist?(File.join(applib_gem, "mrblib", "applib.rb"))
+        assert File.exist?(File.join(applib_gem, "src", "applib.c"))
+        assert File.exist?(File.join(applib_gem, "README.md"))
 
-          # Set current environment
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["current", env_name])
-          end
-
-          # Verify
-          assert_equal env_name, Picotorokko::Env.get_current_env
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify mrbgem.rake content
+        rake_content = File.read(File.join(applib_gem, "mrbgem.rake"))
+        assert_match(/MRuby::Gem::Specification/, rake_content)
       end
     end
 
-    test "Verification: build directory structure" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "project structure includes configuration files" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
-          Dir.chdir("myapp")
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
+        project_dir = File.join(tmpdir, project_id)
 
-          # Setup environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          env_name = "20251123_160000"
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
-
-          # Create simulated build structure
-          build_path = Picotorokko::Env.get_build_path(env_name)
-          FileUtils.mkdir_p(File.join(build_path, "R2P2-ESP32", "storage", "home"))
-          FileUtils.mkdir_p(File.join(build_path, "R2P2-ESP32", "mrbgems"))
-
-          # Verify build directory structure
-          assert Dir.exist?(build_path)
-          assert Dir.exist?(File.join(build_path, "R2P2-ESP32"))
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify configuration files
+        assert File.exist?(File.join(project_dir, ".rubocop.yml"))
+        assert File.exist?(File.join(project_dir, "Mrbgemfile"))
+        assert File.exist?(File.join(project_dir, "CLAUDE.md"))
+        assert File.exist?(File.join(project_dir, ".picoruby-env.yml"))
       end
     end
 
-    test "Verification: mrbgems structure" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "storage/home directory exists and is writable" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Verify mrbgems structure
-          assert Dir.exist?("myapp/mrbgems/app")
-          assert File.exist?("myapp/mrbgems/app/mrbgem.rake")
-          assert File.exist?("myapp/mrbgems/app/mrblib/app.rb")
-          assert File.exist?("myapp/mrbgems/app/src/app.c")
-          assert File.exist?("myapp/mrbgems/app/README.md")
+        project_dir = File.join(tmpdir, project_id)
+        storage_home = File.join(project_dir, "storage", "home")
 
-          # Verify mrbgem.rake content
-          rake_content = File.read("myapp/mrbgems/app/mrbgem.rake")
-          assert_match(/MRuby::Gem::Specification/, rake_content)
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify storage/home exists
+        assert Dir.exist?(storage_home)
+
+        # Verify writable
+        File.write(File.join(storage_home, "test.rb"), "# Test file")
+        assert File.exist?(File.join(storage_home, "test.rb"))
+        content = File.read(File.join(storage_home, "test.rb"))
+        assert_equal "# Test file", content
       end
     end
 
-    test "Verification: storage/home exists and is writable" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "project has required directory structure for patches and environments" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Verify storage/home
-          assert Dir.exist?("myapp/storage/home")
+        project_dir = File.join(tmpdir, project_id)
 
-          # Verify writable
-          File.write("myapp/storage/home/test.rb", "# Test file")
-          assert File.exist?("myapp/storage/home/test.rb")
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify patch directories
+        assert Dir.exist?(File.join(project_dir, "patch", "R2P2-ESP32"))
+        assert Dir.exist?(File.join(project_dir, "patch", "picoruby-esp32"))
+        assert Dir.exist?(File.join(project_dir, "patch", "picoruby"))
+
+        # Verify environment directory
+        assert Dir.exist?(File.join(project_dir, ".ptrk_env"))
       end
     end
   end
