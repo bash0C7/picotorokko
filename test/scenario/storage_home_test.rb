@@ -1,8 +1,6 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
-require_relative "../../lib/picotorokko/commands/new"
-require_relative "../../lib/picotorokko/commands/env"
 
 class ScenarioStorageHomeTest < PicotorokkoTestCase
   # storage/home workflow シナリオテスト
@@ -18,139 +16,108 @@ class ScenarioStorageHomeTest < PicotorokkoTestCase
     super
   end
 
-  # 標準出力をキャプチャするヘルパー
-
   sub_test_case "Scenario: storage/home workflow" do
-    test "Step 1: project creation includes storage/home directory" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "user can create project with storage/home directory" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Verify storage/home exists
-          assert Dir.exist?("myapp/storage"), "storage/ should be created"
-          assert Dir.exist?("myapp/storage/home"), "storage/home/ should be created"
-        ensure
-          Dir.chdir(original_dir)
-        end
+        project_dir = File.join(tmpdir, project_id)
+        assert Dir.exist?(File.join(project_dir, "storage")), "storage/ should be created"
+        assert Dir.exist?(File.join(project_dir, "storage", "home")), "storage/home/ should be created"
       end
     end
 
-    test "Steps 2-3: storage/home files are available in project" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "user can create and read files in storage/home" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          Dir.chdir("myapp")
+        project_dir = File.join(tmpdir, project_id)
+        storage_home = File.join(project_dir, "storage", "home")
 
-          # Create test file in storage/home
-          File.write("storage/home/app.rb", "# My app\nputs 'Hello'")
+        # Create test file in storage/home
+        File.write(File.join(storage_home, "app.rb"), "# My app\nputs 'Hello'")
 
-          # Verify file exists
-          assert File.exist?("storage/home/app.rb")
-          content = File.read("storage/home/app.rb")
-          assert_match(/My app/, content)
-          assert_match(/Hello/, content)
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify file exists and content
+        assert File.exist?(File.join(storage_home, "app.rb"))
+        content = File.read(File.join(storage_home, "app.rb"))
+        assert_match(/My app/, content)
+        assert_match(/Hello/, content)
       end
     end
 
-    test "Steps 4-5: storage/home files can be updated" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "user can update files in storage/home" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          Dir.chdir("myapp")
+        project_dir = File.join(tmpdir, project_id)
+        storage_home = File.join(project_dir, "storage", "home")
+        app_file = File.join(storage_home, "app.rb")
 
-          # Create initial file
-          File.write("storage/home/app.rb", "# Version 1")
-          assert_equal "# Version 1", File.read("storage/home/app.rb")
+        # Create initial file
+        File.write(app_file, "# Version 1")
+        assert_equal "# Version 1", File.read(app_file)
 
-          # Update file
-          File.write("storage/home/app.rb", "# Version 2\nputs 'Updated'")
+        # Update file
+        File.write(app_file, "# Version 2\nputs 'Updated'")
 
-          # Verify updated content
-          content = File.read("storage/home/app.rb")
-          assert_match(/Version 2/, content)
-          assert_match(/Updated/, content)
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify updated content
+        content = File.read(app_file)
+        assert_match(/Version 2/, content)
+        assert_match(/Updated/, content)
       end
     end
 
-    test "Step 6: nested directories in storage/home are supported" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "user can create nested directories in storage/home" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          Dir.chdir("myapp")
+        project_dir = File.join(tmpdir, project_id)
+        storage_home = File.join(project_dir, "storage", "home")
 
-          # Create nested directory structure
-          FileUtils.mkdir_p("storage/home/lib")
-          File.write("storage/home/lib/helper.rb", "# Helper module")
-          FileUtils.mkdir_p("storage/home/config")
-          File.write("storage/home/config/settings.rb", "# Settings")
+        # Create nested directory structure
+        FileUtils.mkdir_p(File.join(storage_home, "lib"))
+        File.write(File.join(storage_home, "lib", "helper.rb"), "# Helper module")
+        FileUtils.mkdir_p(File.join(storage_home, "config"))
+        File.write(File.join(storage_home, "config", "settings.rb"), "# Settings")
 
-          # Verify nested structure
-          assert Dir.exist?("storage/home/lib")
-          assert File.exist?("storage/home/lib/helper.rb")
-          assert Dir.exist?("storage/home/config")
-          assert File.exist?("storage/home/config/settings.rb")
+        # Verify nested structure
+        assert Dir.exist?(File.join(storage_home, "lib"))
+        assert File.exist?(File.join(storage_home, "lib", "helper.rb"))
+        assert Dir.exist?(File.join(storage_home, "config"))
+        assert File.exist?(File.join(storage_home, "config", "settings.rb"))
 
-          # Verify content
-          assert_match(/Helper module/, File.read("storage/home/lib/helper.rb"))
-          assert_match(/Settings/, File.read("storage/home/config/settings.rb"))
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify content
+        assert_match(/Helper module/, File.read(File.join(storage_home, "lib", "helper.rb")))
+        assert_match(/Settings/, File.read(File.join(storage_home, "config", "settings.rb")))
       end
     end
 
     test "storage/home supports binary files" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("myapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          Dir.chdir("myapp")
+        project_dir = File.join(tmpdir, project_id)
+        storage_home = File.join(project_dir, "storage", "home")
+        binary_file = File.join(storage_home, "data.bin")
 
-          # Create binary-like file
-          binary_content = [0x00, 0x01, 0xFF, 0xFE].pack("C*")
-          File.binwrite("storage/home/data.bin", binary_content)
+        # Create binary-like file
+        binary_content = [0x00, 0x01, 0xFF, 0xFE].pack("C*")
+        File.binwrite(binary_file, binary_content)
 
-          # Verify binary file
-          assert File.exist?("storage/home/data.bin")
-          read_content = File.binread("storage/home/data.bin")
-          assert_equal binary_content, read_content
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify binary file
+        assert File.exist?(binary_file)
+        read_content = File.binread(binary_file)
+        assert_equal binary_content, read_content
       end
     end
   end
