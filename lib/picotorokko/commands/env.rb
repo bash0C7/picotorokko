@@ -678,39 +678,7 @@ module Picotorokko
 
       private
 
-      # @rbs (String, String) -> Hash[String, String]
-      def fetch_repo_info(repo_name, repo_url)
-        require "tmpdir"
-
-        Dir.mktmpdir do |tmpdir|
-          tmp_repo = File.join(tmpdir, repo_name)
-          puts "    Cloning to get timestamp..."
-
-          cmd = "git clone --depth 1 #{Shellwords.escape(repo_url)} #{Shellwords.escape(tmp_repo)} 2>/dev/null"
-          unless system(cmd)
-            raise "Command failed (exit status: #{$CHILD_STATUS.exitstatus}): #{cmd.sub(" 2>/dev/null", "")}"
-          end
-
-          Dir.chdir(tmp_repo) do
-            short_hash = `git rev-parse --short=7 HEAD`.strip
-            raise "Failed to get commit hash from #{repo_name}" if short_hash.empty?
-
-            timestamp_str = `git show -s --format=%ci HEAD`.strip
-            raise "Failed to get timestamp from #{repo_name}" if timestamp_str.empty?
-
-            timestamp = Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
-
-            puts "    ✓ #{repo_name}: #{short_hash} (#{timestamp})"
-
-            {
-              "commit" => short_hash,
-              "timestamp" => timestamp
-            }
-          end
-        end
-      end
-
-      # @rbs (String, Hash[String, Hash[String, String]]) -> void
+      # @rbs (String, String, String, Hash[String, Hash[String, String]]) -> void
       def setup_build_environment(env_name, _repos_info)
         env_path = File.join(Picotorokko::Env::ENV_DIR, env_name)
         build_path = Picotorokko::Env.get_build_path(env_name)
@@ -778,29 +746,6 @@ module Picotorokko
         end
 
         puts "  ✓ Patches applied"
-      end
-
-      # @rbs (String, String, String, Hash[String, Hash[String, String]]) -> void
-      def clone_and_checkout_repo(repo_name, repo_url, build_path, repos_info)
-        target_path = File.join(build_path, repo_name)
-        commit_info = repos_info[repo_name]
-        commit_sha = commit_info["commit"]
-
-        # Skip if already cloned AND valid (has .git directory)
-        return if Dir.exist?(target_path) && File.directory?(File.join(target_path, ".git"))
-
-        # Remove incomplete clone if exists
-        FileUtils.rm_rf(target_path)
-
-        # Clone repository - check return value
-        clone_cmd = "git clone --filter=blob:none #{Shellwords.escape(repo_url)} #{Shellwords.escape(target_path)}"
-        raise "Clone failed: #{repo_name} from #{repo_url}" unless system(clone_cmd)
-
-        # Checkout specific commit - check return value
-        checkout_cmd = "cd #{Shellwords.escape(target_path)} && git checkout #{Shellwords.escape(commit_sha)}"
-        raise "Checkout failed: #{repo_name} to commit #{commit_sha}" unless system(checkout_cmd)
-
-        puts "    ✓ #{repo_name}: #{commit_sha}"
       end
 
       # @rbs (String) -> void

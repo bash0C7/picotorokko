@@ -268,7 +268,9 @@ class EnvTest < Test::Unit::TestCase
 
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
       # NOTE: set -x && is added for debug output
-      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && false"
+      # NOTE: ESPBAUD=150000 is the current default (changed from 115200)
+      # NOTE: openssl_setup is empty when brew command fails in MockExecutor
+      cmd = "set -x && . #{Shellwords.escape(idf_export)} && export ESPBAUD=150000 && false"
       mock_executor.set_result(cmd, stdout: "", stderr: "Error", fail: true)
 
       assert_raise(RuntimeError) do
@@ -317,7 +319,9 @@ class EnvTest < Test::Unit::TestCase
 
       idf_export = File.join(ENV.fetch("IDF_PATH", nil), "export.sh")
       # NOTE: set -x && is added for debug output
-      cmd = "set -x && . #{idf_export} && export ESPBAUD=115200 && false"
+      # NOTE: ESPBAUD=150000 is the current default (changed from 115200)
+      # NOTE: openssl_setup is empty when brew command fails in MockExecutor
+      cmd = "set -x && . #{Shellwords.escape(idf_export)} && export ESPBAUD=150000 && false"
       mock_executor.set_result(cmd, stdout: "", stderr: "Error", fail: true)
 
       assert_raise(RuntimeError) do

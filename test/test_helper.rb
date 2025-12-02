@@ -161,6 +161,17 @@ class PicotorokkoTestCase < Test::Unit::TestCase
     system("git add .") || raise("git add failed")
     system('git commit -m "test"', out: File::NULL) || raise("git commit failed")
   end
+
+  # Helper: Capture stdout output from a block
+  # Usage: output = capture_stdout { puts "hello" }
+  def capture_stdout
+    original_stdout = $stdout
+    $stdout = StringIO.new
+    yield
+    $stdout.string
+  ensure
+    $stdout = original_stdout
+  end
 end
 
 # Refinement-based system command mocking for CI compatibility

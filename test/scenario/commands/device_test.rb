@@ -577,18 +577,6 @@ class CommandsDeviceTest < PicotorokkoTestCase
     end
   end
 
-  def capture_stdout
-    original_stdout = $stdout
-    original_stderr = $stderr
-    $stdout = StringIO.new
-    $stderr = StringIO.new # stderr もキャプチャして捨てる（rake エラーメッセージを抑制）
-    yield
-    $stdout.string
-  ensure
-    $stdout = original_stdout
-    $stderr = original_stderr
-  end
-
   def setup_test_environment(env_name)
     r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
     esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }

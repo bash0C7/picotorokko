@@ -312,34 +312,6 @@ module Picotorokko
         Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
       end
 
-      # Fetch repository information from remote URL
-      # Clones repo, gets commit info, then cleans up
-      # @rbs (String, String) -> Hash[String, String]
-      def fetch_repo_info(repo_name, repo_url)
-        Dir.mktmpdir do |tmpdir|
-          clone_path = File.join(tmpdir, repo_name)
-
-          # Clone repository
-          clone_cmd = "git clone --filter=blob:none --depth 1 " \
-                      "#{Shellwords.escape(repo_url)} #{Shellwords.escape(clone_path)}"
-          unless system(clone_cmd, out: File::NULL, err: File::NULL)
-            raise "Command failed: #{clone_cmd}"
-          end
-
-          # Get commit hash
-          short_hash = `git -C #{Shellwords.escape(clone_path)} rev-parse --short=7 HEAD`.strip
-          raise "Failed to get commit hash from #{repo_url}" if short_hash.empty?
-
-          # Get timestamp
-          timestamp_str = `git -C #{Shellwords.escape(clone_path)} show -s --format=%ci HEAD`.strip
-          raise "Failed to get timestamp from #{repo_url}" if timestamp_str.empty?
-
-          timestamp = Time.parse(timestamp_str).strftime("%Y%m%d_%H%M%S")
-
-          { "commit" => short_hash, "timestamp" => timestamp }
-        end
-      end
-
       # Check if repository has .gitmodules file
       # @rbs (String) -> bool
       def has_submodules?(repo_path)

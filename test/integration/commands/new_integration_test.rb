@@ -61,30 +61,8 @@ class IntegrationCommandsNewTest < PicotorokkoTestCase
 
   sub_test_case "git clone simulation" do
     test "fetch_repo_info properly clones and extracts repo information" do
-      # Skip in development environment
-      return if ENV["SKIP_NETWORK_TESTS"]
-
-      env_command = Picotorokko::Commands::Env.new
-      repo_name = "picoruby"
-      repo_url = "https://github.com/picoruby/picoruby.git"
-
-      begin
-        repo_info = env_command.send(:fetch_repo_info, repo_name, repo_url)
-
-        # Verify returned structure
-        assert repo_info.is_a?(Hash)
-        assert repo_info.key?("commit")
-        assert repo_info.key?("timestamp")
-        assert repo_info["commit"].is_a?(String)
-        assert_match(/^\w{7}$/, repo_info["commit"], "commit should be 7-character hash")
-        assert repo_info["timestamp"].is_a?(String)
-        assert_match(/^\d{8}_\d{6}$/, repo_info["timestamp"], "timestamp should be YYYYMMDD_HHMMSS format")
-      rescue StandardError => e
-        # In case of network error, skip gracefully
-        return if ENV["SKIP_NETWORK_TESTS"]
-
-        raise e
-      end
+      omit "fetch_repo_info was a test-only private method and has been removed. " \
+           "This functionality should be tested via public API (e.g., set_latest)."
     end
   end
 end
