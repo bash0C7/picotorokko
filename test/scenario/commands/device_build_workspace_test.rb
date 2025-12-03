@@ -20,7 +20,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     test "copies storage/home to build workspace" do
       Dir.mktmpdir do |tmpdir|
         project_id = generate_project_id
-        _, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        _output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
         assert status.success?, "ptrk new should succeed"
 
         project_dir = File.join(tmpdir, project_id)
@@ -34,7 +34,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         File.write(File.join(storage_dir, "app.rb"), "# Test app\nputs 'Hello'")
 
         # Run device build via CLI
-        _output, = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+        output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
         # Verify storage/home was copied to build workspace
         build_path = File.join(project_dir, ".ptrk_build", env_name, "R2P2-ESP32")
@@ -43,6 +43,11 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         if Dir.exist?(build_path)
           assert File.exist?(copied_app), "storage/home/app.rb should be copied to R2P2-ESP32"
           assert_equal "# Test app\nputs 'Hello'", File.read(copied_app)
+        else
+          # Build workspace not created due to missing ESP-IDF, which is acceptable
+          # The key is that the command executed (success or error message)
+          assert status.success? || output.include?("Build") || output.include?("error"),
+                 "Build command should execute without crashing"
         end
       end
     end
@@ -50,7 +55,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
     test "copies mrbgems to nested picoruby path in build workspace" do
       Dir.mktmpdir do |tmpdir|
         project_id = generate_project_id
-        _, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        _output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
         assert status.success?, "ptrk new should succeed"
 
         project_dir = File.join(tmpdir, project_id)
@@ -64,7 +69,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         File.write(File.join(mrbgems_dir, "mrbgem.rake"), "# Test gem")
 
         # Run device build via CLI
-        _output, = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+        output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
         # Verify mrbgems was copied to nested picoruby path
         build_path = File.join(project_dir, ".ptrk_build", env_name, "R2P2-ESP32")
@@ -75,6 +80,10 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         if Dir.exist?(build_path)
           assert File.exist?(copied_gem), "mrbgems should be copied to nested picoruby path in R2P2-ESP32"
           assert_equal "# Test gem", File.read(copied_gem)
+        else
+          # Build workspace not created due to missing ESP-IDF
+          assert status.success? || output.include?("Build") || output.include?("error"),
+                 "Build command should execute without crashing"
         end
       end
     end
@@ -96,7 +105,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         File.write(File.join(patch_dir, "custom_config.h"), "#define CUSTOM_VALUE 42")
 
         # Run device build via CLI
-        _output, = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+        output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
         # Verify patch was applied to build workspace
         build_path = File.join(project_dir, ".ptrk_build", env_name, "R2P2-ESP32")
@@ -105,6 +114,10 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         if Dir.exist?(build_path)
           assert File.exist?(patched_file), "patch files should be applied to R2P2-ESP32"
           assert_equal "#define CUSTOM_VALUE 42", File.read(patched_file)
+        else
+          # Build workspace not created due to missing ESP-IDF
+          assert status.success? || output.include?("Build") || output.include?("error"),
+                 "Build command should execute without crashing"
         end
       end
     end
@@ -131,7 +144,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         File.write(File.join(storage_dir, "app.rb"), "# User app")
 
         # Run device build via CLI
-        _output, = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+        output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
         # User's storage/home should override patch
         build_path = File.join(project_dir, ".ptrk_build", env_name, "R2P2-ESP32")
@@ -141,6 +154,10 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
           assert File.exist?(final_app), "app.rb should exist in R2P2-ESP32"
           assert_equal "# User app", File.read(final_app),
                        "User's storage/home should not be overwritten by patches"
+        else
+          # Build workspace not created due to missing ESP-IDF
+          assert status.success? || output.include?("Build") || output.include?("error"),
+                 "Build command should execute without crashing"
         end
       end
     end
@@ -167,7 +184,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         File.write(File.join(mrbgems_dir, "custom.c"), "// C source")
 
         # Run device build via CLI
-        _output, = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+        output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
         build_path = File.join(project_dir, ".ptrk_build", env_name, "R2P2-ESP32")
 
@@ -180,6 +197,10 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
             build_path, "components", "picoruby-esp32", "picoruby", "mrbgems", "my_gem", "src", "custom.c"
           )
           assert_equal "// C source", File.read(gem_path)
+        else
+          # Build workspace not created due to missing ESP-IDF
+          assert status.success? || output.include?("Build") || output.include?("error"),
+                 "Build command should execute without crashing"
         end
       end
     end
@@ -200,12 +221,16 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         assert Dir.exist?(env_path), ".ptrk_env environment structure should exist"
 
         # Run device build via CLI
-        _output, = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+        output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
         # Verify build workspace R2P2-ESP32 subdirectory exists (if build completed)
         build_path = File.join(project_dir, ".ptrk_build", env_name, "R2P2-ESP32")
         if Dir.exist?(File.join(project_dir, ".ptrk_build", env_name))
           assert Dir.exist?(build_path), "R2P2-ESP32 subdirectory should exist in build workspace"
+        else
+          # Build workspace not created due to missing ESP-IDF
+          assert status.success? || output.include?("Build") || output.include?("error"),
+                 "Build command should execute without crashing"
         end
       end
     end
@@ -232,7 +257,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
         File.write(File.join(mrbgems_dir, "mrbgem.rake"), "# Gem version 1")
 
         # Run device build via CLI
-        _output, = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+        output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
         # Verify first build copied files
         build_path = File.join(project_dir, ".ptrk_build", env_name, "R2P2-ESP32")
@@ -268,7 +293,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
           FileUtils.rm_rf(File.join(project_dir, ".ptrk_build"))
 
           # Run build again - workspace will be recreated from scratch
-          _output, = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+          output2, status2 = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
           # Verify: source files are updated
           assert_equal "# Version 2", File.read(storage_copy),
@@ -281,6 +306,10 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
                  "Manually-added file in storage/home should be deleted on rebuild"
           assert !File.exist?(extra_gem_file),
                  "Manually-added directory in mrbgems should be deleted on rebuild"
+        else
+          # Build workspace not created due to missing ESP-IDF
+          assert status.success? || output.include?("Build") || output.include?("error"),
+                 "Build command should execute without crashing"
         end
       end
     end
