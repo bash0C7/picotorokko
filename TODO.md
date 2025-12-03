@@ -357,7 +357,7 @@ end
 
 ### [TODO-SCENARIO-DEVICE-TESTS] Device Command Scenario Tests (32 tests)
 
-**Status**: 🚀 IN PROGRESS
+**Status**: 🚀 IN PROGRESS (Phase 1: Error Handling)
 
 **Objective**: Convert device-related scenario tests to external `ptrk device` command execution pattern (PHASE 1 style)
 
@@ -365,61 +365,48 @@ end
 - `test/scenario/commands/device_test.rb`: 25 tests (all omitted)
 - `test/scenario/commands/device_build_workspace_test.rb`: 7 tests (all omitted)
 - Current implementation: Internal API (Picotorokko::Commands::Device.start) + mocking
-- **Target pattern**: External `ptrk device` command execution + filesystem verification
+- **New test file**: `test/scenario/device_scenario_test.rb` created with 5 tests (✅ All passing)
 
 **Implementation Strategy** (t-wada style TDD):
 
-1. **New Test File**: `test/scenario/device_scenario_test.rb`
-   - Uses `run_ptrk_command("device ...")` helper (PHASE 1 pattern)
-   - Each test: setup project → env setup → device command → filesystem verification
-   - No internal API mocking required
+1. **Commit 1** ✅ **COMPLETED** (commit 5d622c9)
+   - Created scaffold for device_scenario_test.rb
+   - Implemented Group 1 (error handling) - 3 tests
+   - Implemented basic success test - 1 test
+   - All tests passing (100% pass rate, 5 tests)
 
-2. **Test Pattern** (Example):
-```ruby
-def test_device_build_creates_build_directory
-  Dir.mktmpdir do |tmpdir|
-    project_id = generate_project_id
+2. **Command Format Discovered**:
+   ```
+   ptrk env set [ENV_NAME] --R2P2-ESP32=<value> --picoruby-esp32=<value> --picoruby=<value> [--latest] [--current]
+   ```
+   - Note: Network access required for actual repo clones
+   - `path://` scheme available for local testing (future)
 
-    # 1. Create project
-    output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
-    assert status.success?, "ptrk new should succeed"
+3. **Test Categories** (Revised):
+   - **Group 1**: Error handling ✅ DONE (3 tests - nonexistent env for build/flash/monitor)
+   - **Group 2**: Command interface verification (5+ tests - env list, env show, etc.)
+   - **Group 3**: Build workspace operations (pending proper env setup pattern)
 
-    project_dir = File.join(tmpdir, project_id)
+**Revised Implementation Plan**:
+1. [x] Create `test/scenario/device_scenario_test.rb` scaffold
+2. [x] Implement Group 1 tests (error handling) - 3 tests
+3. [ ] Expand Group 1 with more error scenarios - 2-3 more tests
+4. [ ] Implement Group 2 tests (command interface) - 5+ tests
+5. [ ] Defer Group 3 (workspace ops) - requires env setup solution
+6. [ ] RuboCop audit and auto-fix (done per commit)
+7. [ ] Final test suite validation
+8. [ ] Commit: "refactor: complete device scenario tests Phase 1 (error handling + interface)"
 
-    # 2. Setup environment (simulated)
-    # Using `ptrk env set` with mock commit info
+**Known Limitations for Current Phase**:
+- Build workspace tests require network access or special path:// setup
+- Tests focus on CLI interface verification (user perspective)
+- Will implement workspace operations in separate phase with proper env setup
 
-    # 3. Run device command
-    output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
-
-    # 4. Verify results via filesystem
-    assert Dir.exist?(File.join(project_dir, ".ptrk_build")), "Build dir should exist"
-  end
-end
-```
-
-3. **Skip Complex Tests**:
-   - Help command display (low priority, Thor conflicts)
-   - Tasks command display (similar Thor issue)
-   - Tests requiring actual ESP-IDF (mark with `omit` for later)
-
-4. **Test Categories**:
-   - **Group 1**: Error handling (nonexistent env, missing build dir)
-   - **Group 2**: Successful execution + output verification
-   - **Group 3**: Build workspace file operations (storage/home, mrbgems, patches)
-
-**Implementation Steps**:
-1. [ ] Create `test/scenario/device_scenario_test.rb` scaffold
-2. [ ] Implement Group 1 tests (error handling) - 6 tests
-3. [ ] Implement Group 2 tests (successful execution) - 8 tests
-4. [ ] Implement Group 3 tests (workspace operations) - 7 tests
-5. [ ] RuboCop audit and auto-fix
-6. [ ] Run full test suite
-7. [ ] Commit: "refactor: convert device scenario tests to external ptrk command execution"
-
-**Next Parallel Actions**:
-- [ ] Update TODO.md Phase 2 notes with lessons learned
-- [ ] Consolidate device_test.rb and device_build_workspace_test.rb patterns as reference
+**Next Actions**:
+1. [ ] Expand error handling tests (Group 1) with more edge cases
+2. [ ] Implement command interface tests (Group 2)
+3. [ ] Run full test suite (bundle exec rake test)
+4. [ ] Verify all 32 device tests path forward
 
 ### [TODO-QUALITY-2] Fix RBS parsing encoding error in env.rb
 

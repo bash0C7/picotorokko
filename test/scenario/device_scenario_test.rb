@@ -75,10 +75,27 @@ class ScenarioDeviceTest < PicotorokkoTestCase
   end
 
   # ============================================================================
-  # Group 2: Environment Setup and Device Command Success
+  # Group 2: Device Command Interface Verification
   # ============================================================================
-  sub_test_case "Scenario: Device command success with valid environment" do
-    test "device env list is available" do
+  sub_test_case "Scenario: Device command interface" do
+    test "device help is available" do
+      Dir.mktmpdir do |tmpdir|
+        project_id = generate_project_id
+
+        # Create project
+        _output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed"
+
+        project_dir = File.join(tmpdir, project_id)
+
+        # Get device help
+        output, status = run_ptrk_command("device help", cwd: project_dir)
+        assert status.success?, "ptrk device help should succeed"
+        assert_match(/device/i, output, "Help output should mention device")
+      end
+    end
+
+    test "env list is available" do
       Dir.mktmpdir do |tmpdir|
         project_id = generate_project_id
 
@@ -91,6 +108,23 @@ class ScenarioDeviceTest < PicotorokkoTestCase
         # List environments (should work even if empty)
         output, status = run_ptrk_command("env list", cwd: project_dir)
         assert status.success?, "ptrk env list should succeed. Output: #{output}"
+      end
+    end
+
+    test "env help displays available subcommands" do
+      Dir.mktmpdir do |tmpdir|
+        project_id = generate_project_id
+
+        # Create project
+        _output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed"
+
+        project_dir = File.join(tmpdir, project_id)
+
+        # Get env help
+        output, status = run_ptrk_command("env help", cwd: project_dir)
+        assert status.success?, "ptrk env help should succeed"
+        assert_match(/set|list|show|remove/i, output, "Env help should show available commands")
       end
     end
   end
