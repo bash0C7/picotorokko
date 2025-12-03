@@ -77,23 +77,34 @@ m5unified.rb (single file)
 
 ---
 
-### ⏳ Phase 1.2: C++ Header File Enumeration and Reading
+### ✅ Phase 1.2: C++ Header File Enumeration and Reading
 
-**状態**: 未実装
-**ファイル**: `m5unified.rb` (予定)
-**テスト**: `m5unified_test.rb` (予定)
+**状態**: 完了
+**ファイル**: `m5unified.rb` (lines 59-88)
+**テスト**: `m5unified_test.rb` (test_enumerate_header_files_from_repository, test_read_header_file_content)
 
-**要件**:
+**機能**:
 - `HeaderFileReader` クラス
-- M5Unified repo内の`.h`ファイルを列挙
-- `src/`および`include/`ディレクトリからヘッダー抽出
-- ファイル内容を読み込み
-- テンプレートファイルのスキップ
+  - `new(repo_path)` - リーダー初期化
+  - `list_headers()` - `.h`ファイルを列挙（src/, include/から）
+  - `read_file(file_path)` - ファイル内容を読み込み
 
-**テスト計画**:
-- `.h`ファイルを複数検出できる
-- ファイルの内容を正確に読み込める
-- C++スタイルのコメント・プリプロセッサを含むファイルに対応
+**テスト**:
+```ruby
+✓ test_enumerate_header_files_from_repository
+✓ test_read_header_file_content
+```
+
+**詳細**:
+- `src/`と`include/`ディレクトリを検索
+- `Dir.glob("**/*.h")`で再帰的に`.h`ファイルを検出
+- ファイルを昇順でソート
+- `File.read()`で内容を読み込み
+- ファイル存在チェック（存在しない場合は例外）
+
+**制約**:
+- `src/`または`include/`ディレクトリが存在しない場合はスキップ（エラーなし）
+- バイナリファイルの処理は考慮していない（テキストファイルのみ）
 
 ---
 
@@ -219,6 +230,14 @@ mrbgem-picoruby-m5unified/
 - **Refactor**: 完了
 - **Commit**: `Implement M5Unified repository manager with clone and update operations`
 
+#### Cycle 2: C++ Header File Enumeration and Reading
+
+- **Red**: HeaderFileReader テストを2つ追加（失敗：NameError）
+- **Green**: HeaderFileReader クラス実装（list_headers, read_file）
+- **RuboCop**: 4 offenses corrected
+- **Refactor**: 完了
+- **Commit**: `Implement C++ header file reader for M5Unified repository`
+
 ---
 
 ## Testing Strategy
@@ -237,7 +256,7 @@ ruby -I. m5unified_test.rb
 
 **現在の状態**:
 ```
-4 tests, 7 assertions, 0 failures, 0 errors
+6 tests, 13 assertions, 0 failures, 0 errors
 ```
 
 ---

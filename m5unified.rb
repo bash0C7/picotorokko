@@ -55,3 +55,34 @@ class M5UnifiedRepositoryManager
     }
   end
 end
+
+# C++ Header file reader
+class HeaderFileReader
+  def initialize(repo_path)
+    @repo_path = repo_path
+  end
+
+  # List all .h files in src/ and include/ directories
+  def list_headers
+    headers = []
+    search_dirs = ["src", "include"]
+
+    search_dirs.each do |dir|
+      dir_path = File.join(@repo_path, dir)
+      next unless Dir.exist?(dir_path)
+
+      Dir.glob(File.join(dir_path, "**", "*.h")).each do |file|
+        headers << file
+      end
+    end
+
+    headers.sort
+  end
+
+  # Read header file content
+  def read_file(file_path)
+    raise "File does not exist: #{file_path}" unless File.exist?(file_path)
+
+    File.read(file_path)
+  end
+end

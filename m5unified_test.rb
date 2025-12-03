@@ -73,4 +73,44 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert_not_nil info[:commit], "Info should contain commit hash"
     assert_not_nil info[:branch], "Info should contain branch name"
   end
+
+  # Test 5: Header files can be enumerated from repository
+  def test_enumerate_header_files_from_repository
+    repo_path = File.join(TEST_VENDOR_DIR, "m5unified")
+    manager = M5UnifiedRepositoryManager.new(repo_path)
+
+    manager.clone(
+      url: "https://github.com/m5stack/M5Unified.git",
+      branch: "master"
+    )
+
+    reader = HeaderFileReader.new(repo_path)
+    headers = reader.list_headers
+
+    assert_instance_of Array, headers
+    assert headers.length.positive?, "Should find multiple header files"
+    assert headers.all? { |h| h.end_with?(".h") }, "All files should end with .h"
+  end
+
+  # Test 6: Header file content can be read
+  def test_read_header_file_content
+    repo_path = File.join(TEST_VENDOR_DIR, "m5unified")
+    manager = M5UnifiedRepositoryManager.new(repo_path)
+
+    manager.clone(
+      url: "https://github.com/m5stack/M5Unified.git",
+      branch: "master"
+    )
+
+    reader = HeaderFileReader.new(repo_path)
+    headers = reader.list_headers
+
+    # Read the first header file
+    first_header = headers.first
+    content = reader.read_file(first_header)
+
+    assert_instance_of String, content
+    assert content.length.positive?, "Content should not be empty"
+    assert content.include?("#include") || content.include?("class"), "Header should contain C++ code"
+  end
 end
