@@ -355,23 +355,71 @@ end
 
 ## Code Quality: AGENTS.md Rule Compliance
 
-### [TODO-QUALITY-1] Remove rubocop:disable from lib/picotorokko/commands/env.rb
+### [TODO-SCENARIO-DEVICE-TESTS] Device Command Scenario Tests (32 tests)
 
-**⚠️ REQUIRES SPECIAL INSTRUCTION FROM USER TO PROCEED**
+**Status**: 🚀 IN PROGRESS
 
-**Issue**: AGENTS.md prohibits `# rubocop:disable` comments. Refactor instead.
+**Objective**: Convert device-related scenario tests to external `ptrk device` command execution pattern (PHASE 1 style)
 
-**Violations Found**:
-- `lib/picotorokko/commands/env.rb:16` — `# rubocop:disable Metrics/ClassLength`
+**Current State**:
+- `test/scenario/commands/device_test.rb`: 25 tests (all omitted)
+- `test/scenario/commands/device_build_workspace_test.rb`: 7 tests (all omitted)
+- Current implementation: Internal API (Picotorokko::Commands::Device.start) + mocking
+- **Target pattern**: External `ptrk device` command execution + filesystem verification
 
-**Refactoring Tasks** (behavior must not change):
-- [ ] **Extract helper modules**: Move related methods into separate modules (e.g., `EnvSetup`, `EnvValidation`, `RubocopSetup`)
-- [ ] **Split no_commands block**: Break large `no_commands` block into smaller logical groups
-- [ ] **TDD verification**: Ensure all existing tests pass after refactoring
-- [ ] **RuboCop clean**: Verify 0 violations without disable comments
-- [ ] **COMMIT**: "refactor: extract helper modules to eliminate rubocop:disable in env.rb"
+**Implementation Strategy** (t-wada style TDD):
 
-**Estimated effort**: Medium (class is ~800 lines, needs careful extraction)
+1. **New Test File**: `test/scenario/device_scenario_test.rb`
+   - Uses `run_ptrk_command("device ...")` helper (PHASE 1 pattern)
+   - Each test: setup project → env setup → device command → filesystem verification
+   - No internal API mocking required
+
+2. **Test Pattern** (Example):
+```ruby
+def test_device_build_creates_build_directory
+  Dir.mktmpdir do |tmpdir|
+    project_id = generate_project_id
+
+    # 1. Create project
+    output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+    assert status.success?, "ptrk new should succeed"
+
+    project_dir = File.join(tmpdir, project_id)
+
+    # 2. Setup environment (simulated)
+    # Using `ptrk env set` with mock commit info
+
+    # 3. Run device command
+    output, status = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+
+    # 4. Verify results via filesystem
+    assert Dir.exist?(File.join(project_dir, ".ptrk_build")), "Build dir should exist"
+  end
+end
+```
+
+3. **Skip Complex Tests**:
+   - Help command display (low priority, Thor conflicts)
+   - Tasks command display (similar Thor issue)
+   - Tests requiring actual ESP-IDF (mark with `omit` for later)
+
+4. **Test Categories**:
+   - **Group 1**: Error handling (nonexistent env, missing build dir)
+   - **Group 2**: Successful execution + output verification
+   - **Group 3**: Build workspace file operations (storage/home, mrbgems, patches)
+
+**Implementation Steps**:
+1. [ ] Create `test/scenario/device_scenario_test.rb` scaffold
+2. [ ] Implement Group 1 tests (error handling) - 6 tests
+3. [ ] Implement Group 2 tests (successful execution) - 8 tests
+4. [ ] Implement Group 3 tests (workspace operations) - 7 tests
+5. [ ] RuboCop audit and auto-fix
+6. [ ] Run full test suite
+7. [ ] Commit: "refactor: convert device scenario tests to external ptrk command execution"
+
+**Next Parallel Actions**:
+- [ ] Update TODO.md Phase 2 notes with lessons learned
+- [ ] Consolidate device_test.rb and device_build_workspace_test.rb patterns as reference
 
 ### [TODO-QUALITY-2] Fix RBS parsing encoding error in env.rb
 
