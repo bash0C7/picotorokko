@@ -113,4 +113,77 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert content.length.positive?, "Content should not be empty"
     assert content.include?("#include") || content.include?("class"), "Header should contain C++ code"
   end
+
+  # Test 7: C++ Parser can extract class names from code
+  def test_cpp_parser_extracts_class_names
+    cpp_code = <<~CPP
+      class MyClass {
+      public:
+        void doSomething();
+      };
+    CPP
+
+    parser = CppParser.new(cpp_code)
+    classes = parser.extract_classes
+
+    assert_instance_of Array, classes
+    assert classes.length.positive?, "Should extract at least one class"
+    assert classes.first[:name] == "MyClass", "Should extract correct class name"
+  end
+
+  # Test 8: C++ Parser can extract method names
+  def test_cpp_parser_extracts_method_names
+    cpp_code = <<~CPP
+      class MyClass {
+      public:
+        void doSomething();
+        int getValue();
+      };
+    CPP
+
+    parser = CppParser.new(cpp_code)
+    classes = parser.extract_classes
+
+    methods = classes.first[:methods]
+    assert_instance_of Array, methods
+    assert methods.length >= 2, "Should extract at least 2 methods"
+  end
+
+  # Test 9: C++ Parser can extract return types
+  def test_cpp_parser_extracts_return_types
+    cpp_code = <<~CPP
+      class MyClass {
+      public:
+        int getValue();
+        void doSomething();
+      };
+    CPP
+
+    parser = CppParser.new(cpp_code)
+    classes = parser.extract_classes
+    methods = classes.first[:methods]
+
+    # Find getValue method
+    get_value = methods.find { |m| m[:name] == "getValue" }
+    assert_not_nil get_value, "Should find getValue method"
+    assert get_value[:return_type] == "int", "Should extract correct return type"
+  end
+
+  # Test 10: C++ Parser can extract method parameters
+  def test_cpp_parser_extracts_parameters
+    cpp_code = <<~CPP
+      class MyClass {
+      public:
+        void setValues(int x, float y);
+      };
+    CPP
+
+    parser = CppParser.new(cpp_code)
+    classes = parser.extract_classes
+    methods = classes.first[:methods]
+
+    set_values = methods.find { |m| m[:name] == "setValues" }
+    assert_not_nil set_values, "Should find setValues method"
+    assert set_values[:parameters].length == 2, "Should extract 2 parameters"
+  end
 end
