@@ -2,7 +2,7 @@
 name: debug-workflow
 description: Helps developers debug scenario tests using Ruby debug gem step execution. Analyzes failing tests, guides interactive debugging sessions, and helps interpret variable states and assertions.
 tools: Bash, Read, Grep
-model: sonnet
+model: haiku
 permissionMode: default
 skills: project-workflow, development-guidelines, picoruby-constraints
 ---

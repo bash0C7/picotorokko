@@ -167,5 +167,5 @@ Use the debug-workflow subagent to help me debug test/scenario/your_test.rb
 - Links to test helpers and project-specific context
 
 **Subagent Tools**: Bash, Read, Grep
-**Model**: Sonnet (most capable for debugging reasoning)
+**Model**: Haiku (fast, cost-effective pattern-based guidance)
 

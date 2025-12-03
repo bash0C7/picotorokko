@@ -940,7 +940,7 @@ end
 - Interprets debug output, variable values, file system states
 - Teaches four core debugging patterns with examples
 - Integrates with t-wada TDD cycle
-- Uses Sonnet model for sophisticated debugging reasoning
+- Uses Haiku model for fast, cost-effective pattern-based guidance
 - References official guides and test helpers automatically
 
 **Key Learnings**:
