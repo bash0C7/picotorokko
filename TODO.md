@@ -931,7 +931,17 @@ end
    - `.claude/docs/step-execution-guide.md` — 400+ line complete guide with examples
    - `CLAUDE.md` — Integrated debugging workflow with TDD cycle
    - `.claude/examples/debugging-session-example.md` — Real-world interactive session example
-4. **Working Example**: `.claude/examples/step-execution-example.rb` (demandstrative script)
+4. **Working Example**: `.claude/examples/step-execution-example.rb` (demonstrative script)
+5. **Specialized Subagent**: `.claude/agents/debug-workflow.md` — Autonomous debugging assistant
+
+**Subagent Features** (NEW):
+- Analyzes test structure and identifies failing assertions
+- Guides interactive step execution through Ruby debugger
+- Interprets debug output, variable values, file system states
+- Teaches four core debugging patterns with examples
+- Integrates with t-wada TDD cycle
+- Uses Sonnet model for sophisticated debugging reasoning
+- References official guides and test helpers automatically
 
 **Key Learnings**:
 - `ruby -r debug` is more reliable than `rdbg` command (PATH issues)
@@ -939,6 +949,7 @@ end
 - Test helpers (`generate_project_id`, `run_ptrk_command`) integrate seamlessly with debugger
 - File system assertions (Dir.exist?, File.exist?) are most efficiently debugged with `system("ls", "find", etc.)`
 - Multiple breakpoints can be set with multiple `-b` flags
+- Subagent architecture provides superior context and autonomous guidance compared to skills
 
 **Usage Quick Start**:
 ```bash
@@ -952,11 +963,16 @@ ruby -r debug -Itest test/scenario/new_scenario_test.rb
 (rdbg) step       # Step to next line
 (rdbg) pp var     # Print variable
 (rdbg) help       # Show all commands
+
+# 4. OR invoke debugging subagent:
+# "Use the debug-workflow subagent to help me debug test/scenario/new_scenario_test.rb"
 ```
 
 **For Detailed Guide**: See `.claude/docs/step-execution-guide.md`
 
 **For Interactive Example**: See `.claude/examples/debugging-session-example.md`
+
+**For Subagent Details**: See `AGENTS.md` section "Specialized Subagents" → "debug-workflow Subagent"
 
 **Integration**: CLAUDE.md includes complete TDD cycle integration
 
