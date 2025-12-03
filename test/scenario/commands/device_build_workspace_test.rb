@@ -293,7 +293,7 @@ class DeviceBuildWorkspaceTest < PicotorokkoTestCase
           FileUtils.rm_rf(File.join(project_dir, ".ptrk_build"))
 
           # Run build again - workspace will be recreated from scratch
-          output2, status2 = run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
+          run_ptrk_command("device build --env #{env_name}", cwd: project_dir)
 
           # Verify: source files are updated
           assert_equal "# Version 2", File.read(storage_copy),
