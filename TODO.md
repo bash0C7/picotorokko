@@ -920,17 +920,45 @@ end
 
 ### [TODO-VERIFY-1] Step Execution Verification for Scenario Tests
 
-**⚠️ REQUIRES SPECIAL INSTRUCTION FROM USER TO PROCEED**
+**Status**: ✅ COMPLETED (2025-12-03)
 
-- **Status**: Pending
-- **Objective**: Establish regular step execution verification workflow for scenario tests
-- **Approach**: Use Ruby debug gem (`rdbg`) with command-line breakpoints
-- **Prerequisites**: Install debug gem locally (`gem install debug`)
-- **Usage**:
-  ```bash
-  rdbg -c -b "test/scenario/phase5_e2e_test.rb:30" -- bundle exec ruby -Itest test/scenario/phase5_e2e_test.rb
-  ```
-- **Note**: debug gem removed from Gemfile due to CI build issues; install locally when needed
+**Objective**: Establish regular step execution verification workflow for scenario tests
+
+**Solution Implemented**:
+1. **Debug Gem Installation**: Installed locally via `gem install debug`
+2. **Step Execution Method**: Use `ruby -r debug -Itest` (better than `rdbg` command for PATH compatibility)
+3. **Comprehensive Documentation**:
+   - `.claude/docs/step-execution-guide.md` — 400+ line complete guide with examples
+   - `CLAUDE.md` — Integrated debugging workflow with TDD cycle
+   - `.claude/examples/debugging-session-example.md` — Real-world interactive session example
+4. **Working Example**: `.claude/examples/step-execution-example.rb` (demandstrative script)
+
+**Key Learnings**:
+- `ruby -r debug` is more reliable than `rdbg` command (PATH issues)
+- Step execution best used for: understanding expected behavior (Green phase), refactoring verification (Refactor phase)
+- Test helpers (`generate_project_id`, `run_ptrk_command`) integrate seamlessly with debugger
+- File system assertions (Dir.exist?, File.exist?) are most efficiently debugged with `system("ls", "find", etc.)`
+- Multiple breakpoints can be set with multiple `-b` flags
+
+**Usage Quick Start**:
+```bash
+# 1. Install debug gem locally (once)
+gem install debug
+
+# 2. Run test with step execution
+ruby -r debug -Itest test/scenario/new_scenario_test.rb
+
+# 3. At debugger prompt, use:
+(rdbg) step       # Step to next line
+(rdbg) pp var     # Print variable
+(rdbg) help       # Show all commands
+```
+
+**For Detailed Guide**: See `.claude/docs/step-execution-guide.md`
+
+**For Interactive Example**: See `.claude/examples/debugging-session-example.md`
+
+**Integration**: CLAUDE.md includes complete TDD cycle integration
 
 ---
 
