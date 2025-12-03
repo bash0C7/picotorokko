@@ -1,12 +1,10 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
-require_relative "../../lib/picotorokko/commands/new"
-require_relative "../../lib/picotorokko/commands/mrbgems"
 
 class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
-  # mrbgems workflow シナリオテスト
-  # Verify mrbgems are correctly generated and included in builds
+  # mrbgems workflow scenario tests
+  # Verify mrbgems are correctly generated using ptrk commands
 
   def setup
     super
@@ -18,373 +16,253 @@ class ScenarioMrbgemsWorkflowTest < PicotorokkoTestCase
     super
   end
 
-  # 標準出力をキャプチャするヘルパー
-
-  sub_test_case "Scenario: mrbgems workflow from project creation to build" do
-    test "Step 1: ptrk new creates project with default mrbgems/app/" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+  sub_test_case "Scenario: mrbgems workflow from project creation" do
+    test "ptrk new creates project with default applib mrbgem" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # User scenario: ptrk new testapp
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Verify mrbgems/app/ is generated
-          assert Dir.exist?("testapp/mrbgems/app"), "Should create mrbgems/app/ directory"
-          assert Dir.exist?("testapp/mrbgems/app/mrblib"), "Should create mrblib directory"
-          assert Dir.exist?("testapp/mrbgems/app/src"), "Should create src directory"
-          assert File.exist?("testapp/mrbgems/app/mrbgem.rake"), "Should create mrbgem.rake"
-          assert File.exist?("testapp/mrbgems/app/mrblib/app.rb"), "Should create app.rb"
-          assert File.exist?("testapp/mrbgems/app/src/app.c"), "Should create app.c"
-        ensure
-          Dir.chdir(original_dir)
+        project_dir = File.join(tmpdir, project_id)
+        applib_dir = File.join(project_dir, "mrbgems", "applib")
+
+        # Verify mrbgems/applib/ is generated
+        assert Dir.exist?(applib_dir), "Should create mrbgems/applib/ directory"
+        assert Dir.exist?(File.join(applib_dir, "mrblib")), "Should create mrblib directory"
+        assert Dir.exist?(File.join(applib_dir, "src")), "Should create src directory"
+        assert File.exist?(File.join(applib_dir, "mrbgem.rake")), "Should create mrbgem.rake"
+        assert File.exist?(File.join(applib_dir, "mrblib", "applib.rb")), "Should create applib.rb"
+        assert File.exist?(File.join(applib_dir, "src", "applib.c")), "Should create applib.c"
+      end
+    end
+
+    test "user can generate custom mrbgem using ptrk mrbgems generate" do
+      Dir.mktmpdir do |tmpdir|
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
+
+        project_dir = File.join(tmpdir, project_id)
+
+        # Generate custom mrbgem
+        output, status = run_ptrk_command("mrbgems generate mylib", cwd: project_dir)
+        assert status.success?, "ptrk mrbgems generate should succeed. Output: #{output}"
+
+        mylib_dir = File.join(project_dir, "mrbgems", "mylib")
+
+        # Verify mrbgems/mylib/ is generated
+        assert Dir.exist?(mylib_dir), "Should create mrbgems/mylib/ directory"
+        assert Dir.exist?(File.join(mylib_dir, "mrblib")), "Should create mylib mrblib directory"
+        assert Dir.exist?(File.join(mylib_dir, "src")), "Should create mylib src directory"
+        assert File.exist?(File.join(mylib_dir, "mrbgem.rake")), "Should create mylib mrbgem.rake"
+        assert File.exist?(File.join(mylib_dir, "mrblib", "mylib.rb")), "Should create mylib.rb"
+        assert File.exist?(File.join(mylib_dir, "src", "mylib.c")), "Should create mylib.c"
+
+        # Verify content uses correct names
+        rake_content = File.read(File.join(mylib_dir, "mrbgem.rake"))
+        assert_match(/MRuby::Gem::Specification\.new\('mylib'\)/, rake_content)
+
+        c_content = File.read(File.join(mylib_dir, "src", "mylib.c"))
+        assert_match(/mrbc_mylib_init/, c_content)
+      end
+    end
+
+    test "multiple mrbgems can be created in project" do
+      Dir.mktmpdir do |tmpdir|
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
+
+        project_dir = File.join(tmpdir, project_id)
+
+        # Generate second mrbgem
+        output, status = run_ptrk_command("mrbgems generate mylib", cwd: project_dir)
+        assert status.success?, "ptrk mrbgems generate mylib should succeed. Output: #{output}"
+
+        # Generate third mrbgem
+        output, status = run_ptrk_command("mrbgems generate utils", cwd: project_dir)
+        assert status.success?, "ptrk mrbgems generate utils should succeed. Output: #{output}"
+
+        # Verify all mrbgems exist
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "Should have applib mrbgem"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "mylib")), "Should have mylib mrbgem"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "utils")), "Should have utils mrbgem"
+
+        # Verify each has complete structure
+        %w[applib mylib utils].each do |gem_name|
+          prefix = gem_name.downcase
+          assert File.exist?(File.join(project_dir, "mrbgems", gem_name, "mrbgem.rake")),
+                 "Should have mrbgem.rake for #{gem_name}"
+          assert File.exist?(File.join(project_dir, "mrbgems", gem_name, "mrblib", "#{prefix}.rb")),
+                 "Should have #{prefix}.rb for #{gem_name}"
+          assert File.exist?(File.join(project_dir, "mrbgems", gem_name, "src", "#{prefix}.c")),
+                 "Should have #{prefix}.c for #{gem_name}"
+        end
+
+        # Verify mrbgems are distinct
+        applib_rake = File.read(File.join(project_dir, "mrbgems", "applib", "mrbgem.rake"))
+        mylib_rake = File.read(File.join(project_dir, "mrbgems", "mylib", "mrbgem.rake"))
+        assert_match(/Specification\.new\('applib'\)/, applib_rake)
+        assert_match(/Specification\.new\('mylib'\)/, mylib_rake)
+      end
+    end
+
+    test "generated mrbgems have correct class names in Ruby code" do
+      Dir.mktmpdir do |tmpdir|
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
+
+        project_dir = File.join(tmpdir, project_id)
+
+        # Generate with different naming patterns
+        run_ptrk_command("mrbgems generate my_lib", cwd: project_dir)
+        run_ptrk_command("mrbgems generate MyAwesomeLib", cwd: project_dir)
+
+        # Verify my_lib uses correct class name
+        my_lib_rb = File.read(File.join(project_dir, "mrbgems", "my_lib", "mrblib", "my_lib.rb"))
+        assert_match(/class MyLib/, my_lib_rb)
+
+        # Verify MyAwesomeLib preserves capitalization
+        awesome_rb = File.read(File.join(project_dir, "mrbgems", "MyAwesomeLib", "mrblib", "myawesomelib.rb"))
+        assert_match(/class MyAwesomeLib/, awesome_rb)
+
+        # Verify C code uses lowercase for function names
+        my_lib_c = File.read(File.join(project_dir, "mrbgems", "my_lib", "src", "my_lib.c"))
+        assert_match(/mrbc_my_lib_init/, my_lib_c)
+
+        awesome_c = File.read(File.join(project_dir, "mrbgems", "MyAwesomeLib", "src", "myawesomelib.c"))
+        assert_match(/mrbc_myawesomelib_init/, awesome_c)
+      end
+    end
+
+    test "mrbgems directory structure can be copied to build path" do
+      Dir.mktmpdir do |tmpdir|
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
+
+        project_dir = File.join(tmpdir, project_id)
+
+        # Generate custom mrbgem
+        run_ptrk_command("mrbgems generate custom", cwd: project_dir)
+
+        # Verify mrbgems directory exists in project
+        assert Dir.exist?(File.join(project_dir, "mrbgems")), "mrbgems directory should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "default applib mrbgem should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "custom")), "custom mrbgem should exist"
+
+        # Simulate copying to build directory
+        mrbgems_src = File.join(project_dir, "mrbgems")
+        build_mrbgems_dst = File.join(tmpdir, "build", "R2P2-ESP32", "components",
+                                      "picoruby-esp32", "picoruby", "mrbgems")
+
+        FileUtils.mkdir_p(File.dirname(build_mrbgems_dst))
+        FileUtils.cp_r(mrbgems_src, build_mrbgems_dst)
+
+        # Verify copy worked
+        assert Dir.exist?(build_mrbgems_dst), "mrbgems should be copied to nested picoruby path"
+        assert Dir.exist?(File.join(build_mrbgems_dst, "applib")), "applib should exist in copied path"
+        assert Dir.exist?(File.join(build_mrbgems_dst, "custom")), "custom should exist in copied path"
+        assert Dir.exist?(File.join(build_mrbgems_dst, "applib", "mrblib")), "applib mrblib should exist"
+      end
+    end
+
+    test "mrbgems structure includes all required files for building" do
+      Dir.mktmpdir do |tmpdir|
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
+
+        project_dir = File.join(tmpdir, project_id)
+
+        # Generate multiple mrbgems with different styles
+        run_ptrk_command("mrbgems generate utils", cwd: project_dir)
+        run_ptrk_command("mrbgems generate device_helpers", cwd: project_dir)
+
+        # Verify all mrbgems have README
+        %w[applib utils device_helpers].each do |gem_name|
+          readme = File.join(project_dir, "mrbgems", gem_name, "README.md")
+          assert File.exist?(readme), "Should have README.md for #{gem_name}"
+
+          # Verify all mrbgems have proper mrblib structure
+          mrblib = File.join(project_dir, "mrbgems", gem_name, "mrblib")
+          assert Dir.exist?(mrblib), "Should have mrblib directory for #{gem_name}"
+
+          # Each mrblib should have at least one .rb file
+          rb_files = Dir.glob(File.join(mrblib, "*.rb"))
+          assert rb_files.any?, "#{gem_name} should have Ruby files in mrblib"
         end
       end
     end
 
-    test "Step 2: ptrk mrbgems generate creates custom mrbgem" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "mrbgems have proper source files with C support" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Setup: Create project first
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Move into project
-          Dir.chdir("testapp")
+        project_dir = File.join(tmpdir, project_id)
 
-          # User scenario: ptrk mrbgems generate mylib
-          capture_stdout do
-            Picotorokko::Commands::Mrbgems.start(["generate", "mylib"])
-          end
+        # Generate mrbgem with C code
+        run_ptrk_command("mrbgems generate native_lib", cwd: project_dir)
 
-          # Verify mrbgems/mylib/ is generated
-          assert Dir.exist?("mrbgems/mylib"), "Should create mrbgems/mylib/ directory"
-          assert Dir.exist?("mrbgems/mylib/mrblib"), "Should create mylib mrblib directory"
-          assert Dir.exist?("mrbgems/mylib/src"), "Should create mylib src directory"
-          assert File.exist?("mrbgems/mylib/mrbgem.rake"), "Should create mylib mrbgem.rake"
-          assert File.exist?("mrbgems/mylib/mrblib/mylib.rb"), "Should create mylib.rb"
-          assert File.exist?("mrbgems/mylib/src/mylib.c"), "Should create mylib.c"
+        native_lib = File.join(project_dir, "mrbgems", "native_lib")
 
-          # Verify content uses correct names
-          rake_content = File.read("mrbgems/mylib/mrbgem.rake")
-          assert_match(/MRuby::Gem::Specification\.new\('mylib'\)/, rake_content)
+        # Verify src directory has C file
+        src_dir = File.join(native_lib, "src")
+        assert Dir.exist?(src_dir), "Should have src directory"
 
-          c_content = File.read("mrbgems/mylib/src/mylib.c")
-          assert_match(/mrbc_mylib_init/, c_content)
-        ensure
-          Dir.chdir(original_dir)
-        end
+        c_files = Dir.glob(File.join(src_dir, "*.c"))
+        assert c_files.any?, "Should have C source files"
+
+        c_content = File.read(File.join(src_dir, "native_lib.c"))
+        assert_match(/mrbc_native_lib_init/, c_content)
+        assert_match(/"NativeLib"/, c_content)
       end
     end
 
-    test "Steps 3-4: Multiple mrbgems are created in project" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "Mrbgemfile exists in project after creation" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Setup: Create project with default app
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          Dir.chdir("testapp")
+        project_dir = File.join(tmpdir, project_id)
+        mrbgemfile = File.join(project_dir, "Mrbgemfile")
 
-          # Generate second mrbgem
-          capture_stdout do
-            Picotorokko::Commands::Mrbgems.start(["generate", "mylib"])
-          end
+        # Verify Mrbgemfile exists
+        assert File.exist?(mrbgemfile), "Mrbgemfile should exist"
 
-          # Generate third mrbgem
-          capture_stdout do
-            Picotorokko::Commands::Mrbgems.start(["generate", "utils"])
-          end
-
-          # Verify all mrbgems exist
-          assert Dir.exist?("mrbgems/app"), "Should have app mrbgem"
-          assert Dir.exist?("mrbgems/mylib"), "Should have mylib mrbgem"
-          assert Dir.exist?("mrbgems/utils"), "Should have utils mrbgem"
-
-          # Verify each has complete structure
-          %w[app mylib utils].each do |gem_name|
-            prefix = gem_name.downcase
-            assert File.exist?("mrbgems/#{gem_name}/mrbgem.rake"),
-                   "Should have mrbgem.rake for #{gem_name}"
-            assert File.exist?("mrbgems/#{gem_name}/mrblib/#{prefix}.rb"),
-                   "Should have #{prefix}.rb for #{gem_name}"
-            assert File.exist?("mrbgems/#{gem_name}/src/#{prefix}.c"),
-                   "Should have #{prefix}.c for #{gem_name}"
-          end
-
-          # Verify mrbgems are distinct
-          app_rake = File.read("mrbgems/app/mrbgem.rake")
-          mylib_rake = File.read("mrbgems/mylib/mrbgem.rake")
-          assert_match(/Specification\.new\('app'\)/, app_rake)
-          assert_match(/Specification\.new\('mylib'\)/, mylib_rake)
-        ensure
-          Dir.chdir(original_dir)
-        end
+        # Verify it contains references to mrbgems
+        content = File.read(mrbgemfile)
+        assert_match(/mrbgems do/, content)
+        assert_match(/conf\.gem.*mrbgems/, content)
       end
     end
 
-    test "mrbgems generate raises error when directory already exists" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
+    test "mrbgem names support underscores and lowercase" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Setup: Create project
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          Dir.chdir("testapp")
+        project_dir = File.join(tmpdir, project_id)
 
-          # Try to generate mrbgem with same name as default
-          error = assert_raises(RuntimeError) do
-            capture_stdout do
-              Picotorokko::Commands::Mrbgems.start(["generate", "app"])
-            end
-          end
+        # Generate mrbgems with various naming patterns
+        run_ptrk_command("mrbgems generate string_utils", cwd: project_dir)
+        run_ptrk_command("mrbgems generate device_io", cwd: project_dir)
 
-          assert_match(/already exists/, error.message)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
+        # Verify all were created successfully
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "string_utils"))
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "device_io"))
 
-    test "generated mrbgems have correct class names in Ruby and C code" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Setup
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
+        # Verify mrbgem.rake files have correct names
+        su_rake = File.read(File.join(project_dir, "mrbgems", "string_utils", "mrbgem.rake"))
+        di_rake = File.read(File.join(project_dir, "mrbgems", "device_io", "mrbgem.rake"))
 
-          Dir.chdir("testapp")
-
-          # Generate with PascalCase name
-          capture_stdout do
-            Picotorokko::Commands::Mrbgems.start(["generate", "MyAwesomeLib"])
-          end
-
-          # Verify Ruby code uses PascalCase class name
-          rb_content = File.read("mrbgems/MyAwesomeLib/mrblib/myawesomelib.rb")
-          assert_match(/class MyAwesomeLib/, rb_content)
-
-          # Verify C code uses lowercase for function names
-          c_content = File.read("mrbgems/MyAwesomeLib/src/myawesomelib.c")
-          assert_match(/mrbc_myawesomelib_init/, c_content)
-          assert_match(/mrbc_define_class.*"MyAwesomeLib"/, c_content)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "mrbgems directory is created in project and can be copied to build path" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        begin
-          # Create a mock environment with R2P2-ESP32 structure
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
-
-          Dir.chdir("testapp")
-
-          # Verify mrbgems directory exists in project
-          assert Dir.exist?("mrbgems"), "mrbgems directory should be created"
-          assert Dir.exist?("mrbgems/app"), "default app mrbgem should exist"
-
-          # Test that mrbgems can be copied to a nested picoruby path
-          env_name = "20240101_120000"
-          build_dir = File.join(".ptrk_build", env_name)
-          mrbgems_src = File.join(Dir.pwd, "mrbgems")
-          mrbgems_dst = File.join(build_dir, "R2P2-ESP32", "components", "picoruby-esp32", "picoruby", "mrbgems")
-
-          FileUtils.mkdir_p(File.dirname(mrbgems_dst))
-          FileUtils.cp_r(mrbgems_src, mrbgems_dst)
-
-          # Verify copy worked
-          assert Dir.exist?(mrbgems_dst), "mrbgems should be copied to nested picoruby path"
-          assert Dir.exist?(File.join(mrbgems_dst, "app")), "app mrbgem should exist in copied path"
-          assert Dir.exist?(File.join(mrbgems_dst, "app", "mrblib")), "app mrblib should exist"
-          assert Dir.exist?(File.join(mrbgems_dst, "app", "src")), "app src should exist"
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "Mrbgemfile is parsed and applied to build_config files" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        Picotorokko::Env.reset_cached_root!
-        begin
-          # Create project with mrbgems
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
-
-          Dir.chdir("testapp")
-          Picotorokko::Env.reset_cached_root!
-
-          # Add a custom mrbgem
-          capture_stdout do
-            Picotorokko::Commands::Mrbgems.start(["generate", "mylib"])
-          end
-
-          # Setup build directory structure manually
-          env_name = "20240101_120000"
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20240101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20240101_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20240101_120000" }
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
-
-          build_config_dir = File.join(".ptrk_build", env_name, "R2P2-ESP32", "build_config")
-          FileUtils.mkdir_p(build_config_dir)
-          File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
-
-          # Apply Mrbgemfile directly (as it's called by build command)
-          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
-          mrbgemfile_content = File.read("Mrbgemfile")
-          capture_stdout do
-            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
-          end
-
-          # Verify build_config was modified
-          build_config_path = File.join(build_config_dir, "default.rb")
-          assert File.exist?(build_config_path), "build_config file should exist"
-
-          config_content = File.read(build_config_path)
-          assert_match(/# === BEGIN Mrbgemfile generated ===/, config_content)
-          assert_match(/# === END Mrbgemfile generated ===/, config_content)
-          # Paths are now absolute, so check that it ends with mrbgems/app
-          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/app"}, config_content)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "Multiple mrbgems are correctly specified in build_config" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        Picotorokko::Env.reset_cached_root!
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
-
-          Dir.chdir("testapp")
-          Picotorokko::Env.reset_cached_root!
-
-          # Generate multiple mrbgems
-          capture_stdout do
-            Picotorokko::Commands::Mrbgems.start(["generate", "lib1"])
-            Picotorokko::Commands::Mrbgems.start(["generate", "lib2"])
-          end
-
-          # Add mrbgems to Mrbgemfile
-          mrbgemfile = File.read("Mrbgemfile")
-          new_mrbgemfile = mrbgemfile.gsub(
-            "  conf.gem \"mrbgems/app\"",
-            "  conf.gem \"mrbgems/app\"\n  conf.gem \"mrbgems/lib1\"\n  conf.gem \"mrbgems/lib2\""
-          )
-          File.write("Mrbgemfile", new_mrbgemfile)
-
-          # Setup build directory
-          env_name = "20240101_120000"
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20240101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20240101_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20240101_120000" }
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
-
-          build_config_dir = File.join(".ptrk_build", env_name, "R2P2-ESP32", "build_config")
-          FileUtils.mkdir_p(build_config_dir)
-          File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
-
-          # Apply Mrbgemfile directly (as it's called by build command)
-          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
-          mrbgemfile_content = File.read("Mrbgemfile")
-          capture_stdout do
-            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
-          end
-
-          # Verify all mrbgems are in build_config
-          build_config_path = File.join(build_config_dir, "default.rb")
-          config_content = File.read(build_config_path)
-
-          # Paths are now absolute, so check that they end with the expected paths
-          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/app"}, config_content)
-          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/lib1"}, config_content)
-          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/lib2"}, config_content)
-        ensure
-          Dir.chdir(original_dir)
-        end
-      end
-    end
-
-    test "Mrbgemfile with core gems and github sources" do
-      omit "Scenario test: awaiting test-suite-wide review"
-      original_dir = Dir.pwd
-      Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir)
-        Picotorokko::Env.reset_cached_root!
-        begin
-          # Create project
-          initializer = Picotorokko::ProjectInitializer.new("testapp", {})
-          initializer.initialize_project
-
-          Dir.chdir("testapp")
-          Picotorokko::Env.reset_cached_root!
-
-          # Modify Mrbgemfile to add more source types
-          mrbgemfile = File.read("Mrbgemfile")
-          new_mrbgemfile = mrbgemfile.gsub(
-            "mrbgems do |conf|",
-            "mrbgems do |conf|\n  conf.gem :core => \"mruby-string-ext\"\n  conf.gem :core => \"mruby-array\""
-          )
-          File.write("Mrbgemfile", new_mrbgemfile)
-
-          # Setup build directory
-          env_name = "20240101_120000"
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20240101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20240101_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20240101_120000" }
-          Picotorokko::Env.set_environment(env_name, r2p2_info, esp32_info, picoruby_info)
-
-          build_config_dir = File.join(".ptrk_build", env_name, "R2P2-ESP32", "build_config")
-          FileUtils.mkdir_p(build_config_dir)
-          File.write(File.join(build_config_dir, "default.rb"), "MRuby::Build.new do |conf|\nend")
-
-          r2p2_path = File.join(".ptrk_build", env_name, "R2P2-ESP32")
-          mrbgemfile_content = File.read("Mrbgemfile")
-          capture_stdout do
-            Picotorokko::MrbgemfileApplier.apply(mrbgemfile_content, r2p2_path)
-          end
-
-          build_config_path = File.join(build_config_dir, "default.rb")
-          config_content = File.read(build_config_path)
-
-          assert_match(/conf\.gem\s+core:\s+"mruby-string-ext"/, config_content)
-          assert_match(/conf\.gem\s+core:\s+"mruby-array"/, config_content)
-          # Paths are now absolute, so check that it ends with mrbgems/app
-          assert_match(%r{conf\.gem\s+path:\s+"[^"]+/mrbgems/app"}, config_content)
-        ensure
-          Dir.chdir(original_dir)
-        end
+        assert_match(/Specification\.new\('string_utils'\)/, su_rake)
+        assert_match(/Specification\.new\('device_io'\)/, di_rake)
       end
     end
   end

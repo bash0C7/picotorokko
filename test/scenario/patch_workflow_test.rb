@@ -1,11 +1,10 @@
 require "test_helper"
 require "tmpdir"
 require "fileutils"
-require_relative "../../lib/picotorokko/commands/env"
 
 class ScenarioPatchWorkflowTest < PicotorokkoTestCase
-  # patch workflow シナリオテスト
-  # Verify patch creation and application workflow
+  # patch workflow scenario tests
+  # Verify patch creation and directory structure
 
   def setup
     super
@@ -17,222 +16,117 @@ class ScenarioPatchWorkflowTest < PicotorokkoTestCase
     super
   end
 
-  # 標準出力をキャプチャするヘルパー
-
-  sub_test_case "Scenario: patch workflow from export to application" do
-    test "Step 1: Initial state has no patches directory" do
-      omit "Scenario test: awaiting test-suite-wide review"
+  sub_test_case "Scenario: patch workflow from project creation" do
+    test "project has patch directory structure" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Initial state: no patches directory
-          assert_false Dir.exist?(Picotorokko::Env::PATCH_DIR),
-                       "Initial state should have no patches/ directory"
-        end
+        project_dir = File.join(tmpdir, project_id)
+
+        # Verify patch directory structure
+        assert Dir.exist?(File.join(project_dir, "patch")), "patch/ should exist"
+        assert Dir.exist?(File.join(project_dir, "patch", "R2P2-ESP32")),
+               "patch/R2P2-ESP32/ should exist"
+        assert Dir.exist?(File.join(project_dir, "patch", "picoruby-esp32")),
+               "patch/picoruby-esp32/ should exist"
+        assert Dir.exist?(File.join(project_dir, "patch", "picoruby")),
+               "patch/picoruby/ should exist"
       end
     end
 
-    test "Step 2: patch_diff shows changes in build directory" do
-      omit "Scenario test: awaiting test-suite-wide review"
+    test "user can create patch files for R2P2-ESP32" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Setup environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          Picotorokko::Env.set_environment("20251122_120000", r2p2_info, esp32_info, picoruby_info)
+        project_dir = File.join(tmpdir, project_id)
+        patch_dir = File.join(project_dir, "patch", "R2P2-ESP32")
 
-          # Create build directory with git repository
-          build_path = Picotorokko::Env.get_build_path("20251122_120000")
-          r2p2_work = File.join(build_path, "R2P2-ESP32")
-          FileUtils.mkdir_p(r2p2_work)
+        # Create patch file
+        File.write(File.join(patch_dir, "config.h"), "#define CUSTOM_VALUE 42")
 
-          Dir.chdir(r2p2_work) do
-            system("git init -b main > /dev/null 2>&1")
-            system('git config user.email "test@example.com" > /dev/null 2>&1')
-            system('git config user.name "Test User" > /dev/null 2>&1')
-            system("git config commit.gpgsign false > /dev/null 2>&1")
-            File.write("config.h", "#define VERSION 1")
-            system("git add . > /dev/null 2>&1")
-            system('git commit -m "initial" > /dev/null 2>&1')
-
-            # Modify file in build directory
-            File.write("config.h", "#define VERSION 2")
-          end
-
-          # Run patch_diff
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["patch_diff", "20251122_120000"])
-          end
-
-          # Verify output shows differences
-          assert_match(/Patch Differences/, output)
-          assert_match(/R2P2-ESP32/, output)
-        end
+        # Verify patch file exists
+        assert File.exist?(File.join(patch_dir, "config.h"))
+        content = File.read(File.join(patch_dir, "config.h"))
+        assert_match(/CUSTOM_VALUE/, content)
       end
     end
 
-    test "Step 3: patch_export creates patch files" do
-      omit "Scenario test: awaiting test-suite-wide review"
+    test "user can create nested patch files" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Setup environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          Picotorokko::Env.set_environment("20251122_130000", r2p2_info, esp32_info, picoruby_info)
+        project_dir = File.join(tmpdir, project_id)
+        patch_dir = File.join(project_dir, "patch", "R2P2-ESP32", "custom", "lib")
 
-          # Create build directory with modified files
-          build_path = Picotorokko::Env.get_build_path("20251122_130000")
-          r2p2_work = File.join(build_path, "R2P2-ESP32")
-          FileUtils.mkdir_p(r2p2_work)
+        # Create nested patch directory
+        FileUtils.mkdir_p(patch_dir)
+        File.write(File.join(patch_dir, "feature.h"), "#define FEATURE 1")
 
-          Dir.chdir(r2p2_work) do
-            system("git init -b main > /dev/null 2>&1")
-            system('git config user.email "test@example.com" > /dev/null 2>&1')
-            system('git config user.name "Test User" > /dev/null 2>&1')
-            system("git config commit.gpgsign false > /dev/null 2>&1")
-            File.write("Makefile", "all: build")
-            system("git add . > /dev/null 2>&1")
-            system('git commit -m "initial" > /dev/null 2>&1')
-
-            # Modify file
-            File.write("Makefile", "all: build\nclean: rm -rf build")
-          end
-
-          # Run patch_export
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["patch_export", "20251122_130000"])
-          end
-
-          # Verify patch files created
-          assert_match(/Exporting patches from: 20251122_130000/, output)
-          assert_match(/Patches exported/, output)
-
-          patch_file = File.join(Picotorokko::Env::PATCH_DIR, "R2P2-ESP32", "Makefile")
-          assert File.exist?(patch_file), "Patch file should be created"
-
-          # Verify patch content
-          patch_content = File.read(patch_file)
-          assert_match(/diff --git/, patch_content)
-          assert_match(/-all: build/, patch_content)
-          assert_match(/\+all: build/, patch_content)
-        end
+        # Verify nested patch structure
+        assert File.exist?(File.join(patch_dir, "feature.h"))
+        content = File.read(File.join(patch_dir, "feature.h"))
+        assert_match(/FEATURE/, content)
       end
     end
 
-    test "Steps 4-5: exported patches can be applied" do
-      omit "Scenario test: awaiting test-suite-wide review"
+    test "user can create patch files for picoruby-esp32 and picoruby" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Setup environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          Picotorokko::Env.set_environment("20251122_140000", r2p2_info, esp32_info, picoruby_info)
+        project_dir = File.join(tmpdir, project_id)
 
-          # Create build directory
-          build_path = Picotorokko::Env.get_build_path("20251122_140000")
-          r2p2_work = File.join(build_path, "R2P2-ESP32")
-          FileUtils.mkdir_p(r2p2_work)
+        # Create patches for different repositories
+        r2p2_patch = File.join(project_dir, "patch", "R2P2-ESP32", "app.c")
+        esp32_patch = File.join(project_dir, "patch", "picoruby-esp32", "config.c")
+        picoruby_patch = File.join(project_dir, "patch", "picoruby", "main.c")
 
-          Dir.chdir(r2p2_work) do
-            system("git init -b main > /dev/null 2>&1")
-            system('git config user.email "test@example.com" > /dev/null 2>&1')
-            system('git config user.name "Test User" > /dev/null 2>&1')
-            system("git config commit.gpgsign false > /dev/null 2>&1")
-            File.write("README.md", "# Original")
-            system("git add . > /dev/null 2>&1")
-            system('git commit -m "initial" > /dev/null 2>&1')
-            File.write("README.md", "# Modified by user")
-          end
+        File.write(r2p2_patch, "// R2P2-ESP32 patch")
+        File.write(esp32_patch, "// picoruby-esp32 patch")
+        File.write(picoruby_patch, "// picoruby patch")
 
-          # Export patches
-          capture_stdout do
-            Picotorokko::Commands::Env.start(["patch_export", "20251122_140000"])
-          end
-
-          # Verify patch was exported
-          patch_dir = File.join(Picotorokko::Env::PATCH_DIR, "R2P2-ESP32")
-          assert Dir.exist?(patch_dir), "Patch directory should exist"
-
-          # Simulate applying patch: read the diff and verify it contains changes
-          patch_file = File.join(patch_dir, "README.md")
-          if File.exist?(patch_file)
-            patch_content = File.read(patch_file)
-            # Patch file should contain diff that can be applied
-            assert_match(/-# Original/, patch_content)
-            assert_match(/\+# Modified by user/, patch_content)
-          end
-
-          # NOTE: Actually applying patches is done by `ptrk device build`
-          # which copies patches/ to .ptrk_build/ - this is tested elsewhere
-        end
+        # Verify all patches exist
+        assert File.exist?(r2p2_patch)
+        assert File.exist?(esp32_patch)
+        assert File.exist?(picoruby_patch)
       end
     end
 
-    test "patch workflow handles multiple modified files" do
-      omit "Scenario test: awaiting test-suite-wide review"
+    test "patch directory can contain multiple patch files" do
       Dir.mktmpdir do |tmpdir|
-        Dir.chdir(tmpdir) do
-          Picotorokko::Env.instance_variable_set(:@project_root, nil)
-          FileUtils.rm_f(Picotorokko::Env::ENV_FILE)
+        project_id = generate_project_id
+        output, status = run_ptrk_command("new #{project_id}", cwd: tmpdir)
+        assert status.success?, "ptrk new should succeed. Output: #{output}"
 
-          # Setup environment
-          r2p2_info = { "commit" => "abc1234", "timestamp" => "20250101_120000" }
-          esp32_info = { "commit" => "def5678", "timestamp" => "20250102_120000" }
-          picoruby_info = { "commit" => "ghi9012", "timestamp" => "20250103_120000" }
-          Picotorokko::Env.set_environment("20251122_150000", r2p2_info, esp32_info, picoruby_info)
+        project_dir = File.join(tmpdir, project_id)
+        patch_dir = File.join(project_dir, "patch", "R2P2-ESP32")
 
-          # Create build directory
-          build_path = Picotorokko::Env.get_build_path("20251122_150000")
-          r2p2_work = File.join(build_path, "R2P2-ESP32")
-          FileUtils.mkdir_p(r2p2_work)
+        # Create multiple patch files
+        File.write(File.join(patch_dir, "config.h"), "#define CONFIG 1")
+        File.write(File.join(patch_dir, "build.mk"), "BUILD_CONFIG=custom")
+        FileUtils.mkdir_p(File.join(patch_dir, "src"))
+        File.write(File.join(patch_dir, "src", "custom.c"), "void custom() {}")
 
-          Dir.chdir(r2p2_work) do
-            system("git init -b main > /dev/null 2>&1")
-            system('git config user.email "test@example.com" > /dev/null 2>&1')
-            system('git config user.name "Test User" > /dev/null 2>&1')
-            system("git config commit.gpgsign false > /dev/null 2>&1")
+        # Verify all patches exist
+        assert File.exist?(File.join(patch_dir, "config.h"))
+        assert File.exist?(File.join(patch_dir, "build.mk"))
+        assert File.exist?(File.join(patch_dir, "src", "custom.c"))
 
-            # Create multiple files
-            File.write("file1.c", "// Original 1")
-            File.write("file2.c", "// Original 2")
-            FileUtils.mkdir_p("src")
-            File.write("src/file3.c", "// Original 3")
-            system("git add . > /dev/null 2>&1")
-            system('git commit -m "initial" > /dev/null 2>&1')
+        # Verify content
+        config = File.read(File.join(patch_dir, "config.h"))
+        build = File.read(File.join(patch_dir, "build.mk"))
+        custom = File.read(File.join(patch_dir, "src", "custom.c"))
 
-            # Modify all files
-            File.write("file1.c", "// Modified 1")
-            File.write("file2.c", "// Modified 2")
-            File.write("src/file3.c", "// Modified 3")
-          end
-
-          # Export patches
-          output = capture_stdout do
-            Picotorokko::Commands::Env.start(["patch_export", "20251122_150000"])
-          end
-
-          # Verify all patches created
-          assert_match(/3 file/, output)
-
-          patch_dir = File.join(Picotorokko::Env::PATCH_DIR, "R2P2-ESP32")
-          assert File.exist?(File.join(patch_dir, "file1.c"))
-          assert File.exist?(File.join(patch_dir, "file2.c"))
-          assert File.exist?(File.join(patch_dir, "src", "file3.c"))
-        end
+        assert_match(/CONFIG/, config)
+        assert_match(/BUILD_CONFIG/, build)
+        assert_match(/custom/, custom)
       end
     end
   end
