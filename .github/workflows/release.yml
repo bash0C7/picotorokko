@@ -48,8 +48,8 @@ jobs:
           sed -i 's/VERSION = ".*"/VERSION = "${{ inputs.version }}"/' lib/picotorokko/version.rb
           git diff lib/picotorokko/version.rb
 
-      - name: Run tests
-        run: bundle exec rake test
+      - name: Run tests (including scenario tests)
+        run: bundle exec rake test:all
 
       - name: Build gem
         run: gem build picotorokko.gemspec
