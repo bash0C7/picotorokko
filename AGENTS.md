@@ -127,3 +127,45 @@ When code changes affect behavior:
 2. Template/workflow changed? → Update user guides in `docs/`
 3. Public API changed? → Update rbs-inline annotations
 4. Architecture changed? → Update `.claude/docs/` design documents
+
+## Specialized Subagents
+
+The project includes specialized subagents for focused debugging and development tasks.
+
+### debug-workflow Subagent
+
+**Location**: `.claude/agents/debug-workflow.md`
+
+**Purpose**: Helps developers debug failing scenario tests using the Ruby debug gem
+
+**Invoke with**:
+```
+Use the debug-workflow subagent to help me debug test/scenario/your_test.rb
+```
+
+**What it does**:
+- Analyzes test structure and identifies failing assertions
+- Guides interactive step execution with `ruby -r debug`
+- Interprets debug output, variable values, and file system states
+- Teaches the four core debugging patterns:
+  1. Command success checking (status codes, output)
+  2. File system verification (directory/file existence)
+  3. Assertion pattern matching (regex, includes)
+  4. Multi-step workflow debugging (state after each step)
+
+**When to use**:
+- Test is failing and you need to understand why
+- You're in a debug session and need guidance on next steps
+- You want to learn the step execution workflow
+- You need help interpreting complex test behavior
+
+**Key Features**:
+- References official debugging guide (`.claude/docs/step-execution-guide.md`)
+- Integrates with t-wada TDD cycle
+- Provides debugger command reference
+- Shows practical debugging patterns specific to scenario tests
+- Links to test helpers and project-specific context
+
+**Subagent Tools**: Bash, Read, Grep
+**Model**: Haiku (fast, cost-effective pattern-based guidance)
+
