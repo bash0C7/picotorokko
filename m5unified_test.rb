@@ -186,4 +186,32 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert_not_nil set_values, "Should find setValues method"
     assert set_values[:parameters].length == 2, "Should extract 2 parameters"
   end
+
+  # Test 11: TypeMapper can map integer types
+  def test_type_mapper_maps_integer_types
+    assert_equal "MRBC_TT_INTEGER", TypeMapper.map_type("int")
+    assert_equal "MRBC_TT_INTEGER", TypeMapper.map_type("uint32_t")
+    assert_equal "MRBC_TT_INTEGER", TypeMapper.map_type("size_t")
+    assert_equal "MRBC_TT_INTEGER", TypeMapper.map_type("long")
+  end
+
+  # Test 12: TypeMapper can map float types
+  def test_type_mapper_maps_float_types
+    assert_equal "MRBC_TT_FLOAT", TypeMapper.map_type("float")
+    assert_equal "MRBC_TT_FLOAT", TypeMapper.map_type("double")
+  end
+
+  # Test 13: TypeMapper can map string and bool types
+  def test_type_mapper_maps_string_and_bool_types
+    assert_equal "MRBC_TT_STRING", TypeMapper.map_type("const char*")
+    assert_equal "MRBC_TT_STRING", TypeMapper.map_type("char*")
+    assert_equal "MRBC_TT_TRUE", TypeMapper.map_type("bool")
+  end
+
+  # Test 14: TypeMapper can map void and pointer types
+  def test_type_mapper_maps_void_and_pointer_types
+    assert_equal "nil", TypeMapper.map_type("void")
+    assert_equal "MRBC_TT_OBJECT", TypeMapper.map_type("Display*")
+    assert_equal "MRBC_TT_OBJECT", TypeMapper.map_type("M5Canvas*")
+  end
 end

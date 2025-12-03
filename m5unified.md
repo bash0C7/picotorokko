@@ -158,37 +158,49 @@ m5unified.rb (single file)
 
 ---
 
-### ⏳ Phase 1.4: Type Mapping
+### ✅ Phase 1.4: Type Mapping
 
-**状態**: 未実装
-**ファイル**: `m5unified.rb` (予定)
-**テスト**: `m5unified_test.rb` (予定)
+**状態**: 完了
+**ファイル**: `m5unified.rb` (lines 163-207)
+**テスト**: `m5unified_test.rb` (test 11-14)
 
-**要件**:
+**機能**:
 - `TypeMapper` クラス
-- C++ 型から mruby/mrubyc 型への変換
+- C++ 型から mrubyc 型への変換
+
+**実装内容**:
+- `TypeMapper.map_type(cpp_type)` - C++型をmrubyc型に変換
+- `normalize_type(cpp_type)` - const修飾子・参照型を正規化
+- `pointer_type?(cpp_type)` - ポインタ型判定
+- `TYPE_MAPPING` ハッシュ - 型マッピングテーブル
 
 **型マッピングテーブル**:
 ```
-C++型                  → mruby型
-int                    → MRBC_TT_INTEGER
-uint32_t, size_t       → MRBC_TT_INTEGER
-float                  → MRBC_TT_FLOAT
-double                 → MRBC_TT_FLOAT
-const char*            → MRBC_TT_STRING
-std::string            → MRBC_TT_STRING
-bool                   → MRBC_TT_TRUE / FALSE
-void                   → nil (mrbc_nil_value())
-クラス型               → MRBC_TT_OBJECT
+C++型                  → mrubyc型
+int, int8_t, ...,
+uint8_t, ..., size_t   → MRBC_TT_INTEGER
+float, double          → MRBC_TT_FLOAT
+const char*, char*     → MRBC_TT_STRING
+bool                   → MRBC_TT_TRUE
+void                   → nil
+Type*（ポインタ）      → MRBC_TT_OBJECT
 Type&（参照型）        → ポインタとして扱う
-Type*（ポインタ）      → ポインタデータ
 ```
 
-**テスト計画**:
-- `int` → `MRBC_TT_INTEGER`
-- `float` → `MRBC_TT_FLOAT`
-- `const char*` → `MRBC_TT_STRING`
-- その他の型マッピングが正確に行われる
+**テスト結果**:
+```ruby
+✓ test_type_mapper_maps_integer_types
+✓ test_type_mapper_maps_float_types
+✓ test_type_mapper_maps_string_and_bool_types
+✓ test_type_mapper_maps_void_and_pointer_types
+```
+
+**詳細実装**:
+- クラスメソッドのみ（stateless design）
+- 13種類の整数型サポート（int, int8_t～int64_t, uint8_t～uint64_t, unsigned int, long, unsigned long, size_t）
+- const修飾子とリファレンス型を自動削除
+- char* は MRBC_TT_STRING、その他ポインタは MRBC_TT_OBJECT
+- 未知の型はデフォルト MRBC_TT_OBJECT
 
 ---
 
@@ -274,6 +286,18 @@ mrbgem-picoruby-m5unified/
 - **RuboCop**: 0 offenses corrected (1 documentation warning ignored)
 - **Refactor**: 完了
 - **Commit**: `Implement C++ parser with regex-based method extraction`
+
+#### Cycle 4: Type Mapping
+
+- **Red**: TypeMapper テストを4つ追加（失敗：NameError）
+- **Green**: TypeMapper クラス実装
+  - map_type() メソッド
+  - normalize_type() - const/参照型正規化
+  - pointer_type?() - ポインタ判定
+  - TYPE_MAPPING ハッシュ（13種類の整数型対応）
+- **RuboCop**: 3 offenses corrected (1 documentation warning remains)
+- **Refactor**: 完全な TYPE_MAPPING を追加（すべての整数型バリエーション対応）
+- **Commit**: `Implement TypeMapper class for C++ to mruby type conversion`
 
 ---
 
