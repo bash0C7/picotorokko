@@ -204,26 +204,57 @@ Type&（参照型）        → ポインタとして扱う
 
 ---
 
-### ⏳ Phase 1.5: mrbgem Directory Structure Generation
+### ✅ Phase 1.5: mrbgem Directory Structure Generation
 
-**状態**: 未実装
-**ファイル**: `m5unified.rb` (予定)
-**テスト**: `m5unified_test.rb` (予定)
+**状態**: 完了
+**ファイル**: `m5unified.rb` (lines 210-292)
+**テスト**: `m5unified_test.rb` (test 15-25)
+
+**機能**:
+- `MrbgemGenerator` クラス
+- mrbgem ディレクトリ構造生成
+- テンプレートファイル生成
+
+**実装内容**:
+- `MrbgemGenerator.new(output_path)` - 初期化
+- `generate(cpp_data)` - メイン処理
+- `create_structure` - ディレクトリ作成
+- `render_mrbgem_rake` - mrbgem.rake 生成
+- `render_c_bindings(cpp_data)` - C バインディングスケルトン生成
+- `render_ruby_lib(cpp_data)` - Ruby ドキュメント生成
+- `render_readme(cpp_data)` - README 生成
 
 **生成ディレクトリ構造**:
 ```
 mrbgem-picoruby-m5unified/
-├── mrbgem.rake
+├── mrbgem.rake              # Gem specification
 ├── mrblib/
-│   └── m5unified.rb
+│   └── m5unified.rb         # Ruby documentation
 ├── src/
-│   └── m5unified.c
-└── README.md
+│   └── m5unified.c          # C binding skeleton
+└── README.md                # Gem documentation
 ```
 
-**テスト計画**:
-- ディレクトリ構造が正確に作成される
-- 必要なファイルが存在する
+**テスト結果**:
+```ruby
+✓ test_mrbgem_generator_initializes_with_output_path
+✓ test_mrbgem_generator_creates_directory_structure
+✓ test_mrbgem_generator_creates_mrbgem_rake
+✓ test_mrbgem_generator_creates_mrblib_ruby
+✓ test_mrbgem_generator_creates_src_c
+✓ test_mrbgem_generator_creates_readme
+✓ test_mrbgem_rake_contains_specification
+✓ test_mrblib_ruby_lists_classes
+✓ test_src_c_includes_class_definitions
+✓ test_mrbgem_generator_generate_returns_true
+✓ test_mrbgem_generator_handles_empty_data
+```
+
+**詳細実装**:
+- インスタンス初期化で output_path を保持
+- generate() メソッドで各テンプレート生成を実行
+- 文字列連結によるシンプルなテンプレート実装
+- 動的コンテンツは cpp_data から抽出したクラス名を使用
 
 ---
 
@@ -298,6 +329,21 @@ mrbgem-picoruby-m5unified/
 - **RuboCop**: 3 offenses corrected (1 documentation warning remains)
 - **Refactor**: 完全な TYPE_MAPPING を追加（すべての整数型バリエーション対応）
 - **Commit**: `Implement TypeMapper class for C++ to mruby type conversion`
+
+#### Cycle 5: mrbgem Directory Structure Generation
+
+- **Red**: MrbgemGenerator テストを11個追加（失敗：NameError）
+- **Green**: MrbgemGenerator クラス実装
+  - initialize(output_path) - 初期化
+  - generate(cpp_data) - メイン処理
+  - create_structure - ディレクトリ作成
+  - render_mrbgem_rake - mrbgem.rake 生成
+  - render_c_bindings - C スケルトン生成
+  - render_ruby_lib - Ruby ドキュメント生成
+  - render_readme - README 生成
+- **RuboCop**: 15 offenses corrected (2 warnings remain - acceptable)
+- **Refactor**: 最小限（コード品質良好）
+- **Commit**: `Implement mrbgem directory structure generation`
 
 ---
 

@@ -3,6 +3,7 @@
 require "test/unit"
 require "fileutils"
 require "pathname"
+require "tempfile"
 require_relative "m5unified"
 
 class M5UnifiedTest < Test::Unit::TestCase
@@ -12,6 +13,32 @@ class M5UnifiedTest < Test::Unit::TestCase
     # Clean up test directory before each test
     FileUtils.rm_rf(TEST_VENDOR_DIR)
     FileUtils.mkdir_p(TEST_VENDOR_DIR)
+
+    # Sample C++ parsed data for MrbgemGenerator tests
+    @sample_cpp_data = [
+      {
+        name: "M5Display",
+        methods: [
+          { name: "begin", return_type: "void", parameters: [] },
+          { name: "print", return_type: "void", parameters: [
+            { type: "const char*", name: "text" },
+            { type: "int", name: "x" },
+            { type: "int", name: "y" }
+          ] },
+          { name: "drawPixel", return_type: "int", parameters: [
+            { type: "int", name: "x" },
+            { type: "int", name: "y" },
+            { type: "uint32_t", name: "color" }
+          ] }
+        ]
+      },
+      {
+        name: "M5Canvas",
+        methods: [
+          { name: "clear", return_type: "void", parameters: [] }
+        ]
+      }
+    ]
   end
 
   def teardown
@@ -213,5 +240,154 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert_equal "nil", TypeMapper.map_type("void")
     assert_equal "MRBC_TT_OBJECT", TypeMapper.map_type("Display*")
     assert_equal "MRBC_TT_OBJECT", TypeMapper.map_type("M5Canvas*")
+  end
+
+  # Test 15: MrbgemGenerator initializes with output_path
+  def test_mrbgem_generator_initializes_with_output_path
+    output_path = "/tmp/test_mrbgem"
+    generator = MrbgemGenerator.new(output_path)
+
+    assert_equal output_path, generator.output_path
+  end
+
+  # Test 16: MrbgemGenerator creates directory structure
+  def test_mrbgem_generator_creates_directory_structure
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      assert Dir.exist?(output_path)
+      assert Dir.exist?(File.join(output_path, "mrblib"))
+      assert Dir.exist?(File.join(output_path, "src"))
+    end
+  end
+
+  # Test 17: MrbgemGenerator creates mrbgem.rake file
+  def test_mrbgem_generator_creates_mrbgem_rake
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      mrbgem_rake = File.join(output_path, "mrbgem.rake")
+      assert File.exist?(mrbgem_rake)
+      assert File.read(mrbgem_rake).include?("MRuby::Gem::Specification")
+    end
+  end
+
+  # Test 18: MrbgemGenerator creates mrblib/m5unified.rb
+  def test_mrbgem_generator_creates_mrblib_ruby
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      ruby_lib = File.join(output_path, "mrblib", "m5unified.rb")
+      assert File.exist?(ruby_lib)
+    end
+  end
+
+  # Test 19: MrbgemGenerator creates src/m5unified.c
+  def test_mrbgem_generator_creates_src_c
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      assert File.exist?(c_file)
+    end
+  end
+
+  # Test 20: MrbgemGenerator creates README.md
+  def test_mrbgem_generator_creates_readme
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      readme = File.join(output_path, "README.md")
+      assert File.exist?(readme)
+    end
+  end
+
+  # Test 21: mrbgem.rake contains specification
+  def test_mrbgem_rake_contains_specification
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      mrbgem_rake = File.join(output_path, "mrbgem.rake")
+      content = File.read(mrbgem_rake)
+
+      assert_match(/spec\.license\s*=/, content)
+      assert_match(/spec\.author\s*=/, content)
+      assert_match(/spec\.summary\s*=/, content)
+    end
+  end
+
+  # Test 22: mrblib/m5unified.rb lists classes
+  def test_mrblib_ruby_lists_classes
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      ruby_lib = File.join(output_path, "mrblib", "m5unified.rb")
+      content = File.read(ruby_lib)
+
+      assert_match(/M5Display/, content)
+      assert_match(/M5Canvas/, content)
+    end
+  end
+
+  # Test 23: src/m5unified.c includes class definitions
+  def test_src_c_includes_class_definitions
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      assert_match(/#include/, content)
+      assert_match(/m5unified/, content)
+    end
+  end
+
+  # Test 24: generate returns true on success
+  def test_mrbgem_generator_generate_returns_true
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      result = generator.generate(@sample_cpp_data)
+
+      assert result == true
+    end
+  end
+
+  # Test 25: generate handles empty cpp_data
+  def test_mrbgem_generator_handles_empty_data
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      result = generator.generate([])
+
+      assert result == true
+      assert Dir.exist?(output_path)
+    end
   end
 end
