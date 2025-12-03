@@ -275,39 +275,6 @@ Based on research analysis, the Event-Driven Monitor pattern (shown above) is th
 
 **Estimated**: v0.2.0
 
-### Priority 1.5: Scenario Test E2E Conversion
-
-**Status**: Planned
-
-**Objective**: Convert 77 currently-omitted scenario tests to true end-to-end tests that execute actual `ptrk` commands
-
-**Approach**:
-- Replace MockExecutor-based tests with real command execution via `bundle exec bin/ptrk`
-- Verify commands through filesystem state (file existence, content validation)
-- Test exit codes explicitly for success/failure scenarios
-- Maintain test isolation with independent tmpdir for each test
-- Skip ESP-IDF-dependent tests (device build/flash) in CI when ESP-IDF unavailable
-
-**Example Pattern**:
-```ruby
-def test_env_set_and_build_workflow
-  Dir.mktmpdir do |tmpdir|
-    Dir.chdir(tmpdir) do
-      output, status = Open3.capture2e("bundle exec ptrk init my_project")
-      assert status.success?, "ptrk init should succeed"
-      assert File.exist?("my_project/.rubocop.yml"), "RuboCop config should be generated"
-    end
-  end
-end
-```
-
-**Benefits**:
-- Tests actual user-facing behavior, not internal implementation
-- Eliminates hidden exit code 1 issues from mock interference
-- Better test isolation and predictability
-- Easier to understand and maintain
-
-**Estimated**: v0.2.0 (after E2E framework is stable)
 
 ### Priority 2: Additional mrbgems Management
 - **Status**: Planned
