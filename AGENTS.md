@@ -116,6 +116,24 @@ For detailed testing guidelines and patterns:
 - Never use fixed `sleep` for process waiting
 - Use proper process monitoring patterns
 
+### Scenario Tests: CI-Only
+
+**Important**: Scenario tests are slow (>0.8s per test) and should only run in CI.
+
+**Local Development**:
+```bash
+bundle exec rake              # ✅ Unit tests only (~1.3s)
+bundle exec rake test         # ✅ Fast tests: unit + integration (~31s)
+bundle exec rake test:all     # ⚠️  All tests including scenario (~35s, before pushing)
+```
+
+**CI Pipeline** (`bundle exec rake ci`):
+```bash
+bundle exec rake ci           # ✅ Runs all tests + RuboCop + coverage
+```
+
+The CI task automatically includes scenario tests as part of comprehensive validation. This keeps local development fast while ensuring full coverage verification before merge.
+
 ## Documentation Updates
 
 When code changes affect behavior:
@@ -130,7 +148,19 @@ When code changes affect behavior:
 
 ## Specialized Subagents
 
-The project includes specialized subagents for focused debugging and development tasks.
+The project includes specialized subagents for focused development tasks. **Use these subagents instead of running commands directly** to keep your local development session clean and focused.
+
+### Test Execution via Subagents
+
+**For running tests locally**:
+- ⚠️ NEVER run `bundle exec rake test` directly in Claude Code
+- ✅ Use the `debug-workflow` subagent to run and debug tests
+- ✅ Use the `Project Workflow` skill for build system guidance
+
+**Example**:
+```
+Use the debug-workflow subagent to help me debug test/scenario/new_scenario_test.rb
+```
 
 ### debug-workflow Subagent
 
@@ -168,4 +198,20 @@ Use the debug-workflow subagent to help me debug test/scenario/your_test.rb
 
 **Subagent Tools**: Bash, Read, Grep
 **Model**: Haiku (fast, cost-effective pattern-based guidance)
+
+### Git Operations
+
+**For git commits**:
+- ✅ Use `git add`, `git status`, `git log`, `git diff` (read-only, always safe)
+- ⚠️ For committing: Use the Bash tool with proper git protocols (no --force, no --amend without checking authorship)
+- 🚫 Never: `git reset --hard`, `git rebase -i`, `git push --force`
+
+See the Bash tool's git safety protocol for safe commit procedures.
+
+### RuboCop Auto-Fix
+
+**For running RuboCop**:
+- Use `bundle exec rubocop --auto-correct-all` via Bash tool
+- RuboCop violations must be fixed before committing
+- Never add `# rubocop:disable` comments—refactor the code instead
 

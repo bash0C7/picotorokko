@@ -40,21 +40,32 @@ Rake::TestTask.new("test:integration") do |t|
   t.ruby_opts = ["-W1"]
 end
 
-# Main test task (all tests except device)
-# NOTE: With gem-wide test reorganization, all tests are in:
-# - test/unit/ (fast, mocked)
-# - test/integration/ (real network/git operations)
-# - test/scenario/ (user workflows)
-# Device tests run separately via test:device_internal
-desc "Run all core tests: unit → integration → scenario (excludes device)"
+# Main test task (all tests except scenario and device)
+# NOTE: Scenario tests are slow and run in CI only (see task :test:all below)
+# - test/unit/ (fast, mocked) ~1.3s
+# - test/integration/ (real network/git operations) ~30s
+# - test/scenario/ (user workflows, time-consuming) - CI only
+desc "Run fast tests: unit → integration (scenario tests in CI only)"
 task test: [:reset_coverage] do
-  puts "Running all core tests (unit → integration → scenario)..."
+  puts "Running fast tests (unit → integration, scenario in CI only)..."
+  sh "bundle exec rake test:unit"
+  sh "bundle exec rake test:integration"
+  puts "\n✓ Fast tests passed! (~31s)"
+  puts "  To run scenario tests: bundle exec rake test:scenario"
+  puts "  To run all tests: bundle exec rake test:all"
+  puts "  To run full CI suite: bundle exec rake ci"
+end
+
+# All tests task (unit + integration + scenario)
+# NOTE: Run locally before pushing to verify full test suite passes
+desc "Run all tests including scenario (recommended before push)"
+task "test:all" => [:reset_coverage] do
+  puts "Running all tests including scenario (unit → integration → scenario)..."
   sh "bundle exec rake test:unit"
   sh "bundle exec rake test:integration"
   sh "bundle exec rake test:scenario"
-  puts "\n✓ All core tests passed!"
-  puts "  To run device tests: bundle exec rake test:device_internal"
-  puts "  To run full CI suite: bundle exec rake ci"
+  puts "\n✓ All tests passed!"
+  puts "  Full CI suite (with RuboCop + coverage): bundle exec rake ci"
 end
 
 # ============================================================================
@@ -208,6 +219,7 @@ end
 
 # Default: Run unit tests only (fast feedback for development)
 # Note: Coverage validation is skipped - full coverage is only checked in CI
+# Scenario tests are CI-only to keep local development fast
 desc "Default task: Run unit tests (fast feedback, ~1.3s)"
 task default: [:reset_coverage] do
   sh "bundle exec rake test:unit"
@@ -215,11 +227,12 @@ task default: [:reset_coverage] do
   puts "\nTest options:"
   puts "  - rake               : Unit tests (fast feedback, ~1.3s) ← you are here"
   puts "  - rake test:unit     : Unit tests only (same as above, ~1.3s)"
-  puts "  - rake test:scenario : Scenario tests (main workflows, ~0.8s)"
   puts "  - rake test:integration : Integration tests (real git ops, ~30s)"
-  puts "  - rake test          : All core tests: unit → integration → scenario (~35s)"
+  puts "  - rake test          : Fast tests (unit → integration, ~31s)"
+  puts "  - rake test:all      : All tests (unit → integration → scenario, ~35s)"
+  puts "  - rake test:scenario : Scenario tests (main workflows, ~0.8s)"
   puts "  - rake test:device_internal : Device command tests (~5s)"
   puts "  - rake ci            : Full CI suite: all tests + RuboCop + coverage (~65s)"
   puts "  - rake dev           : Dev mode (RuboCop auto-fix + unit tests, ~5s)"
-  puts "\nBefore pushing, run: rake ci"
+  puts "\nBefore pushing, run: rake test:all && rake ci"
 end
