@@ -390,4 +390,129 @@ class M5UnifiedTest < Test::Unit::TestCase
       assert Dir.exist?(output_path)
     end
   end
+
+  # Phase 1.6: C Binding Code Generation Tests
+
+  # Test 26: Generator creates mrbc_define_class calls in C code
+  def test_c_binding_generator_creates_class_definitions
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      assert_match(/mrbc_define_class\(vm,\s*"M5Display"/, content)
+      assert_match(/mrbc_define_class\(vm,\s*"M5Canvas"/, content)
+    end
+  end
+
+  # Test 27: Generator creates mrbc_define_method calls in C code
+  def test_c_binding_generator_creates_method_definitions
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      assert_match(/mrbc_define_method\(vm,\s*c_M5Display,\s*"begin"/, content)
+      assert_match(/mrbc_define_method\(vm,\s*c_M5Display,\s*"print"/, content)
+      assert_match(/mrbc_define_method\(vm,\s*c_M5Canvas,\s*"clear"/, content)
+    end
+  end
+
+  # Test 28: Generator creates C function wrappers for methods
+  def test_c_binding_generator_creates_function_wrappers
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      assert_match(/static void mrbc_m5unified_begin/, content)
+      assert_match(/static void mrbc_m5unified_print/, content)
+      assert_match(/static void mrbc_m5unified_drawPixel/, content)
+      assert_match(/static void mrbc_m5unified_clear/, content)
+    end
+  end
+
+  # Test 29: Generator creates parameter extraction code for int types
+  def test_c_binding_generator_creates_int_parameter_extraction
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      # Should have parameter extraction for methods with int params
+      assert_match(/GET_INT_ARG/, content)
+    end
+  end
+
+  # Test 30: Generator creates parameter extraction code for string types
+  def test_c_binding_generator_creates_string_parameter_extraction
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      # Should have parameter extraction for string params
+      assert_match(/GET_STRING_ARG/, content)
+    end
+  end
+
+  # Test 31: Generator creates return value marshalling code
+  def test_c_binding_generator_creates_return_marshalling
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      # Should have return value marshalling for int return type
+      assert_match(/SET_RETURN_INTEGER/, content)
+      # Should have return void handling for void return type
+      assert_match(%r{/\*\s*void\s*return\s*\*/}, content)
+    end
+  end
+
+  # Test 32: Generated C code has proper structure and syntax markers
+  def test_c_binding_generator_creates_valid_c_structure
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      # Should have proper includes
+      assert_match(/#include\s+<mrubyc\.h>/, content)
+
+      # Should have mrbc_m5unified_gem_init function
+      assert_match(/void mrbc_m5unified_gem_init\(mrbc_vm \*vm\)/, content)
+
+      # Should have closing braces
+      assert_match(/^}$/, content)
+    end
+  end
 end
