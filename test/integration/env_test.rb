@@ -543,7 +543,7 @@ class EnvTest < Test::Unit::TestCase
       Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)
     end
 
-    test "returns nil when network error occurs" do
+    test "raises error when network error occurs" do
       mock_executor = Picotorokko::MockExecutor.new
       Picotorokko::Env.set_executor(mock_executor)
 
@@ -551,9 +551,11 @@ class EnvTest < Test::Unit::TestCase
       cmd = "git ls-remote --symref #{Shellwords.escape(repo_url)} HEAD"
       mock_executor.set_result(cmd, stdout: "", stderr: "fatal: unable to access...", fail: true)
 
-      result = Picotorokko::Env.fetch_remote_default_branch(repo_url)
+      error = assert_raise(RuntimeError) do
+        Picotorokko::Env.fetch_remote_default_branch(repo_url)
+      end
 
-      assert_nil(result)
+      assert_include error.message, "Command failed"
 
       # Reset to production executor
       Picotorokko::Env.set_executor(Picotorokko::ProductionExecutor.new)

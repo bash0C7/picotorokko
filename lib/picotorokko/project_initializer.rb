@@ -102,8 +102,6 @@ module Picotorokko
       # Ensure encoding is UTF-8 to avoid ASCII issues
       author.force_encoding("UTF-8") if author.respond_to?(:force_encoding)
       author.empty? ? nil : author
-    rescue StandardError
-      nil
     end
 
     # @rbs (Hash[Symbol, (String | nil)]) -> void
