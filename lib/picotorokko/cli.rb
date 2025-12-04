@@ -50,5 +50,23 @@ module Picotorokko
       puts "picotorokko version #{Picotorokko::VERSION}"
     end
     map %w[--version -v] => :version
+
+    # Show help and documentation references
+    # @rbs () -> void
+    desc "help [COMMAND]", "Show help for ptrk commands"
+    def help(command = nil)
+      super(command)
+      return if command
+      puts "\n📚 Documentation:"
+      puts "  For usage guides and tutorials: https://github.com/bash0C7/picotorokko/tree/main/user-guide"
+      puts "  For command specifications: user-guide/SPECIFICATION.md"
+      puts "  For CI/CD workflows: user-guide/CI_CD_GUIDE.md"
+      puts "  For mrbgems management: user-guide/MRBGEMS_GUIDE.md"
+      puts "\n💡 Quick Start:"
+      puts "  1. Create a project: ptrk new my-project"
+      puts "  2. Setup environment: ptrk env set --latest"
+      puts "  3. Build firmware: ptrk device build"
+      puts "  4. Flash to device: ptrk device flash"
+    end
   end
 end
