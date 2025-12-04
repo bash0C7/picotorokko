@@ -6,8 +6,8 @@ mrbgems do |conf|
   # Core utilities
   conf.gem :core => "mruby-print"
 
-  # GPIO button support for ATOM Matrix
-  conf.gem "mrbgems/mrbgem-picoruby-button"
+  # M5Unified API support for ATOM Matrix
+  conf.gem "mrbgems/mrbgem-picoruby-m5unified"
 
   # Device-specific application mrbgem (auto-generated)
   conf.gem "mrbgems/app"

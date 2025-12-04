@@ -1,17 +1,18 @@
 # frozen_string_literal: true
 
 # M5Stack ATOM Matrix Button Demo
+# Using M5Unified API
 # Press the center button to see "push" output
 
-puts "ATOM Matrix Button Demo"
+puts "M5Unified Button Demo"
 puts "Press button to trigger"
 
-Button.init
+M5.begin
 
 loop do
-  Button.update
+  M5.update
 
-  puts "push" if Button.was_pressed?
+  puts "push" if M5.BtnA.wasPressed?
 
   sleep 0.1
 end
