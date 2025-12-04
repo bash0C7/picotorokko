@@ -55,8 +55,9 @@ module Picotorokko
     # @rbs () -> void
     desc "help [COMMAND]", "Show help for ptrk commands"
     def help(command = nil)
-      super(command)
+      super
       return if command
+
       puts "\n📚 Documentation:"
       puts "  For usage guides and tutorials: https://github.com/bash0C7/picotorokko/tree/main/user-guide"
       puts "  For command specifications: user-guide/SPECIFICATION.md"
