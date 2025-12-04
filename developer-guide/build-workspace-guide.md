@@ -1,0 +1,471 @@
+# Build Workspace Guide
+
+## Overview
+
+A **build workspace** is the working directory where ESP32 firmware is actually built and flashed. It's located at `.ptrk_build/{env_name}/R2P2-ESP32/`.
+
+### Directory Structure
+
+```
+project-root/
+├── .ptrk_env/                                # Environment definitions (git-tracked)
+│   ├── .picoruby-env.yml
+│   └── {env_name}/
+│       └── R2P2-ESP32/                      # Source repository (read-only)
+│           ├── components/picoruby-esp32/
+│           │   └── picoruby/
+│           │       └── (placeholder for mrbgems)
+│           └── storage/home/                 # Placeholder
+│
+├── .ptrk_build/                             # Build workspaces (git-ignored)
+│   └── {env_name}/
+│       └── R2P2-ESP32/                      # 👈 BUILD WORKSPACE (mutable, only build target)
+│           ├── components/picoruby-esp32/
+│           │   └── picoruby/
+│           │       └── mrbgems/             # Custom gems (from project root)
+│           │           └── my_gem/
+│           │               ├── mrbgem.rake
+│           │               └── src/custom.c
+│           ├── storage/home/                 # Application code (from project root)
+│           │   ├── app.rb
+│           │   └── config.yml
+│           ├── build/                        # ESP-IDF build output
+│           └── (patched files from project root patch/)
+│
+├── storage/home/                            # Application code (source, git-tracked)
+│   └── *.rb, *.yml, ...
+├── mrbgems/                                 # Custom gems (source, git-tracked)
+│   └── my_gem/
+│       ├── mrbgem.rake
+│       └── src/custom.c
+└── patch/                                   # Customization patches (source, git-tracked)
+    ├── R2P2-ESP32/
+    ├── picoruby-esp32/
+    └── picoruby/
+```
+
+**Key Points:**
+- **Source**: `.ptrk_env/{env_name}/`, `storage/home/`, `mrbgems/`, `patch/` (git-tracked)
+- **Build Target**: `.ptrk_build/{env_name}/R2P2-ESP32/` (git-ignored, mutable)
+- **ENV Level** (`.ptrk_build/{env_name}/`): Only contains R2P2-ESP32 subdirectory
+- **mrbgems Location**: Nested within R2P2-ESP32/components/picoruby-esp32/picoruby/mrbgems/
+
+## Build Workspace Lifecycle
+
+### 1. Environment Preparation (via `ptrk device prepare`)
+
+Use `ptrk device prepare` to create the build workspace:
+
+```bash
+ptrk device prepare              # Uses current environment
+ptrk device prepare --env NAME   # Specific environment
+```
+
+**What it does:**
+```
+Step 1: Copy .ptrk_env/{env_name}/R2P2-ESP32/ → .ptrk_build/{env_name}/R2P2-ESP32/
+        (Copies source repositories as the base)
+
+Step 2: Apply patches from project root patch/ directory
+        (Overlays customizations onto source repos)
+
+Step 3: Copy project-root/storage/home/ → R2P2-ESP32/storage/home/
+        (Places application code in build target)
+
+Step 4: Copy project-root/mrbgems/ → R2P2-ESP32/components/picoruby-esp32/picoruby/mrbgems/
+        (Places custom Ruby modules in build target, ready for C compilation)
+```
+
+**Key Feature**: If build workspace already exists, `prepare` does nothing (preserves your changes).
+
+### 2. Auto-Prepare on Build
+
+When `ptrk device build` is called and no build workspace exists:
+
+```bash
+ptrk device build
+# → Build environment not found, preparing...
+# → (runs prepare automatically)
+# → Building...
+```
+
+This **ENV → Patch → Storage → mrbgems** workflow ensures the build workspace contains
+all project customizations properly layered.
+
+### 3. Initial Setup (via `ptrk device build` with fresh workspace)
+
+Occurs **only on first build** when `build/repos/esp32` directory is missing:
+
+```bash
+# (All setup steps above are executed automatically by ptrk device build)
+
+# Then R2P2-ESP32 Rakefile runs:
+cd .ptrk_build/{env_name}/R2P2-ESP32
+. ~/esp/esp-idf/export.sh
+export ESPBAUD=115200
+rake setup_esp32
+```
+
+This builds:
+- PicoRuby C components
+- mrbgems dependencies
+- ESP32-specific build artifacts
+
+**Generated**: `build/repos/esp32/` directory (marks workspace as "set up")
+
+### 4. Build & Flash (via `ptrk device build`, `ptrk device flash`)
+
+On every build (after setup):
+
+```bash
+cd .ptrk_build/{env_name}/R2P2-ESP32
+. ~/esp/esp-idf/export.sh
+export ESPBAUD=115200
+rake build        # Build firmware
+rake flash        # Flash to device
+rake monitor      # Monitor serial output
+```
+
+Artifacts are created in:
+- `build/` — ESP-IDF build directory
+- `build/repos/esp32/` — PicoRuby build cache (persists across builds for speed)
+
+## Implementation Details
+
+### Build Workspace Setup Flow
+
+The `setup_build_environment` method in `lib/picotorokko/commands/env.rb` orchestrates the workspace preparation:
+
+**Code Flow:**
+```ruby
+# Step 1: Delete existing build directory, then copy ENV source
+FileUtils.rm_rf(build_path)  # ⚠️ Removes entire .ptrk_build/{env}/
+FileUtils.cp_r(env_path, build_path)
+
+# Step 2: Apply patches from project root
+apply_patches_to_build(build_path)  # Applies patch/ directory
+
+# Step 3: Delete existing storage/home, then copy from project root
+FileUtils.rm_rf("#{build_path}/R2P2-ESP32/storage/home/")  # ⚠️ Complete replacement
+FileUtils.cp_r(storage_src, "#{build_path}/R2P2-ESP32/storage/home/")
+
+# Step 4: Delete existing mrbgems, then copy from project root
+FileUtils.rm_rf("#{build_path}/R2P2-ESP32/components/picoruby-esp32/picoruby/mrbgems/")  # ⚠️ Complete replacement
+FileUtils.cp_r(mrbgems_src,
+               "#{build_path}/R2P2-ESP32/components/picoruby-esp32/picoruby/mrbgems/")
+```
+
+**Critical Points:**
+- **⚠️ Directory Replacement Behavior**: Each step uses `FileUtils.rm_rf()` to completely delete the destination directory before copying
+- **Implication**: Any files manually added to the build workspace will be **deleted** on the next build
+- **Design Rationale**: Ensures clean, reproducible builds without stale artifacts
+- Storage and mrbgems are **only** in R2P2-ESP32, **not** at ENV level
+- mrbgems must be in nested path for CMakeLists.txt to discover C sources
+- Patches apply to the copied R2P2-ESP32 directory (Step 2), before storage/mrbgems
+
+**For Users**: The build workspace (`.ptrk_build/`) is **generated and mutable**. The source of truth is:
+- `.ptrk_env/{env}/` — Environment definition (from `ptrk env set`)
+- `storage/home/` — Application code (project root)
+- `mrbgems/` — Custom Ruby/C modules (project root)
+- `patch/` — Customization overlays (project root)
+
+Do not manually edit files in `.ptrk_build/` expecting them to persist across builds.
+
+### mrbgems Placement and C Source Integration
+
+Custom Ruby gems in `project-root/mrbgems/my_gem/` are copied to:
+```
+.ptrk_build/{env_name}/R2P2-ESP32/
+  └── components/picoruby-esp32/picoruby/mrbgems/my_gem/
+      ├── mrbgem.rake
+      └── src/custom.c
+```
+
+The **nested picoruby path** is essential because:
+1. R2P2-ESP32's CMakeLists.txt expects mrbgems in this location
+2. PicoRuby's build system scans for `src/*.c` files in each gem
+3. C sources are automatically compiled into the PicoRuby runtime
+
+**Design Note**: Future enhancement should auto-register mrbgems C sources in CMakeLists.txt.
+
+### Patch Application Sources
+
+Patches can come from two sources and are applied in order:
+
+1. **`.ptrk_env/patch/{repo}/`** — Stored patches (checked into version control)
+2. **`project-root/patch/{repo}/`** — Project-level patches (for local customizations)
+
+Both sources overlay files onto the build target in the same order.
+
+## Patch Workflow
+
+### Recommended Workflow (Iterative Development)
+
+The best workflow uses `ptrk device prepare` to preserve your changes:
+
+```bash
+# 1. Prepare build environment (creates workspace)
+ptrk device prepare
+
+# 2. Edit files directly in build workspace
+vim .ptrk_build/{env}/R2P2-ESP32/custom/config.h
+
+# 3. Export changes to patch directory
+ptrk patch export
+
+# 4. Build (does NOT reset workspace)
+ptrk device build
+```
+
+**Key Benefit**: Build workspace is NOT reset when using `ptrk device prepare` + `ptrk device build`.
+
+**⚠️ Important**: If you call `ptrk device build` directly (without `prepare`), the build workspace **IS completely reset** via `FileUtils.rm_rf()`. See "[Directory Replacement Behavior](#build-workspace-setup-flow)" for details.
+
+### ptrk patch Commands
+
+```bash
+ptrk patch list              # List all patch files
+ptrk patch diff [ENV_NAME]   # Show differences between build and patches
+ptrk patch export [ENV_NAME] # Export changes from build to patch/
+```
+
+### Alternative: Direct Patch Creation
+
+For simple cases, create patch files directly:
+
+```bash
+# 1. Create patch file directly
+mkdir -p patch/R2P2-ESP32/custom
+echo '#define MY_VALUE 42' > patch/R2P2-ESP32/custom/config.h
+
+# 2. Build applies patches automatically
+ptrk device build
+```
+### Why No Explicit `apply` Command?
+
+There is no `ptrk patch apply` command because:
+
+- **Automatic application**: Patches are applied during `ptrk device build`
+- **Build order**: ENV → **Patch** → Storage → mrbgems
+- **Idempotent**: Each build starts fresh, applying all patches
+
+The `patch_export` command exists for **saving work** from the build environment,
+not for applying patches (which happens automatically).
+
+### Directory Change Pattern
+
+Always use `Dir.chdir` with a block to ensure the original directory is restored:
+
+```ruby
+# ✅ CORRECT: Cleanup guaranteed
+Dir.chdir(workspace_path) do
+  execute_rake_task("build")
+end
+# Original directory automatically restored
+
+# ❌ WRONG: May fail to restore if exception occurs
+Dir.chdir(workspace_path)
+execute_rake_task("build")
+Dir.chdir(original_dir)
+```
+
+### ESP-IDF Environment Setup
+
+Before any Rake task execution in the build workspace:
+
+```bash
+# 1. Source ESP-IDF environment
+. ~/esp/esp-idf/export.sh
+
+# 2. Set serial baud rate
+export ESPBAUD=115200
+
+# 3. Run Rake task
+rake build
+```
+
+**Detection**: Check if `~/esp/esp-idf/export.sh` exists. If missing, raise clear error with setup instructions.
+
+### Setup Detection
+
+First build detection is handled by R2P2-ESP32 Rakefile:
+
+```ruby
+# R2P2-ESP32/Rakefile
+task :deep_clean => [:clean] do
+  sh "idf.py fullclean"
+  rm_rf File.join(MRUBY_ROOT, "build/repos/esp32")  # 👈 Marks as "not set up"
+end
+```
+
+**In ptrk device command**: Check if `build/repos/esp32` exists:
+- **Missing** → First build, run `rake setup_esp32` first
+- **Exists** → Subsequent build, run `rake build` directly
+
+```ruby
+workspace = get_build_workspace_path(env_name)
+setup_needed = !File.exist?(File.join(workspace, "build/repos/esp32"))
+
+Dir.chdir(workspace) do
+  setup_esp32_task if setup_needed
+  rake_build_task
+end
+```
+
+## Debugging Build Workspace Issues
+
+### Problem: "idf.py not found"
+
+**Cause**: ESP-IDF environment not sourced
+
+**Solution**:
+```bash
+. ~/esp/esp-idf/export.sh
+echo $IDF_PATH  # Should print ESP-IDF path
+```
+
+### Problem: "build/repos/esp32 not found"
+
+**Cause**: `rake setup_esp32` not run yet
+
+**Solution**:
+```bash
+cd .ptrk_build/{env_name}/R2P2-ESP32
+. ~/esp/esp-idf/export.sh
+export ESPBAUD=115200
+rake setup_esp32
+```
+
+### Problem: "No such file or directory" in build workspace
+
+**Cause**: Build workspace corrupted, or source files missing from project root
+
+**Possible Causes:**
+- `storage/home/` or `mrbgems/` missing from project root
+- `patch/` directory missing
+- File permissions issue
+
+**Solution**:
+```bash
+# Verify project root structure
+ls -la storage/home/      # Should exist and have files
+ls -la mrbgems/           # Should exist (may be empty)
+ls -la patch/             # Should exist (may be empty)
+
+# Rebuild workspace
+rm -rf .ptrk_build/{env_name}
+ptrk device build --env {env_name}  # Recreates workspace
+```
+
+### Problem: "I edited files in .ptrk_build/ but they disappeared after rebuild"
+
+**Cause**: Build workspace is completely replaced on every `ptrk device build` call
+
+**Explanation**: The directory replacement behavior uses `FileUtils.rm_rf()` to delete the entire destination directory before copying new files. This ensures clean builds but means **manual edits to build workspace files are not persistent**.
+
+**Recovery Options:**
+
+1. **Use `ptrk env patch_export`** (Recommended)
+   ```bash
+   # Export your changes from build workspace to patch/ directory
+   ptrk env patch_export {env_name}
+   # Your changes are now saved in project-root/patch/
+   ```
+
+2. **Move files to permanent locations** before editing:
+   - **Application code** → `project-root/storage/home/`
+   - **Custom gems** → `project-root/mrbgems/`
+   - **Configuration patches** → `project-root/patch/R2P2-ESP32/`
+
+3. **Remember the workflow**:
+   - ❌ Don't edit in `.ptrk_build/` expecting persistence
+   - ✅ Always edit in `project-root/` or use `patch_export` to save work
+
+**Design Note**: The build workspace is intentionally ephemeral. The source of truth must always be in `project-root/` (tracked in git) so builds are reproducible.
+
+### Problem: mrbgems C files not compiling
+
+**Cause**: mrbgems not in correct nested picoruby path
+
+**Debug:**
+```bash
+# Check if mrbgems are in correct location
+ls .ptrk_build/{env_name}/R2P2-ESP32/components/picoruby-esp32/picoruby/mrbgems/
+
+# Should show: my_gem/, other_gem/, etc.
+# NOT in: .ptrk_build/{env_name}/mrbgems/
+```
+
+**Solution**:
+```bash
+# Rebuild workspace (will place mrbgems in correct nested path)
+rm -rf .ptrk_build/{env_name}
+ptrk device build --env {env_name}
+```
+
+### Problem: "patch files not applied"
+
+**Cause**: patch/ directory missing from project root or `.ptrk_env/patch/`
+
+**Debug:**
+```bash
+# Check for project root patches
+ls -la patch/R2P2-ESP32/     # Project-level patches
+
+# Check for stored patches
+ls -la .ptrk_env/patch/R2P2-ESP32/  # Stored patches
+
+# Check if patches applied in build
+grep "CUSTOM_VALUE" .ptrk_build/{env_name}/R2P2-ESP32/custom/config.h
+```
+
+**Solution**:
+- Create `patch/` directory if it doesn't exist
+- Add patch files in `patch/R2P2-ESP32/` subdirectory
+- Rebuild workspace
+
+## Reference: R2P2-ESP32 Rake Tasks
+
+From R2P2-ESP32 Rakefile:
+
+| Task | Purpose |
+|------|---------|
+| `rake setup_esp32` | Build PicoRuby C components (first build only) |
+| `rake setup_esp32c3` | Same, for C3 variant |
+| `rake build` | Build ESP32 firmware |
+| `rake flash` | Flash firmware to device |
+| `rake monitor` | Monitor serial output (Ctrl+] to exit) |
+| `rake clean` | Clean build artifacts |
+| `rake deep_clean` | Clean everything including PicoRuby cache |
+
+## Design Decisions & Future Enhancements
+
+### Current Architecture (as of 2025-11-24)
+
+- ✅ **Build target unified**: Only `R2P2-ESP32` is the mutable build target
+- ✅ **mrbgems nested placement**: Custom gems in nested picoruby path ready for CMakeLists.txt
+- ✅ **Multi-source patches**: Both `.ptrk_env/patch/` and `project-root/patch/` supported
+- ⚠️ **CMakeLists.txt integration**: Needs implementation for auto-registering mrbgems C sources
+
+### Future Enhancements (Planned)
+
+1. **CMakeLists.txt Auto-Integration**
+   - Auto-discover mrbgems C sources in nested path
+   - Auto-update CMakeLists.txt with C source references
+   - Enable seamless C extension compilation
+
+2. **ptrk mrbgems Workflow**
+   - Design user-facing `ptrk mrbgems add` command
+   - Ensure gems are placed in correct nested path
+   - Integrate with Mrbgemfile for reproducibility
+
+3. **Storage/mrbgems Symlink Option**
+   - Consider symlinks instead of file copying
+   - Reduce storage usage for large projects
+   - Maintain Windows compatibility
+
+## Related Documentation
+
+- `CLAUDE.md` — Build workspace concept overview and AI agent instructions
+- `.claude/docs/testing-guidelines.md` — Test coverage requirements
+- `.claude/docs/tdd-rubocop-cycle.md` — TDD micro-cycle workflow

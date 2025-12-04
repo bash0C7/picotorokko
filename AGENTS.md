@@ -33,7 +33,7 @@ You develop the `ptrk` gem itself:
 **ptrk Users** (NOT your role):
 - Install and use the `ptrk` command
 - Develop PicoRuby applications for ESP32
-- Use templates in `docs/` and `docs/github-actions/`
+- Use templates in `user-guide/` and `user-guide/github-actions/`
 
 ## Documentation Locations
 
@@ -46,9 +46,9 @@ You develop the `ptrk` gem itself:
 
 **For ptrk users** (they read):
 - `README.md` — Installation and quick start
-- `docs/SPECIFICATION.md` — Complete command specification
-- `docs/` — User guides
-- `docs/github-actions/` — Workflow templates
+- `user-guide/SPECIFICATION.md` — Complete command specification
+- `user-guide/` — User guides
+- `user-guide/github-actions/` — Workflow templates
 
 ## Playground Directory: Strict Access Control
 
@@ -142,10 +142,10 @@ When code changes affect behavior:
 @import .claude/skills/documentation-standards/SKILL.md
 
 **Quick Reference**:
-1. Command behavior changed? → Update `docs/SPECIFICATION.md` + `README.md`
-2. Template/workflow changed? → Update user guides in `docs/`
+1. Command behavior changed? → Update `user-guide/SPECIFICATION.md` + `README.md`
+2. Template/workflow changed? → Update user guides in `user-guide/`
 3. Public API changed? → Update rbs-inline annotations
-4. Architecture changed? → Update `.claude/docs/` design documents
+4. Architecture changed? → Update `developer-guide/` and `.claude/docs/` design documents
 
 ## Specialized Subagents
 

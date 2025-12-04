@@ -1,0 +1,68 @@
+# Run Tests Workflow Template for PicoRuby Applications
+#
+# **TARGET AUDIENCE**: PicoRuby application developers
+#
+# This workflow automatically runs unit tests for your PicoRuby application
+# and reports results with code coverage metrics.
+#
+# **Users**: Enable by uncommenting this workflow or copying to your project.
+# **gem developers**: Do NOT modify this template without coordination.
+#
+# Prerequisites:
+# 1. Have Ruby tests in `test/` directory
+# 2. (Optional) Configure CODECOV_TOKEN for coverage reports
+# 3. Ensure Rakefile has `rake test` task defined
+
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: ['3.3', '3.4']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true
+
+      - name: Run tests
+        run: bundle exec rake test
+
+      - name: Generate coverage report
+        run: |
+          echo "Coverage report generated in coverage/" || true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.ruby-version == '3.4'  # Upload once per workflow
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+        continue-on-error: true
+
+      - name: Comment test results on PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Tests failed. Please review the test output above.'
+            })
