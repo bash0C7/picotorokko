@@ -1,0 +1,14 @@
+mrbgems do |conf|
+  # Configure mrbgems for your PicoRuby application
+  # This file is auto-generated during project initialization
+  # Edit to add custom mrbgems for your application
+
+  # Core utilities
+  conf.gem :core => "mruby-print"
+
+  # GPIO button support for ATOM Matrix
+  conf.gem "mrbgems/mrbgem-picoruby-button"
+
+  # Device-specific application mrbgem (auto-generated)
+  conf.gem "mrbgems/app"
+end
