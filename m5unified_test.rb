@@ -795,4 +795,33 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert_match(/extern "C" \{/, output)
     assert_match(%r{\} // extern "C"}, output)
   end
+
+  # Test 44: CppWrapperGenerator generates wrapper functions
+  def test_generate_cpp_wrapper_functions
+    cpp_data = [
+      { name: "M5", methods: [{ name: "begin", return_type: "void", parameters: [] }] },
+      { name: "BtnA", methods: [{ name: "wasPressed", return_type: "bool", parameters: [] }] }
+    ]
+    generator = CppWrapperGenerator.new(cpp_data)
+    output = generator.generate
+
+    assert_match(/void m5unified_begin\(void\)/, output)
+    assert_match(/int m5unified_btna_wasPressed\(void\)/, output)
+    assert_match(/M5\.begin/, output)
+    assert_match(/M5\.BtnA\.wasPressed/, output)
+  end
+
+  # Test 45: CppWrapperGenerator handles method parameters
+  def test_generate_cpp_wrapper_with_parameters
+    cpp_data = [
+      { name: "Display", methods: [
+        { name: "print", return_type: "void", parameters: [{ type: "const char*", name: "text" }] }
+      ] }
+    ]
+    generator = CppWrapperGenerator.new(cpp_data)
+    output = generator.generate
+
+    assert_match(/void m5unified_display_print\(const char\* text\)/, output)
+    assert_match(/M5\.Display\.print\(text\)/, output)
+  end
 end

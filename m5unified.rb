@@ -387,8 +387,72 @@ class CppWrapperGenerator
   def generate
     content = "#include <M5Unified.h>\n\n"
     content += "extern \"C\" {\n\n"
-    # Phase 2.2: Functions will be added here
+
+    @cpp_data.each do |klass|
+      klass[:methods].each do |method|
+        content += generate_wrapper_function(klass[:name], method)
+      end
+    end
+
     content += "} // extern \"C\"\n"
     content
+  end
+
+  private
+
+  # Generate a single wrapper function
+  def generate_wrapper_function(klass_name, method)
+    func_name = flatten_method_name(klass_name, method[:name])
+    return_type = map_cpp_return_type(method[:return_type])
+    params = generate_cpp_params(method[:parameters])
+
+    content = "#{return_type} #{func_name}(#{params}) {\n"
+
+    # bool → int 変換
+    api_call = generate_api_call(klass_name, method[:name], method[:parameters])
+    content += if return_type == "int" && method[:return_type] == "bool"
+                 "  return #{api_call} ? 1 : 0;\n"
+               elsif method[:return_type] == "void"
+                 "  #{api_call};\n"
+               else
+                 "  return #{api_call};\n"
+               end
+
+    content += "}\n\n"
+    content
+  end
+
+  # Flatten namespace hierarchy: M5.begin → m5unified_begin, M5.BtnA.wasPressed → m5unified_btna_wasPressed
+  def flatten_method_name(klass_name, method_name)
+    if klass_name == "M5"
+      "m5unified_#{method_name}"
+    else
+      "m5unified_#{klass_name.downcase}_#{method_name}"
+    end
+  end
+
+  # Map C++ return type to wrapper return type
+  def map_cpp_return_type(cpp_type)
+    return "void" if cpp_type == "void"
+    return "int" if cpp_type == "bool"
+
+    cpp_type
+  end
+
+  # Generate parameter list for C++ function
+  def generate_cpp_params(parameters)
+    return "void" if parameters.empty?
+
+    parameters.map { |p| "#{p[:type]} #{p[:name]}" }.join(", ")
+  end
+
+  # Generate M5 API call
+  def generate_api_call(klass_name, method_name, parameters)
+    param_names = parameters.map { |p| p[:name] }.join(", ")
+    if klass_name == "M5"
+      "M5.#{method_name}(#{param_names})"
+    else
+      "M5.#{klass_name}.#{method_name}(#{param_names})"
+    end
   end
 end
