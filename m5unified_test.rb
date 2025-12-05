@@ -824,4 +824,19 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert_match(/void m5unified_display_print\(const char\* text\)/, output)
     assert_match(/M5\.Display\.print\(text\)/, output)
   end
+
+  # Phase 2.3: CMakeGenerator Tests
+
+  # Test 46: CMakeGenerator generates CMakeLists.txt
+  def test_cmake_generator_generates_cmake_file
+    generator = CMakeGenerator.new
+    output = generator.generate
+
+    assert_match(/idf_component_register\(/, output)
+    assert_match(/SRCS/, output)
+    assert_match(%r{ports/esp32/m5unified_wrapper\.cpp}, output)
+    assert_match(%r{src/m5unified\.c}, output)
+    assert_match(/REQUIRES\s+m5unified/, output)
+    assert_match(/target_link_libraries/, output)
+  end
 end

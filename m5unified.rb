@@ -456,3 +456,23 @@ class CppWrapperGenerator
     end
   end
 end
+
+# ESP-IDF CMake generator for component registration
+class CMakeGenerator
+  # Generate CMakeLists.txt for ESP-IDF component
+  def generate
+    content = "idf_component_register(\n"
+    content += "  SRCS\n"
+    content += "    \"ports/esp32/m5unified_wrapper.cpp\"\n"
+    content += "    \"src/m5unified.c\"\n"
+    content += "  INCLUDE_DIRS\n"
+    content += "    \".\"\n"
+    content += "  REQUIRES\n"
+    content += "    m5unified\n"
+    content += ")\n\n"
+    content += "target_link_libraries(${COMPONENT_LIB} PUBLIC\n"
+    content += "  m5unified\n"
+    content += ")\n"
+    content
+  end
+end
