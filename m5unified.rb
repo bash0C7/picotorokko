@@ -234,6 +234,7 @@ class MrbgemGenerator
     FileUtils.mkdir_p(@output_path)
     FileUtils.mkdir_p(File.join(@output_path, "mrblib"))
     FileUtils.mkdir_p(File.join(@output_path, "src"))
+    FileUtils.mkdir_p(File.join(@output_path, "ports", "esp32"))
   end
 
   # Generate mrbgem.rake with gem specification
@@ -373,5 +374,21 @@ class MrbgemGenerator
     content += "This gem is built as part of the PicoRuby project.\n\n"
     content += "## License\n\nMIT\n"
     File.write(File.join(@output_path, "README.md"), content)
+  end
+end
+
+# C++ wrapper function generator for extern "C" layer
+class CppWrapperGenerator
+  def initialize(cpp_data)
+    @cpp_data = cpp_data
+  end
+
+  # Generate extern "C" wrapper file content
+  def generate
+    content = "#include <M5Unified.h>\n\n"
+    content += "extern \"C\" {\n\n"
+    # Phase 2.2: Functions will be added here
+    content += "} // extern \"C\"\n"
+    content
   end
 end

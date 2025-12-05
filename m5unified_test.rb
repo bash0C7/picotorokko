@@ -773,4 +773,26 @@ class M5UnifiedTest < Test::Unit::TestCase
     # Real M5Unified may have fewer or more methods, so just check we extracted something
     assert total_methods >= 0, "Should extract methods from M5Unified headers"
   end
+
+  # Phase 2.1: CppWrapperGenerator - Basic Structure Tests
+
+  # Test 42: CppWrapperGenerator initializes with cpp_data
+  def test_cpp_wrapper_generator_initializes_with_cpp_data
+    cpp_data = [{ name: "M5", methods: [] }]
+    generator = CppWrapperGenerator.new(cpp_data)
+
+    assert_not_nil generator
+    assert_instance_of CppWrapperGenerator, generator
+  end
+
+  # Test 43: CppWrapperGenerator generates basic wrapper structure
+  def test_generate_cpp_wrapper_file_structure
+    cpp_data = [{ name: "M5", methods: [] }]
+    generator = CppWrapperGenerator.new(cpp_data)
+    output = generator.generate
+
+    assert_match(/#include <M5Unified\.h>/, output)
+    assert_match(/extern "C" \{/, output)
+    assert_match(%r{\} // extern "C"}, output)
+  end
 end
