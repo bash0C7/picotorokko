@@ -608,3 +608,62 @@ class CMakeGenerator
     content
   end
 end
+
+# Main script - Command line interface
+if __FILE__ == $0
+  command = ARGV[0]
+
+  case command
+  when "clone"
+    url = ARGV[1]
+    branch = ARGV[2] || "master"
+
+    unless url
+      puts "Usage: ruby m5unified.rb clone <url> [branch]"
+      exit 1
+    end
+
+    repo_path = "vendor/m5unified"
+    manager = M5UnifiedRepositoryManager.new(repo_path)
+
+    begin
+      manager.clone(url: url, branch: branch)
+      puts "Repository cloned to #{repo_path}"
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+      exit 1
+    end
+
+  when "generate"
+    output_path = ARGV[1]
+
+    unless output_path
+      puts "Usage: ruby m5unified.rb generate <output_path>"
+      exit 1
+    end
+
+    repo_path = "vendor/m5unified"
+
+    unless Dir.exist?(repo_path)
+      puts "Error: Repository not found at #{repo_path}"
+      puts "Run: ruby m5unified.rb clone <url>"
+      exit 1
+    end
+
+    begin
+      generator = MrbgemGenerator.new(repo_path, output_path)
+      generator.generate
+      puts "mrbgem generated at #{output_path}"
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+      exit 1
+    end
+
+  else
+    puts "Usage: ruby m5unified.rb <command> [args]"
+    puts "Commands:"
+    puts "  clone <url> [branch]      Clone M5Unified repository"
+    puts "  generate <output_path>    Generate mrbgem files"
+    exit 1
+  end
+end
