@@ -244,7 +244,43 @@ gem "rubocop"
 
 ## Remaining Work
 
-### Phase 3: Integration Testing with Actual M5Unified
+### Phase 4: libclang C++ Parser導入
+
+**問題**: 現在の正規表現ベースCppParserは複雑なC++構文に非対応
+- 抽出クラス数: 2個のみ（必要: 10個以上）
+- インラインメソッド未対応: `bool isPressed() { return _press; }`
+- ネストした`{}`に非対応
+- 名前空間無視
+
+**解決策**: libclang + ffi-clang gem で置き換え
+
+#### 実装戦略
+
+**技術選定**: libclang (LLVM公式C++パーサー)
+- Apple clang 17.0.0既存（brew不要）
+- ffi-clang gem経由でRubyから利用
+- C++17完全対応（コンパイラグレード）
+
+**予定される変更**:
+1. Gemfile に `gem 'ffi-clang', '~> 0.10.0'` 追加
+2. m5unified.rb の CppParser クラス置き換え (lines 90-161 → 約60行)
+3. libclang AST トラバース実装
+4. テスト追加 (test/unit/libclang_parser_test.rb)
+
+**成功基準**:
+- [ ] M5Unified headersから10個以上のクラス抽出
+- [ ] インラインメソッド対応
+- [ ] 名前空間スコープ保持
+- [ ] コンストラクタ/デストラクタ適切処理
+- [ ] 有効なC/C++コード生成
+
+**参考資料**:
+- [ffi-clang GitHub](https://github.com/ioquatix/ffi-clang)
+- [libclang Documentation](https://clang.llvm.org/doxygen/group__CINDEX.html)
+
+---
+
+### Phase 5: Integration Testing with Actual M5Unified
 
 実装済みのm5unified.rbスクリプトを使用して、実際のM5Unifiedリポジトリでの E2E テストを実施。
 
