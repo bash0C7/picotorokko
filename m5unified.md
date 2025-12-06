@@ -37,6 +37,17 @@ m5unified.rb (single file)
 │   ├── render_mrbgem_rake()  - mrbgem.rake生成
 │   ├── render_c_bindings()   - src/m5unified.c生成
 │   └── render_ruby_lib()     - mrblib/m5unified.rb生成
+├── CppWrapperGenerator (Phase 2.1-2.2)
+│   ├── generate() - extern "C" ラッパー生成
+│   ├── generate_wrapper_function() - C++ラッパー関数生成
+│   └── flatten_method_name() - 名前空間フラット化
+├── CMakeGenerator (Phase 2.3)
+│   ├── generate() - CMakeLists.txt生成
+│   └── generate_component_registration() - idf_component_register生成
+├── ApiPatternDetector (Phase 2.5)
+│   ├── detect_patterns() - M5Unified APIパターン検出
+│   ├── detect_button_classes() - Buttonクラス検出
+│   └── is_predicate_method?() - 述語メソッド判定
 └── Entry point
     └── main() - コマンドライン実行
 ```
@@ -444,6 +455,207 @@ void mrbc_m5unified_gem_init(mrbc_vm *vm) {
 
 ---
 
+## Phase 2: Three-Layer Automation
+
+**状態**: 📋 計画完了、実装待ち
+
+Phase 2では、Phase B（M5Unified mrbgem手動実装）の作業を自動化します。3つのレイヤーから構成：
+- **Layer 1**: C++ラッパー（extern "C" 関数）
+- **Layer 2**: Cバインディング（mrubyc mrbc_define_class/method）
+- **Layer 3**: CMake設定（ESP-IDF idf_component_register）
+
+### Phase 2.1: CppWrapperGenerator - Basic Structure
+
+**目的**: extern "C" ラッパーファイルの基本構造を生成
+
+**テスト例**:
+```ruby
+def test_generate_cpp_wrapper_file_structure
+  cpp_data = [{ name: "M5", methods: [] }]
+  generator = CppWrapperGenerator.new(cpp_data)
+  output = generator.generate
+
+  assert_match(/#include <M5Unified\.h>/, output)
+  assert_match(/extern "C" \{/, output)
+  assert_match(/\} \/\/ extern "C"/, output)
+end
+```
+
+**実装例**:
+```ruby
+class CppWrapperGenerator
+  def initialize(cpp_data)
+    @cpp_data = cpp_data
+  end
+
+  def generate
+    content = "#include <M5Unified.h>\n\n"
+    content += "extern \"C\" {\n\n"
+    # ラッパー関数は Phase 2.2 で追加
+    content += "} // extern \"C\"\n"
+    content
+  end
+end
+```
+
+**TDD サイクル**:
+1. Red: `ruby -I. m5unified_test.rb` → NameError: uninitialized constant CppWrapperGenerator
+2. Green: CppWrapperGenerator クラスを実装
+3. RuboCop: `bundle exec rubocop m5unified.rb m5unified_test.rb --autocorrect-all`
+4. Commit: `git add . && git commit -m "Add CppWrapperGenerator with basic structure"`
+
+**成功基準**: 42 tests, 105 assertions, 0 failures, 0 errors
+
+**推定時間**: 1-2時間
+
+---
+
+### Phase 2.2: CppWrapperGenerator - Function Generation
+
+**目的**: extern "C" 関数を生成、名前空間フラット化、型変換
+
+**テスト例**:
+```ruby
+def test_generate_cpp_wrapper_functions
+  cpp_data = [
+    { name: "M5", methods: [{ name: "begin", return_type: "void", parameters: [] }] },
+    { name: "BtnA", methods: [{ name: "wasPressed", return_type: "bool", parameters: [] }] }
+  ]
+  generator = CppWrapperGenerator.new(cpp_data)
+  output = generator.generate
+
+  assert_match(/void m5unified_begin\(void\)/, output)
+  assert_match(/int m5unified_btnA_wasPressed\(void\)/, output)
+  assert_match(/M5\.begin/, output)
+  assert_match(/M5\.BtnA\.wasPressed/, output)
+end
+```
+
+**実装概要**:
+- `generate_wrapper_function()` メソッド追加
+- 名前空間フラット化: `M5.BtnA.wasPressed` → `m5unified_btnA_wasPressed`
+- 戻り値型変換: `bool` → `int`
+- M5Unified API呼び出し生成
+
+**成功基準**: 45 tests, 114 assertions, 0 failures, 0 errors
+
+**推定時間**: 2-3時間
+
+---
+
+### Phase 2.3: CMakeGenerator Implementation
+
+**目的**: ESP-IDF CMakeLists.txt を生成
+
+**テスト例**:
+```ruby
+def test_generate_cmake_file
+  generator = CMakeGenerator.new
+  output = generator.generate
+
+  assert_match(/idf_component_register\(/, output)
+  assert_match(/SRCS/, output)
+  assert_match(/ports\/esp32\/m5unified_wrapper\.cpp/, output)
+  assert_match(/src\/m5unified\.c/, output)
+  assert_match(/REQUIRES\s+m5unified/, output)
+end
+```
+
+**実装概要**:
+- `idf_component_register()` ブロック生成
+- ソースファイルリスト: m5unified_wrapper.cpp, m5unified.c
+- REQUIRES: m5unified
+- target_link_libraries 設定
+
+**成功基準**: 49 tests, 122 assertions, 0 failures, 0 errors
+
+**推定時間**: 1-2時間
+
+---
+
+### Phase 2.4: Fix C Binding Signatures
+
+**目的**: mrubyc 正式シグネチャの使用とラッパー関数呼び出し
+
+**重要な修正**:
+1. 関数シグネチャを (v, argc) に統一
+   - 旧: `(mrbc_vm *vm, mrbc_value *regs, int nregs)`
+   - 新: `(mrbc_vm *vm, mrbc_value *v, int argc)`
+
+2. extern 宣言追加
+   ```c
+   extern void m5unified_begin(void);
+   extern int m5unified_btnA_wasPressed(void);
+   ```
+
+3. ラッパー関数呼び出し
+   ```c
+   m5unified_begin();
+   SET_RETURN(mrbc_nil_value());
+   ```
+
+**成功基準**: 52 tests, 134 assertions, 0 failures, 0 errors
+
+**推定時間**: 2-3時間
+
+---
+
+### Phase 2.5: M5Unified API Pattern Detection
+
+**目的**: M5Unified固有のAPIパターン（M5.BtnA, M5.Display）を検出
+
+**実装概要**:
+- `ApiPatternDetector` クラス作成
+- Button → BtnA/BtnB/BtnC マッピング
+- Display クラス検出
+- 述語メソッドへの `?` 接尾辞追加（wasPressed → wasPressed?）
+
+**テスト例**:
+```ruby
+def test_detect_button_api_pattern
+  cpp_data = [
+    { name: "Button", methods: [{ name: "wasPressed", return_type: "bool", parameters: [] }] }
+  ]
+  detector = ApiPatternDetector.new(cpp_data)
+  patterns = detector.detect_patterns
+
+  assert patterns[:button_classes].include?("Button")
+  assert_equal ["BtnA", "BtnB", "BtnC"], patterns[:singleton_mapping]["Button"]
+end
+```
+
+**成功基準**: 55 tests, 143 assertions, 0 failures, 0 errors
+
+**推定時間**: 2-3時間
+
+---
+
+### Phase 2.6: Integration Testing
+
+**目的**: 生成されたmrbgemが手動実装と一致することを検証
+
+**テスト例**:
+```ruby
+def test_e2e_generate_complete_mrbgem
+  cpp_data = [
+    { name: "M5", methods: [{ name: "begin", return_type: "void", parameters: [] }] },
+    { name: "BtnA", methods: [{ name: "wasPressed", return_type: "bool", parameters: [] }] }
+  ]
+  generator = MrbgemGenerator.new(tmpdir)
+  result = generator.generate(cpp_data)
+
+  assert File.exist?(File.join(tmpdir, "ports", "esp32", "m5unified_wrapper.cpp"))
+  assert File.exist?(File.join(tmpdir, "src", "m5unified.c"))
+  assert File.exist?(File.join(tmpdir, "CMakeLists.txt"))
+end
+```
+
+**成功基準**: 59 tests, ~154 assertions, 0 failures, 0 errors
+
+**推定時間**: 1-2時間
+
+---
+
 ## Testing Strategy
 
 ### Test Structure
@@ -509,35 +721,142 @@ gem "tree_sitter", "~> 1.0"
 
 ---
 
-## Next Steps
+## Current Status
 
-1. **Phase 1.2**: C++ Header File Enumeration and Reading
-   - Implement `HeaderFileReader` class
-   - Test `.h` file enumeration in M5Unified repo
-   - Handle multiple directories (src/, include/)
+**✅ Phase 1 完了**: 41 tests, 102 assertions, 100% passing
 
-2. **Phase 1.3**: C++ Parsing with tree-sitter
-   - Add `gem 'tree_sitter'` to Gemfile
-   - Implement `CppParser` class
-   - Extract class and method signatures
+- ✅ M5UnifiedRepositoryManager (リポジトリのクローン・更新)
+- ✅ HeaderFileReader (.hファイルの列挙・読込)
+- ✅ CppParser (正規表現ベースのクラス・メソッド抽出)
+- ✅ TypeMapper (C++ ↔ mrubyc 型マッピング)
+- ✅ MrbgemGenerator (ディレクトリ構造 + 基本C バインディング)
+- ✅ End-to-end 統合テスト
 
-3. **Phase 1.4**: Type Mapping
-   - Implement `TypeMapper` class
-   - Create mapping tables for C++ ↔ mruby types
+**📋 Phase 2 実装予定**: Three-layer automation (0/18 tests)
 
-4. **Phase 1.5**: mrbgem Structure Generation
-   - Implement `MrbgemGenerator` class
-   - Create directory and file structure
+- ❌ CppWrapperGenerator - extern "C" ラッパー関数
+- ❌ CMakeGenerator - ESP-IDF CMakeLists.txt
+- ❌ ApiPatternDetector - M5Unified APIパターン
+- ❌ Enhanced MrbgemGenerator - 正式mrubyc シグネチャ
 
-5. **Phase 1.6**: C Binding Code Generation
-   - Generate mrbgem.rake
-   - Generate src/m5unified.c with bindings
-   - Generate mrblib/m5unified.rb documentation
+---
 
-6. **Phase 2**: Thor Integration
-   - Split `m5unified.rb` into `lib/picotorokko/m5unified/`
-   - Create `lib/picotorokko/commands/m5unified.rb`
-   - Integrate with `ptrk` CLI
+## 次セッション開始ガイド
+
+### 1. 現在の状態を確認
+
+```bash
+cd /Users/bash/src/picotorokko
+ruby -I. m5unified_test.rb
+```
+
+**期待される出力**:
+```
+Loaded suite m5unified_test
+Started
+.........................................
+Finished in X.XX seconds.
+41 tests, 102 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions
+100% passed
+```
+
+### 2. Phase 2.1 から開始（基本構造）
+
+**ステップ 1: テストを追加** (`m5unified_test.rb` 末尾)
+```ruby
+def test_generate_cpp_wrapper_file_structure
+  cpp_data = [{ name: "M5", methods: [] }]
+  generator = CppWrapperGenerator.new(cpp_data)
+  output = generator.generate
+
+  assert_match(/#include <M5Unified\.h>/, output)
+  assert_match(/extern "C" \{/, output)
+  assert_match(/\} \/\/ extern "C"/, output)
+end
+```
+
+**ステップ 2: テスト実行 (Red フェーズ)**
+```bash
+ruby -I. m5unified_test.rb
+# 期待: NameError: uninitialized constant CppWrapperGenerator
+```
+
+**ステップ 3: 実装追加** (`m5unified.rb` line ~208 after TypeMapper)
+```ruby
+class CppWrapperGenerator
+  def initialize(cpp_data)
+    @cpp_data = cpp_data
+  end
+
+  def generate
+    content = "#include <M5Unified.h>\n\n"
+    content += "extern \"C\" {\n\n"
+    content += "} // extern \"C\"\n"
+    content
+  end
+end
+```
+
+**ステップ 4: テスト実行 (Green フェーズ)**
+```bash
+ruby -I. m5unified_test.rb
+# 期待: 42 tests, 105 assertions, 0 failures, 0 errors
+```
+
+**ステップ 5: RuboCop**
+```bash
+bundle exec rubocop m5unified.rb m5unified_test.rb --autocorrect-all
+```
+
+**ステップ 6: コミット**
+```bash
+git add m5unified.rb m5unified_test.rb
+git commit -m "Add CppWrapperGenerator with basic structure
+
+Implement extern \"C\" wrapper file generation skeleton.
+- Generate #include <M5Unified.h> header
+- Generate extern \"C\" block wrapper
+- Return complete C++ source as string
+
+Phase 2.1 complete: 42 tests, 105 assertions, 0 failures"
+```
+
+### 3. Phase 2.2-2.6 の実行
+
+各フェーズ（2.1-2.6）について、上記の "## Phase 2.X" セクションを参照してください。
+
+全6フェーズの実行ワークフロー:
+```bash
+# 各フェーズについて:
+# 1. m5unified.md の Phase 2.X セクションを読む
+# 2. テストコードをコピー → m5unified_test.rb に追加
+# 3. ruby -I. m5unified_test.rb 実行 → 失敗を確認 (Red)
+# 4. 実装コードをコピー → m5unified.rb に追加
+# 5. ruby -I. m5unified_test.rb 実行 → 成功を確認 (Green)
+# 6. bundle exec rubocop m5unified.rb --autocorrect
+# 7. git add . && git commit -m "..."
+# 8. 次のフェーズへ
+```
+
+**推定時間**:
+- Phase 2.1: 1-2 時間
+- Phase 2.2: 2-3 時間
+- Phase 2.3: 1-2 時間
+- Phase 2.4: 2-3 時間
+- Phase 2.5: 2-3 時間
+- Phase 2.6: 1-2 時間
+- **合計**: 9-15 時間
+
+### 4. 完了基準
+
+Phase 2 が完了するとき:
+
+```bash
+ruby -I. m5unified_test.rb
+# 表示: 59 tests, ~154 assertions, 0 failures, 0 errors, 100% passed
+```
+
+かつ生成されたmrbgemが `playground/m5app/mrbgems/mrbgem-picoruby-m5unified/` の構造と一致すること。
 
 ---
 
@@ -549,10 +868,161 @@ gem "tree_sitter", "~> 1.0"
 
 ---
 
+## Implementation Progress Tracker
+
+| フェーズ | コンポーネント | 状態 | テスト数 | コード行数 | コミット |
+|---------|-----------|------|--------|---------|--------|
+| **Phase 1: 基本コード生成** | | | | | |
+| 1.1 | M5UnifiedRepositoryManager | ✅ | 4 | 57 | 08610e2 |
+| 1.2 | HeaderFileReader | ✅ | 2 | 29 | 08610e2 |
+| 1.3 | CppParser (regex) | ✅ | 4 | 71 | 08610e2 |
+| 1.4 | TypeMapper | ✅ | 4 | 44 | 08610e2 |
+| 1.5 | MrbgemGenerator (構造) | ✅ | 11 | 82 | 08610e2 |
+| 1.6 | MrbgemGenerator (Cバインディング) | ✅ | 7 | 95 | 08610e2 |
+| 1.7 | 統合テスト | ✅ | 9 | - | 08610e2 |
+| | **Phase 1 小計** | **✅ 完了** | **41** | **377** | |
+| **Phase 2: Three-Layer Automation** | | | | | |
+| 2.1 | CppWrapperGenerator (基本) | ❌ | +3 | +30 | - |
+| 2.2 | CppWrapperGenerator (関数生成) | ❌ | +3 | +50 | - |
+| 2.3 | CMakeGenerator | ❌ | +4 | +40 | - |
+| 2.4 | MrbgemGenerator (署名修正) | ❌ | +3 | +80 | - |
+| 2.5 | ApiPatternDetector | ❌ | +3 | +60 | - |
+| 2.6 | 統合テスト (Phase 2) | ❌ | +2 | - | - |
+| | **Phase 2 小計** | **❌ 実装待ち** | **+18** | **+260** | |
+| | **合計** | | **59** | **637** | |
+
+**現在の状態**: Phase 1 完了 (41/59 テスト)、Phase 2 未開始 (0/18 テスト)
+
+---
+
 ## References
 
 - [M5Unified GitHub](https://github.com/m5stack/M5Unified)
 - [tree-sitter Ruby binding](https://github.com/tree-sitter/ruby-tree-sitter)
 - [mrubyc API Reference](https://github.com/mrubyc/mrubyc)
 - [Blog: PicoRubyでM5Unifiedを使う](https://blog.silentworlds.info/picorubyxiang-kenom5unified-m5gfx-mrbgemwozuo-ruhua/)
+
+---
+
+## 次セッション Quick Start
+
+### 1. ファイルの確認
+
+このドキュメント (`m5unified.md`) が単一の実行可能仕様です。以下のセクションが含まれています：
+
+- **Architecture**: Phase 1 + Phase 2 のコンポーネント一覧
+- **Implemented Components**: Phase 1.1-1.7 の詳細（完了済み）
+- **Phase 2**: Phase 2.1-2.6 の詳細（実装ガイド付き）
+- **Current Status**: 進捗状況
+- **次セッション開始ガイド**: Phase 2.1 からの開始手順
+- **Implementation Progress Tracker**: 進捗追跡テーブル
+
+### 2. 開始前チェックリスト
+
+```bash
+# 1. リポジトリへ移動
+cd /Users/bash/src/picotorokko
+
+# 2. 現在の状態を確認
+ruby -I. m5unified_test.rb
+# 期待: 41 tests, 102 assertions, 0 failures, 0 errors, 100% passed
+
+# 3. ブランチ確認
+git status
+# 期待: On branch m5unifiled (またはマージ後のmain)
+
+# 4. 最新状態に更新
+git pull origin main
+```
+
+### 3. Phase 2.1-2.6 実装の流れ
+
+**各フェーズ（計6つ）について、以下のワークフロー を繰り返します：**
+
+```bash
+# Step 1: m5unified.md の対応セクション (Phase 2.X) を読む
+# → テスト例、実装概要、成功基準を確認
+
+# Step 2: テストをコピー & 追加
+# → m5unified_test.rb の末尾に "テスト例" コードをペースト
+
+# Step 3: Red フェーズ - テスト実行
+ruby -I. m5unified_test.rb
+# 期待: NameError または失敗メッセージ
+
+# Step 4: 実装をコピー & 追加
+# → m5unified.rb の指定位置に "実装例" コードをペースト
+
+# Step 5: Green フェーズ - テスト成功
+ruby -I. m5unified_test.rb
+# 期待: 前フェーズより +3 テスト合格
+
+# Step 6: RuboCop実行
+bundle exec rubocop m5unified.rb m5unified_test.rb --autocorrect-all
+
+# Step 7: コミット
+git add m5unified.rb m5unified_test.rb
+git commit -m "m5unified.md のセクションに記載されたコミットメッセージを使用"
+
+# Step 8: 次のフェーズへ → Step 1 に戻る
+```
+
+### 4. フェーズ実行順序
+
+1. **Phase 2.1**: CppWrapperGenerator - 基本構造 (1-2 時間)
+2. **Phase 2.2**: CppWrapperGenerator - 関数生成 (2-3 時間)
+3. **Phase 2.3**: CMakeGenerator 実装 (1-2 時間)
+4. **Phase 2.4**: C バインディング署名修正 (2-3 時間)
+5. **Phase 2.5**: M5Unified API パターン検出 (2-3 時間)
+6. **Phase 2.6**: 統合テスト (1-2 時間)
+
+**合計見積時間**: 9-15 時間
+
+### 5. 完了確認
+
+すべてのフェーズが完了したら：
+
+```bash
+# 最終テスト実行
+ruby -I. m5unified_test.rb
+# 期待: 59 tests, ~154 assertions, 0 failures, 0 errors, 100% passed
+
+# 生成mrbgemの確認
+# playground/m5app/mrbgems/mrbgem-picoruby-m5unified/ と同等の
+# ディレクトリ構造が生成されていることを確認
+```
+
+### 6. 重要なポイント
+
+- **コード例はすべてコピー&ペースト可能**: m5unified.md に記載されたコードはそのまま使用できます
+- **TDD ワークフロー遵守**: Red → Green → RuboCop → Commit の順序を守ってください
+- **各フェーズは独立**: 前フェーズの完了後に次フェーズに進んでください
+- **テスト数が増加する**: 各フェーズで +3～4 のテストが追加されます（最終: 59 テスト）
+- **ドキュメント参照**: 各フェーズの詳細は "## Phase 2.X" セクションを参照してください
+
+### 7. トラブルシューティング
+
+**テストが失敗する場合**:
+1. コードをm5unified.mdのセクションと正確に比較
+2. インデント・空白に注意
+3. RuboCop 実行後に再度テスト実行
+
+**RuboCop が失敗する場合**:
+```bash
+bundle exec rubocop m5unified.rb m5unified_test.rb --autocorrect-all
+```
+で自動修正されます
+
+**コミット前に最終確認**:
+```bash
+git diff m5unified.rb m5unified_test.rb
+# 変更内容を確認
+git status
+# ステージされているファイルを確認
+```
+
+---
+
+**このドキュメント (`m5unified.md`) がすべての実装ガイドです。**
+**別のドキュメントを参照する必要はありません。**
 
