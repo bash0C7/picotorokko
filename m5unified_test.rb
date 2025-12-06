@@ -974,4 +974,35 @@ class M5UnifiedTest < Test::Unit::TestCase
       assert_match(/M5Unified/, readme_content)
     end
   end
+
+  # Test: MrbgemGenerator generates C++ wrapper file
+  def test_generates_cpp_wrapper_file
+    output_path = File.join(TEST_VENDOR_DIR, "test_cpp_wrapper")
+    generator = MrbgemGenerator.new(output_path)
+    generator.generate(@sample_cpp_data)
+
+    wrapper_path = File.join(output_path, "ports", "esp32", "m5unified_wrapper.cpp")
+    assert File.exist?(wrapper_path), "m5unified_wrapper.cpp should exist at ports/esp32/"
+
+    # Verify content
+    wrapper_content = File.read(wrapper_path)
+    assert_match(/#include\s+<M5Unified\.h>/, wrapper_content)
+    assert_match(/extern "C"/, wrapper_content)
+  end
+
+  # Test: MrbgemGenerator generates CMakeLists.txt
+  def test_generates_cmake_file
+    output_path = File.join(TEST_VENDOR_DIR, "test_cmake")
+    generator = MrbgemGenerator.new(output_path)
+    generator.generate(@sample_cpp_data)
+
+    cmake_path = File.join(output_path, "CMakeLists.txt")
+    assert File.exist?(cmake_path), "CMakeLists.txt should exist"
+
+    # Verify content
+    cmake_content = File.read(cmake_path)
+    assert_match(/idf_component_register/, cmake_content)
+    assert_match(/m5unified_wrapper\.cpp/, cmake_content)
+    assert_match(/m5unified\.c/, cmake_content)
+  end
 end

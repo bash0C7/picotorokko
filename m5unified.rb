@@ -224,6 +224,8 @@ class MrbgemGenerator
     render_c_bindings(cpp_data)
     render_ruby_lib(cpp_data)
     render_readme(cpp_data)
+    render_cpp_wrapper(cpp_data)
+    render_cmake
     true
   end
 
@@ -401,6 +403,21 @@ class MrbgemGenerator
     content += "This gem is built as part of the PicoRuby project.\n\n"
     content += "## License\n\nMIT\n"
     File.write(File.join(@output_path, "README.md"), content)
+  end
+
+  # Generate C++ wrapper file for extern "C" layer
+  def render_cpp_wrapper(cpp_data)
+    generator = CppWrapperGenerator.new(cpp_data)
+    content = generator.generate
+    wrapper_path = File.join(@output_path, "ports", "esp32", "m5unified_wrapper.cpp")
+    File.write(wrapper_path, content)
+  end
+
+  # Generate CMakeLists.txt for ESP-IDF component registration
+  def render_cmake
+    generator = CMakeGenerator.new
+    content = generator.generate
+    File.write(File.join(@output_path, "CMakeLists.txt"), content)
   end
 end
 
