@@ -917,10 +917,10 @@ class M5UnifiedTest < Test::Unit::TestCase
       assert_match(/static void mrbc_m5unified_clear\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
       assert_match(/static void mrbc_m5unified_print\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
 
-      # Verify extern declarations exist for wrapper functions
-      assert_match(/extern void m5unified_begin\(void\)/, content)
-      assert_match(/extern void m5unified_clear\(void\)/, content)
-      assert_match(/extern void m5unified_print\(const char\* text\)/, content)
+      # Verify extern declarations exist with class name prefix (m5display_)
+      assert_match(/extern void m5unified_m5display_begin\(void\)/, content)
+      assert_match(/extern void m5unified_m5display_clear\(void\)/, content)
+      assert_match(/extern void m5unified_m5display_print\(const char\* text\)/, content)
 
       # Verify parameter extraction uses new patterns
       assert_match(/mrbc_string_cstr\(&v\[\d+\]\)/, content)
@@ -1033,5 +1033,21 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert_match(/mrbc_nil_value/, c_content)
     # For int return: should set integer value
     assert_match(/mrbc_integer_value/, c_content)
+  end
+
+  # Test: Extern declarations include class name in function names
+  def test_extern_declarations_include_class_name
+    output_path = File.join(TEST_VENDOR_DIR, "test_extern_namespace")
+    generator = MrbgemGenerator.new(output_path)
+    generator.generate(@sample_cpp_data)
+
+    c_content = File.read(File.join(output_path, "src", "m5unified.c"))
+
+    # M5Display class methods should have m5unified_m5display_ prefix
+    assert_match(/extern.*m5unified_m5display_begin/, c_content)
+    assert_match(/extern.*m5unified_m5display_drawPixel/, c_content)
+
+    # M5Canvas class methods should have m5unified_m5canvas_ prefix
+    assert_match(/extern.*m5unified_m5canvas_clear/, c_content)
   end
 end

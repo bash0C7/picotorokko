@@ -274,7 +274,7 @@ class MrbgemGenerator
       klass[:methods].each do |method|
         # Map C++ return type directly to C type (not mruby type)
         return_type = map_return_type_to_c(method[:return_type])
-        func_name = "m5unified_#{method[:name]}"
+        func_name = flatten_method_name(klass[:name], method[:name])
         param_list = if method[:parameters].empty?
                        "void"
                      else
