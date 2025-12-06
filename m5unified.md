@@ -244,39 +244,85 @@ gem "rubocop"
 
 ## Remaining Work
 
-### Phase 4: libclang C++ Parser導入
+### Phase 4: libclang C++ Parser導入（推奨戦略）
 
-**問題**: 現在の正規表現ベースCppParserは複雑なC++構文に非対応
-- 抽出クラス数: 2個のみ（必要: 10個以上）
-- インラインメソッド未対応: `bool isPressed() { return _press; }`
-- ネストした`{}`に非対応
-- 名前空間無視
+**現在の状況**: 正規表現ベースCppParserは5-10%の抽出率しか達成できない
 
-**解決策**: libclang + ffi-clang gem で置き換え
+**根本的な問題**:
+- P0-1（ネストされた括弧マッチング）: 正規表現では本質的に不可能
+- P0-2（インラインメソッド本体）: 複数行メソッド本体の正確な終了判定が困難
+- P0-3（const修飾子）: メソッド戻り値と修飾子の複雑な解析が必要
+- P0-4（名前空間修飾型）: std::, m5gfx:: 等の全namespace型への対応が手動化
 
-#### 実装戦略
+**これら全てに対する統一解決策**: libclang (LLVM公式C++パーサー)
 
-**技術選定**: libclang (LLVM公式C++パーサー)
-- Apple clang 17.0.0既存（brew不要）
-- ffi-clang gem経由でRubyから利用
-- C++17完全対応（コンパイラグレード）
+#### libclangによる完全解決
 
-**予定される変更**:
-1. Gemfile に `gem 'ffi-clang', '~> 0.10.0'` 追加
-2. m5unified.rb の CppParser クラス置き換え (lines 90-161 → 約60行)
-3. libclang AST トラバース実装
-4. テスト追加 (test/unit/libclang_parser_test.rb)
+**libclang** = LLVM/Clang C++コンパイラの公式C APIライブラリ
 
-**成功基準**:
-- [ ] M5Unified headersから10個以上のクラス抽出
-- [ ] インラインメソッド対応
-- [ ] 名前空間スコープ保持
-- [ ] コンストラクタ/デストラクタ適切処理
-- [ ] 有効なC/C++コード生成
+**何が解決するのか**:
+- ✅ P0-1: libclang AST は自動的にネストされた括弧を正確に処理
+- ✅ P0-2: インラインメソッド本体も含むAST情報を直接取得
+- ✅ P0-3: const_qualified?() メソッドで const修飾子を自動判定
+- ✅ P0-4: canonical_type.spelling で正規化された型名を取得
+
+**実装戦略**:
+
+1. **Gemfile に追加**:
+   ```ruby
+   gem 'ffi-clang', '~> 0.10.0'
+   ```
+
+2. **m5unified.rb の構造変更**:
+   ```
+   CppParser (regex-based) 削除
+   ↓
+   LibClangParser (ffi-clang based) 新規追加
+   ```
+
+3. **基本実装** (4-6時間):
+   ```ruby
+   class LibClangParser
+     def initialize(header_path, include_paths = [])
+       @index = FFI::Clang::Index.new
+       args = ['-x', 'c++', '-std=c++17']
+       include_paths.each { |path| args << "-I#{path}" }
+       @tu = @index.parse_translation_unit(header_path, args)
+     end
+
+     def extract_classes
+       # AST走査でクラス全て抽出
+       # const, static, virtual, inline 全て自動判定
+       # member.const_qualified?, member.static? 等で直接取得
+     end
+   end
+   ```
+
+4. **成功基準**:
+   - ✅ M5Unified headersから29個クラス全て抽出
+   - ✅ インラインメソッド100%対応
+   - ✅ const修飾子100%判定
+   - ✅ 名前空間スコープ完全保持
+   - ✅ static, virtual, abstract全対応
+   - ✅ 有効なC/C++コード生成
+
+**テスト追加**:
+```ruby
+# test/unit/libclang_parser_test.rb
+test "extract Button_Class all 20 methods with full metadata"
+test "extract IMU_Class all methods with const qualifiers"
+test "extract all 29 classes from M5Unified"
+test "preserve namespace information correctly"
+test "handle inline methods correctly"
+test "detect static methods"
+test "detect virtual methods"
+test "extract default parameter values"
+```
 
 **参考資料**:
 - [ffi-clang GitHub](https://github.com/ioquatix/ffi-clang)
 - [libclang Documentation](https://clang.llvm.org/doxygen/group__CINDEX.html)
+- [完全な実装例は .claude/plans/melodic-knitting-leaf.md を参照]
 
 ---
 
