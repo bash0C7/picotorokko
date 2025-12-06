@@ -310,20 +310,37 @@ class MrbgemGenerator
   end
 
   # Generate a single method wrapper function
-  def generate_method_wrapper(_class_name, method)
+  def generate_method_wrapper(class_name, method)
     func_name = "mrbc_m5unified_#{method[:name]}"
+    wrapper_name = flatten_method_name(class_name, method[:name])
     content = "static void #{func_name}(mrbc_vm *vm, mrbc_value *v, int argc) {\n"
 
-    # Generate parameter extraction code
+    # Extract and convert parameters
+    param_names = []
     method[:parameters].each_with_index do |param, index|
-      conversion = generate_parameter_conversion(param, index + 1)
+      arg_index = index + 1
+      conversion = generate_parameter_conversion(param, arg_index)
       content += "  #{conversion}\n"
+      param_names << param[:name]
     end
 
-    # Generate return value marshalling
-    content += "  #{generate_return_marshalling(method[:return_type])}\n"
-    content += "}\n\n"
+    # Call wrapper function and capture result
+    param_list = param_names.join(", ")
+    return_type = method[:return_type]
+    c_return_type = map_return_type_to_c(return_type)
 
+    if return_type == "void"
+      content += "  #{wrapper_name}(#{param_list});\n"
+      content += "  SET_RETURN(mrbc_nil_value());\n"
+    elsif return_type == "bool"
+      content += "  int result = #{wrapper_name}(#{param_list});\n"
+      content += "  SET_RETURN(mrbc_bool_value(result));\n"
+    else
+      content += "  #{c_return_type} result = #{wrapper_name}(#{param_list});\n"
+      content += "  #{marshal_result_value(return_type)}\n"
+    end
+
+    content += "}\n\n"
     content
   end
 
@@ -362,6 +379,31 @@ class MrbgemGenerator
       "/* void return */"
     else
       "/* #{return_type} return */"
+    end
+  end
+
+  # Marshal captured result value to mruby type
+  def marshal_result_value(return_type)
+    mruby_type = TypeMapper.map_type(return_type)
+
+    case mruby_type
+    when "MRBC_TT_INTEGER"
+      "SET_RETURN(mrbc_integer_value(result));"
+    when "MRBC_TT_FLOAT"
+      "SET_RETURN(mrbc_float_value(result));"
+    when "MRBC_TT_STRING"
+      "SET_RETURN(mrbc_string_value(vm, result, strlen(result)));"
+    else
+      "/* #{return_type} marshalling not implemented */"
+    end
+  end
+
+  # Flatten namespace hierarchy: M5.begin → m5unified_begin, M5.BtnA.wasPressed → m5unified_btna_wasPressed
+  def flatten_method_name(klass_name, method_name)
+    if klass_name == "M5"
+      "m5unified_#{method_name}"
+    else
+      "m5unified_#{klass_name.downcase}_#{method_name}"
     end
   end
 

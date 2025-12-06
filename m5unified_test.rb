@@ -490,8 +490,8 @@ class M5UnifiedTest < Test::Unit::TestCase
 
       # Should have return value marshalling using SET_RETURN pattern
       assert_match(/SET_RETURN/, content)
-      # Should have return void handling for void return type
-      assert_match(%r{/\*\s*void\s*return\s*\*/}, content)
+      # Should have return value handling for void return type (mrbc_nil_value)
+      assert_match(/mrbc_nil_value/, content)
     end
   end
 
@@ -1004,5 +1004,34 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert_match(/idf_component_register/, cmake_content)
     assert_match(/m5unified_wrapper\.cpp/, cmake_content)
     assert_match(/m5unified\.c/, cmake_content)
+  end
+
+  # Test: Wrapper functions are actually invoked in generated C bindings
+  def test_wrapper_functions_actually_invoked
+    output_path = File.join(TEST_VENDOR_DIR, "test_wrapper_invocation")
+    generator = MrbgemGenerator.new(output_path)
+    generator.generate(@sample_cpp_data)
+
+    c_content = File.read(File.join(output_path, "src", "m5unified.c"))
+
+    # Verify wrapper functions are called, not just hardcoded values
+    assert_match(/m5unified_m5display_begin/, c_content)
+    assert_match(/m5unified_m5display_drawPixel/, c_content)
+    assert_match(/int result = m5unified_m5display_drawPixel/, c_content)
+    assert_match(/mrbc_integer_value/, c_content)
+  end
+
+  # Test: Return values are properly marshalled based on type
+  def test_return_value_marshalling_varies_by_type
+    output_path = File.join(TEST_VENDOR_DIR, "test_marshalling")
+    generator = MrbgemGenerator.new(output_path)
+    generator.generate(@sample_cpp_data)
+
+    c_content = File.read(File.join(output_path, "src", "m5unified.c"))
+
+    # For void return: should set nil
+    assert_match(/mrbc_nil_value/, c_content)
+    # For int return: should set integer value
+    assert_match(/mrbc_integer_value/, c_content)
   end
 end
