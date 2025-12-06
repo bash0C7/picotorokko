@@ -437,10 +437,11 @@ class M5UnifiedTest < Test::Unit::TestCase
       c_file = File.join(output_path, "src", "m5unified.c")
       content = File.read(c_file)
 
-      assert_match(/static void mrbc_m5unified_begin/, content)
-      assert_match(/static void mrbc_m5unified_print/, content)
-      assert_match(/static void mrbc_m5unified_drawPixel/, content)
-      assert_match(/static void mrbc_m5unified_clear/, content)
+      # Check for new mrubyc signature: (mrbc_vm *vm, mrbc_value *v, int argc)
+      assert_match(/static void mrbc_m5unified_begin\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
+      assert_match(/static void mrbc_m5unified_print\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
+      assert_match(/static void mrbc_m5unified_drawPixel\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
+      assert_match(/static void mrbc_m5unified_clear\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
     end
   end
 
@@ -455,8 +456,8 @@ class M5UnifiedTest < Test::Unit::TestCase
       c_file = File.join(output_path, "src", "m5unified.c")
       content = File.read(c_file)
 
-      # Should have parameter extraction for methods with int params
-      assert_match(/GET_INT_ARG/, content)
+      # Should have parameter extraction using new mrubyc signature: v[n].value.i
+      assert_match(/v\[\d+\]\.value\.i/, content)
     end
   end
 
@@ -471,8 +472,8 @@ class M5UnifiedTest < Test::Unit::TestCase
       c_file = File.join(output_path, "src", "m5unified.c")
       content = File.read(c_file)
 
-      # Should have parameter extraction for string params
-      assert_match(/GET_STRING_ARG/, content)
+      # Should have parameter extraction using mrbc_string_cstr(&v[n]) pattern
+      assert_match(/mrbc_string_cstr\(&v\[\d+\]\)/, content)
     end
   end
 
@@ -487,8 +488,8 @@ class M5UnifiedTest < Test::Unit::TestCase
       c_file = File.join(output_path, "src", "m5unified.c")
       content = File.read(c_file)
 
-      # Should have return value marshalling for int return type
-      assert_match(/SET_RETURN_INTEGER/, content)
+      # Should have return value marshalling using SET_RETURN pattern
+      assert_match(/SET_RETURN/, content)
       # Should have return void handling for void return type
       assert_match(%r{/\*\s*void\s*return\s*\*/}, content)
     end
@@ -507,6 +508,9 @@ class M5UnifiedTest < Test::Unit::TestCase
 
       # Should have proper includes
       assert_match(/#include\s+<mrubyc\.h>/, content)
+
+      # Should have extern declarations for wrapper functions
+      assert_match(/extern (void|int|float) m5unified_/, content)
 
       # Should have mrbc_m5unified_gem_init function
       assert_match(/void mrbc_m5unified_gem_init\(mrbc_vm \*vm\)/, content)
@@ -838,5 +842,136 @@ class M5UnifiedTest < Test::Unit::TestCase
     assert_match(%r{src/m5unified\.c}, output)
     assert_match(/REQUIRES\s+m5unified/, output)
     assert_match(/target_link_libraries/, output)
+  end
+
+  # Phase 2.6: Integration Testing
+
+  # Test 47: Integration - Complete mrbgem generation with all three layers
+  def test_integration_complete_mrbgem_generation
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      # Check that main directory structure exists
+      assert Dir.exist?(output_path), "mrbgem directory should exist"
+      assert Dir.exist?(File.join(output_path, "src")), "src directory should exist"
+      assert Dir.exist?(File.join(output_path, "mrblib")), "mrblib directory should exist"
+    end
+  end
+
+  # Test 48: Integration - C++ wrapper generator with M5 API pattern
+  def test_integration_cpp_wrapper_with_m5_pattern
+    cpp_data = [
+      { name: "M5", methods: [
+        { name: "begin", return_type: "void", parameters: [] },
+        { name: "update", return_type: "void", parameters: [] }
+      ] },
+      { name: "BtnA", methods: [
+        { name: "wasPressed", return_type: "bool", parameters: [] }
+      ] }
+    ]
+
+    generator = CppWrapperGenerator.new(cpp_data)
+    output = generator.generate
+
+    # Check for extern "C" wrapper structure
+    assert_match(/extern "C" \{/, output)
+    assert_match(%r{\} // extern "C"}, output)
+
+    # Check for wrapper functions with correct names
+    assert_match(/m5unified_begin/, output)
+    assert_match(/m5unified_update/, output)
+    assert_match(/m5unified_btna_wasPressed/, output)
+
+    # Check for M5 API calls
+    assert_match(/M5\.begin/, output)
+    assert_match(/M5\.BtnA\.wasPressed/, output)
+  end
+
+  # Test 49: Integration - Verify new C binding signature is consistent across all methods
+  def test_integration_c_binding_signature_consistency
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      # Generate with multiple methods to verify signature consistency
+      cpp_data = [
+        { name: "M5Display", methods: [
+          { name: "begin", return_type: "void", parameters: [] },
+          { name: "clear", return_type: "void", parameters: [] },
+          { name: "print", return_type: "void", parameters: [
+            { type: "const char*", name: "text" }
+          ] }
+        ] }
+      ]
+
+      generator.generate(cpp_data)
+
+      c_file = File.join(output_path, "src", "m5unified.c")
+      content = File.read(c_file)
+
+      # Verify all method wrappers use consistent mrubyc signature
+      assert_match(/static void mrbc_m5unified_begin\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
+      assert_match(/static void mrbc_m5unified_clear\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
+      assert_match(/static void mrbc_m5unified_print\(mrbc_vm \*vm, mrbc_value \*v, int argc\)/, content)
+
+      # Verify extern declarations exist for wrapper functions
+      assert_match(/extern void m5unified_begin\(void\)/, content)
+      assert_match(/extern void m5unified_clear\(void\)/, content)
+      assert_match(/extern void m5unified_print\(const char\* text\)/, content)
+
+      # Verify parameter extraction uses new patterns
+      assert_match(/mrbc_string_cstr\(&v\[\d+\]\)/, content)
+    end
+  end
+
+  # Test 50: Integration - CMakeGenerator references all source files
+  def test_integration_cmake_includes_all_sources
+    generator = CMakeGenerator.new
+    output = generator.generate
+
+    # Verify both C++ wrapper and C binding sources are referenced
+    assert_match(%r{ports/esp32/m5unified_wrapper\.cpp}, output)
+    assert_match(%r{src/m5unified\.c}, output)
+
+    # Verify idf_component_register is properly formatted
+    assert_match(/idf_component_register\(\s+SRCS/m, output)
+    assert_match(/INCLUDE_DIRS/m, output)
+    assert_match(/REQUIRES\s+m5unified/m, output)
+
+    # Verify linking configuration
+    assert_match(/target_link_libraries\(\$\{COMPONENT_LIB\} PUBLIC/m, output)
+  end
+
+  # Test 51: Integration - Generated structure matches expected mrbgem layout
+  def test_integration_mrbgem_structure_completeness
+    Dir.mktmpdir do |tmpdir|
+      output_path = File.join(tmpdir, "mrbgem-picoruby-m5unified")
+      generator = MrbgemGenerator.new(output_path)
+
+      generator.generate(@sample_cpp_data)
+
+      # Verify all expected files exist
+      assert File.exist?(File.join(output_path, "mrbgem.rake")), "mrbgem.rake should exist"
+      assert File.exist?(File.join(output_path, "src", "m5unified.c")), "src/m5unified.c should exist"
+      assert File.exist?(File.join(output_path, "mrblib", "m5unified.rb")), "mrblib/m5unified.rb should exist"
+      assert File.exist?(File.join(output_path, "README.md")), "README.md should exist"
+
+      # Verify critical content in each file
+      c_content = File.read(File.join(output_path, "src", "m5unified.c"))
+      assert_match(/#include\s+<mrubyc\.h>/, c_content)
+      assert_match(/extern void m5unified_/, c_content)
+      assert_match(/mrbc_m5unified_gem_init/, c_content)
+
+      mrbgem_content = File.read(File.join(output_path, "mrbgem.rake"))
+      assert_match(/MRuby::Gem::Specification/, mrbgem_content)
+      assert_match(/picoruby-m5unified/, mrbgem_content)
+
+      readme_content = File.read(File.join(output_path, "README.md"))
+      assert_match(/picoruby-m5unified/, readme_content)
+      assert_match(/M5Unified/, readme_content)
+    end
   end
 end

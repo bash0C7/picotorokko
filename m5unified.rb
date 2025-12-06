@@ -260,13 +260,40 @@ class MrbgemGenerator
     File.write(File.join(@output_path, "src", "m5unified.c"), content)
   end
 
-  # Generate forward declarations for classes
+  # Generate forward declarations for classes and extern function declarations
   def generate_forward_declarations(cpp_data)
     content = "/* Forward declarations */\n"
     cpp_data.each do |klass|
       content += "static mrbc_class *c_#{klass[:name]};\n"
     end
+
+    content += "\n/* Extern declarations for wrapper functions */\n"
+    cpp_data.each do |klass|
+      klass[:methods].each do |method|
+        # Map C++ return type directly to C type (not mruby type)
+        return_type = map_return_type_to_c(method[:return_type])
+        func_name = "m5unified_#{method[:name]}"
+        param_list = if method[:parameters].empty?
+                       "void"
+                     else
+                       method[:parameters].map do |p|
+                         "#{p[:type]} #{p[:name]}"
+                       end.join(", ")
+                     end
+        content += "extern #{return_type} #{func_name}(#{param_list});\n"
+      end
+    end
+
     "#{content}\n"
+  end
+
+  # Map C++ return type to C return type for extern declarations
+  def map_return_type_to_c(cpp_type)
+    normalized = cpp_type.strip.gsub(/^const\s+/, "").gsub(/&$/, "")
+    return "void" if normalized == "void"
+    return "int" if normalized == "bool"
+
+    normalized
   end
 
   # Generate C function wrappers for all methods
@@ -283,7 +310,7 @@ class MrbgemGenerator
   # Generate a single method wrapper function
   def generate_method_wrapper(_class_name, method)
     func_name = "mrbc_m5unified_#{method[:name]}"
-    content = "static void #{func_name}(mrbc_vm *vm, mrbc_value *regs, int nregs) {\n"
+    content = "static void #{func_name}(mrbc_vm *vm, mrbc_value *v, int argc) {\n"
 
     # Generate parameter extraction code
     method[:parameters].each_with_index do |param, index|
@@ -306,15 +333,15 @@ class MrbgemGenerator
 
     case mruby_type
     when "MRBC_TT_INTEGER"
-      "int #{name} = GET_INT_ARG(#{arg_index});"
+      "int #{name} = v[#{arg_index}].value.i;"
     when "MRBC_TT_FLOAT"
-      "float #{name} = GET_FLOAT_ARG(#{arg_index});"
+      "float #{name} = (float)v[#{arg_index}].value.f;"
     when "MRBC_TT_STRING"
-      "const char *#{name} = GET_STRING_ARG(#{arg_index});"
+      "const char *#{name} = mrbc_string_cstr(&v[#{arg_index}]);"
     when "MRBC_TT_OBJECT"
-      "void *#{name} = GET_OBJECT_ARG(#{arg_index});"
+      "void *#{name} = mrbc_obj_get_ptr(&v[#{arg_index}]);"
     else
-      "/* #{type} #{name} = GET_ARG(#{arg_index}); */"
+      "/* #{type} #{name} - unsupported type conversion */"
     end
   end
 
@@ -324,11 +351,11 @@ class MrbgemGenerator
 
     case mruby_type
     when "MRBC_TT_INTEGER"
-      "SET_RETURN_INTEGER(vm, 0); /* result */"
+      "SET_RETURN(mrbc_integer_value(0)); /* result */"
     when "MRBC_TT_FLOAT"
-      "SET_RETURN_FLOAT(vm, 0.0); /* result */"
+      "SET_RETURN(mrbc_float_value(0.0)); /* result */"
     when "MRBC_TT_STRING"
-      "SET_RETURN_STRING(vm, \"\"); /* result */"
+      "SET_RETURN(mrbc_string_value(vm, \"\", 0)); /* result */"
     when "nil"
       "/* void return */"
     else
