@@ -207,6 +207,52 @@ class TypeMapper
   end
 end
 
+# API pattern detector for M5Unified-specific patterns
+class ApiPatternDetector
+  def initialize(cpp_data)
+    @cpp_data = cpp_data
+  end
+
+  # Detect all M5Unified-specific API patterns
+  def detect_patterns
+    {
+      button_classes: detect_button_classes,
+      singleton_mapping: generate_singleton_mapping,
+      display_classes: detect_display_classes
+    }
+  end
+
+  # Detect Button class (maps to BtnA, BtnB, BtnC singletons)
+  def detect_button_classes
+    @cpp_data.select { |klass| klass[:name] == "Button" }.map { |k| k[:name] }
+  end
+
+  # Detect Display class (maps to M5.Display singleton accessor)
+  def detect_display_classes
+    @cpp_data.select { |klass| klass[:name] == "Display" }.map { |k| k[:name] }
+  end
+
+  # Generate singleton mapping for Button class
+  def generate_singleton_mapping
+    {
+      "Button" => %w[BtnA BtnB BtnC]
+    }
+  end
+
+  # Check if method is a boolean predicate (return_type == "bool")
+  def is_predicate_method?(method)
+    method[:return_type] == "bool"
+  end
+
+  # Convert method name to Ruby idiom (add ? suffix for predicates)
+  def rubify_method_name(method)
+    name = method[:name]
+    return "#{name}?" if is_predicate_method?(method)
+
+    name
+  end
+end
+
 # mrbgem directory structure and template file generator
 class MrbgemGenerator
   def initialize(output_path)

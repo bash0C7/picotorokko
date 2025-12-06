@@ -1081,4 +1081,65 @@ class M5UnifiedTest < Test::Unit::TestCase
     # Should NOT use old 5-parameter form with 0, 0, 0
     assert_no_match(/mrbc_define_class\(.*0, 0, 0\)/, c_content)
   end
+
+  # Phase D Tests: API Pattern Detection
+
+  # Test: ApiPatternDetector detects Button API pattern
+  def test_api_pattern_detector_detect_button_classes
+    cpp_data = [
+      { name: "Button", methods: [{ name: "wasPressed", return_type: "bool", parameters: [] }] },
+      { name: "Display", methods: [{ name: "drawPixel", return_type: "void", parameters: [] }] }
+    ]
+
+    detector = ApiPatternDetector.new(cpp_data)
+    patterns = detector.detect_patterns
+
+    assert_equal ["Button"], patterns[:button_classes]
+  end
+
+  # Test: ApiPatternDetector generates singleton mapping
+  def test_api_pattern_detector_singleton_mapping
+    cpp_data = [
+      { name: "Button", methods: [] }
+    ]
+
+    detector = ApiPatternDetector.new(cpp_data)
+    patterns = detector.detect_patterns
+
+    assert_equal %w[BtnA BtnB BtnC], patterns[:singleton_mapping]["Button"]
+  end
+
+  # Test: ApiPatternDetector detects predicate methods
+  def test_api_pattern_detector_is_predicate_method
+    detector = ApiPatternDetector.new([])
+
+    assert detector.is_predicate_method?({ name: "wasPressed", return_type: "bool", parameters: [] })
+    assert detector.is_predicate_method?({ name: "isPressed", return_type: "bool", parameters: [] })
+    refute detector.is_predicate_method?({ name: "begin", return_type: "void", parameters: [] })
+    refute detector.is_predicate_method?({ name: "draw", return_type: "int", parameters: [] })
+  end
+
+  # Test: ApiPatternDetector adds Ruby predicate suffix to boolean methods
+  def test_api_pattern_detector_rubify_method_name
+    detector = ApiPatternDetector.new([])
+
+    assert_equal "wasPressed?", detector.rubify_method_name({ name: "wasPressed", return_type: "bool", parameters: [] })
+    assert_equal "isActive?", detector.rubify_method_name({ name: "isActive", return_type: "bool", parameters: [] })
+    assert_equal "begin", detector.rubify_method_name({ name: "begin", return_type: "void", parameters: [] })
+    assert_equal "draw", detector.rubify_method_name({ name: "draw", return_type: "int", parameters: [] })
+  end
+
+  # Test: ApiPatternDetector detects Display classes
+  def test_api_pattern_detector_detect_display_classes
+    cpp_data = [
+      { name: "Button", methods: [] },
+      { name: "Display", methods: [] },
+      { name: "M5Display", methods: [] }
+    ]
+
+    detector = ApiPatternDetector.new(cpp_data)
+    patterns = detector.detect_patterns
+
+    assert patterns[:display_classes].include?("Display")
+  end
 end
