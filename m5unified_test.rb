@@ -1142,4 +1142,129 @@ class M5UnifiedTest < Test::Unit::TestCase
 
     assert patterns[:display_classes].include?("Display")
   end
+
+  # Test 53: CppParser extracts simple enum
+  def test_cpp_parser_extracts_simple_enum
+    cpp_code = %q{
+      enum imu_t {
+        imu_none,
+        imu_unknown,
+        imu_sh200q,
+        imu_mpu6050
+      };
+    }
+
+    parser = CppParser.new(cpp_code)
+    enums = parser.extract_enums
+
+    assert_instance_of Array, enums
+    enum_imu = enums.find { |e| e[:name] == "imu_t" }
+    assert enum_imu, "Should find imu_t enum"
+    assert_instance_of Array, enum_imu[:values]
+    assert enum_imu[:values].include?("imu_none")
+    assert enum_imu[:values].include?("imu_mpu6050")
+  end
+
+  # Test 54: CppParser extracts enum with backing type
+  def test_cpp_parser_extracts_enum_with_backing_type
+    cpp_code = %q{
+      enum button_state_t : uint8_t {
+        state_nochange = 0,
+        state_clicked = 1,
+        state_hold = 2,
+        state_decide_click_count = 3
+      };
+    }
+
+    parser = CppParser.new(cpp_code)
+    enums = parser.extract_enums
+
+    enum_btn = enums.find { |e| e[:name] == "button_state_t" }
+    assert enum_btn, "Should find button_state_t enum"
+    assert_equal "uint8_t", enum_btn[:backing_type]
+    assert_equal 4, enum_btn[:values].length
+  end
+
+  # Test 55: CppParser extracts multiple enums from file
+  def test_cpp_parser_extracts_multiple_enums
+    cpp_code = %q{
+      enum axis_t { axis_x_pos, axis_x_neg, axis_y_pos };
+      enum sensor_mask_t { sensor_mask_none = 0, sensor_mask_accel = 1 };
+      enum pmic_t { pmic_unknown, pmic_axp192 };
+    }
+
+    parser = CppParser.new(cpp_code)
+    enums = parser.extract_enums
+
+    assert_equal 3, enums.length
+    names = enums.map { |e| e[:name] }
+    assert names.include?("axis_t")
+    assert names.include?("sensor_mask_t")
+    assert names.include?("pmic_t")
+  end
+
+  # Test 56: CppParser extracts enum class syntax
+  def test_cpp_parser_extracts_enum_class
+    cpp_code = %q{
+      enum class touch_state_t : uint8_t {
+        none = 0,
+        touch = 1,
+        touch_end = 2
+      };
+    }
+
+    parser = CppParser.new(cpp_code)
+    enums = parser.extract_enums
+
+    enum_touch = enums.find { |e| e[:name] == "touch_state_t" }
+    assert enum_touch, "Should find touch_state_t enum class"
+    assert_equal true, enum_touch[:is_class]
+    assert_equal "uint8_t", enum_touch[:backing_type]
+  end
+
+  # Test 57: CppParser handles nested enums in class
+  def test_cpp_parser_extracts_enums_from_class_definition
+    cpp_code = %q{
+      class Button_Class {
+      public:
+        enum button_state_t {
+          state_nochange = 0,
+          state_clicked = 1
+        };
+
+        bool wasClicked(void);
+      };
+    }
+
+    parser = CppParser.new(cpp_code)
+    enums = parser.extract_enums
+
+    enum_btn = enums.find { |e| e[:name] == "button_state_t" }
+    assert enum_btn, "Should find nested button_state_t enum"
+  end
+
+  # Test 58: MrbgemGenerator includes enums in generated C code
+  def test_mrbgem_generator_includes_enums_in_c_code
+    output_path = File.join(TEST_VENDOR_DIR, "test_enums")
+    cpp_data = [
+      {
+        name: "IMU_Class",
+        methods: [
+          { name: "begin", return_type: "bool", parameters: [] }
+        ],
+        enums: [
+          { name: "imu_t", values: %w[imu_none imu_mpu6050], backing_type: nil, is_class: false }
+        ]
+      }
+    ]
+
+    generator = MrbgemGenerator.new(output_path)
+    generator.generate(cpp_data)
+
+    c_file = File.join(output_path, "src", "m5unified.c")
+    c_content = File.read(c_file)
+
+    assert_match(/imu_t/, c_content)
+    assert_match(/imu_none/, c_content)
+  end
 end
