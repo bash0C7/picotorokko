@@ -661,13 +661,11 @@ if __FILE__ == $0
       else
         # Parse all headers and extract classes
         all_classes = []
-        detector = ApiPatternDetector.new
         headers.each do |header_file|
           content = reader.read_file(header_file)
           parser = CppParser.new(content)
           classes = parser.extract_classes
-          detected = detector.detect(classes)
-          all_classes.concat(detected)
+          all_classes.concat(classes)
         end
       end
 
