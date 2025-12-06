@@ -201,8 +201,6 @@ module Picotorokko
 
         # Extract branch name between "refs/heads/" and the tab character
         first_line.match(%r{ref: refs/heads/([^\t]+)})&.captures&.first
-      rescue StandardError
-        nil
       end
 
       # Clone repository to specified path and checkout commit
@@ -387,6 +385,7 @@ module Picotorokko
 
       # Detect Homebrew OpenSSL installation and return export commands
       # Returns export commands for LDFLAGS, CPPFLAGS, PKG_CONFIG_PATH if available
+      # Gracefully returns empty string if brew is not installed (optional tool)
       # @rbs () -> String
       def detect_openssl_flags
         openssl_path_output, = executor.execute("brew --prefix openssl@3")
@@ -399,6 +398,7 @@ module Picotorokko
           "export CPPFLAGS=-I#{openssl_path}/include && " \
           "export PKG_CONFIG_PATH=#{openssl_path}/lib/pkgconfig && "
       rescue StandardError
+        # Brew is not installed (optional tool) - continue without OpenSSL flags
         ""
       end
 

@@ -1,0 +1,80 @@
+# Release Firmware Workflow Template for PicoRuby Applications
+#
+# **TARGET AUDIENCE**: PicoRuby application developers
+#
+# This workflow automatically builds and releases firmware when you create
+# a new git tag (e.g., v1.0.0). Builds are uploaded as GitHub Release artifacts.
+#
+# **Users**: Push tags to trigger releases: `git tag v1.0.0 && git push origin v1.0.0`
+# **gem developers**: Do NOT modify this template without coordination.
+#
+# Prerequisites:
+# 1. Semantic versioning for tags (v1.0.0, v1.1.0, etc.)
+# 2. .ptrk_env directory with production environment configured
+# 3. ESP-IDF setup via espressif action
+
+name: Release Firmware
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for release (e.g., v1.0.0)'
+        required: true
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Install picotorokko gem
+        run: |
+          gem install picotorokko
+          ptrk --version
+
+      - name: Setup ESP-IDF environment
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.1
+          target: esp32
+
+      - name: Build firmware
+        run: |
+          ptrk env set production
+          ptrk device build
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp .ptrk_build/production/R2P2-ESP32/build/bootloader/bootloader.bin release-artifacts/ 2>/dev/null || true
+          cp .ptrk_build/production/R2P2-ESP32/build/partition_table/partition-table.bin release-artifacts/ 2>/dev/null || true
+          cp .ptrk_build/production/R2P2-ESP32/build/*.bin release-artifacts/ 2>/dev/null || true
+          cp .ptrk_build/production/R2P2-ESP32/build/*.elf release-artifacts/ 2>/dev/null || true
+          ls -la release-artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-artifacts/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post release notification
+        run: |
+          echo "✅ Release ${{ github.ref_name }} published successfully!"
+          echo "Download firmware from: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"

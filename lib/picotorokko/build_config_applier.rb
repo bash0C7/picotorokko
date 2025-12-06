@@ -151,8 +151,6 @@ module Picotorokko
       when Prism::ConstantPathNode, Prism::ConstantReadNode
         receiver.slice
       end
-    rescue StandardError
-      nil
     end
   end
 end

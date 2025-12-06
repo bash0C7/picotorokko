@@ -164,7 +164,7 @@ Supported gem sources:
 - `path: "./local"` — Local path
 - `git: "https://..."` — Custom Git URL
 
-See [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md) for complete documentation.
+See [user-guide/MRBGEMS_GUIDE.md](user-guide/MRBGEMS_GUIDE.md) for complete documentation.
 
 ### Requirements
 
@@ -188,11 +188,11 @@ Each environment definition includes:
 
 ### Documentation
 
-For detailed specifications, see [docs/SPECIFICATION.md](docs/SPECIFICATION.md).
+For detailed specifications, see [user-guide/SPECIFICATION.md](user-guide/SPECIFICATION.md).
 
 ### CI/CD Integration
 
-For PicoRuby application developers using GitHub Actions for automated builds, see [docs/CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md).
+For PicoRuby application developers using GitHub Actions for automated builds, see [user-guide/CI_CD_GUIDE.md](user-guide/CI_CD_GUIDE.md).
 
 For picotorokko gem developers releasing to RubyGems, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -238,21 +238,21 @@ gem install picotorokko
 #### API Documentation
 
 - [**RubyDoc.info**](https://rubydoc.info/gems/picotorokko/) - Generated from RBS type definitions
-- [Type System & Annotations](docs/type-annotation-guide.md) - How we use rbs-inline annotations and Steep type checking
+- [Type System & Annotations](developer-guide/type-annotation-guide.md) - How we use rbs-inline annotations and Steep type checking
 
 #### Architecture & Design
 
-- [Executor Abstraction](docs/architecture/executor-abstraction-design.md) - Dependency injection pattern for system command testing with ProductionExecutor and MockExecutor
-- [Prism Rakefile Parser](docs/architecture/prism-rakefile-parser-design.md) - AST-based static analysis for dynamic Rake task extraction and whitelist validation
+- [Executor Abstraction](developer-guide/architecture/executor-abstraction-design.md) - Dependency injection pattern for system command testing with ProductionExecutor and MockExecutor
+- [Prism Rakefile Parser](developer-guide/architecture/prism-rakefile-parser-design.md) - AST-based static analysis for dynamic Rake task extraction and whitelist validation
 
-See [docs/architecture/](docs/architecture/) for complete architecture documentation index.
+See [developer-guide/architecture/](developer-guide/architecture/) for complete architecture documentation index.
 
 #### User & Developer Guides
 
-- [docs/SPECIFICATION.md](docs/SPECIFICATION.md) - Complete specification of ptrk commands and behavior
-- [docs/CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md) - GitHub Actions workflows for PicoRuby application users
-- [docs/MRBGEMS_GUIDE.md](docs/MRBGEMS_GUIDE.md) - Creating application-specific mrbgems
-- [docs/RUBOCOP_PICORUBY_GUIDE.md](docs/RUBOCOP_PICORUBY_GUIDE.md) - RuboCop setup for PicoRuby development
+- [user-guide/SPECIFICATION.md](user-guide/SPECIFICATION.md) - Complete specification of ptrk commands and behavior
+- [user-guide/CI_CD_GUIDE.md](user-guide/CI_CD_GUIDE.md) - GitHub Actions workflows for PicoRuby application users
+- [user-guide/MRBGEMS_GUIDE.md](user-guide/MRBGEMS_GUIDE.md) - Creating application-specific mrbgems
+- [developer-guide/RUBOCOP_PICORUBY_GUIDE.md](developer-guide/RUBOCOP_PICORUBY_GUIDE.md) - RuboCop setup for PicoRuby development
 
 ### Development
 

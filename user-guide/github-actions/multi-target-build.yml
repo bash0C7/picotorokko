@@ -1,0 +1,101 @@
+# Multi-Target Build Workflow Template for PicoRuby Applications
+#
+# **TARGET AUDIENCE**: PicoRuby application developers (advanced)
+#
+# This workflow builds firmware for multiple ESP32 chip targets in parallel.
+# Use this if your application supports multiple ESP32 variants.
+#
+# **Users**: Uncomment targets as needed for your project.
+# **gem developers**: Do NOT modify this template without coordination.
+#
+# Supported targets:
+# - esp32 (original, 240 MHz, 4 MB Flash)
+# - esp32s3 (dual core, 240 MHz, up to 16 MB Flash)
+# - esp32c3 (RISC-V, 160 MHz, 4 MB Flash)
+# - esp32s2 (240 MHz, 4 MB Flash)
+
+name: Multi-Target Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - esp32          # Original ESP32
+          # - esp32s3      # Uncomment to build for ESP32-S3
+          # - esp32c3      # Uncomment to build for ESP32-C3
+          # - esp32s2      # Uncomment to build for ESP32-S2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Install picotorokko gem
+        run: |
+          gem install picotorokko
+          ptrk --version
+
+      - name: Setup ESP-IDF for ${{ matrix.target }}
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.1
+          target: ${{ matrix.target }}
+
+      - name: Build firmware for ${{ matrix.target }}
+        run: |
+          # Optional: create separate environment per target
+          ENV_NAME="${{ matrix.target }}_production"
+          ptrk env set "$ENV_NAME"
+          ptrk device build
+
+      - name: Upload artifacts for ${{ matrix.target }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.target }}
+          path: .ptrk_build/*/R2P2-ESP32/build/**/*.bin
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Generate build summary
+        run: |
+          echo "# Build Summary for ${{ matrix.target }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Firmware built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Artifacts available as: \`firmware-${{ matrix.target }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # Combine all artifacts after matrix build
+  combine-artifacts:
+    needs: build
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: combined-artifacts
+
+      - name: List combined firmware
+        run: find combined-artifacts -type f -name "*.bin"
+
+      - name: Upload combined artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-firmware-builds
+          path: combined-artifacts/
+          retention-days: 30

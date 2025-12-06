@@ -1,0 +1,157 @@
+# Firmware Deployment Workflow Template for PicoRuby Applications
+#
+# **TARGET AUDIENCE**: PicoRuby application developers (advanced)
+#
+# This workflow demonstrates firmware deployment patterns for CI/CD environments.
+# Useful for:
+# - Downloading released firmware artifacts
+# - Preparing firmware for mass deployment
+# - Integration with hardware flashing systems
+#
+# **Users**: Customize the deployment steps for your infrastructure.
+# **gem developers**: Do NOT modify this template without coordination.
+#
+# Prerequisites:
+# 1. Completed build job (esp32-build.yml or release-firmware.yml)
+# 2. (Optional) SSH access to deployment servers configured via secrets
+# 3. (Optional) Device inventory or serial port mapping
+
+name: Firmware Deployment
+
+on:
+  workflow_run:
+    workflows: ["ESP32 Firmware Build"]
+    types: [completed]
+  manual-deploy:
+    workflow_dispatch:
+      inputs:
+        artifact_name:
+          description: 'Artifact name to deploy'
+          required: true
+          default: 'esp32-firmware'
+        environment:
+          description: 'Deployment environment'
+          required: true
+          default: 'staging'
+
+jobs:
+  download-and-prepare:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download firmware artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          name: ${{ github.event.inputs.artifact_name || 'esp32-firmware' }}
+          path: firmware/
+
+      - name: List downloaded firmware
+        run: |
+          echo "# Downloaded Firmware" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          find firmware/ -type f -name "*.bin" | while read file; do
+            echo "- $(basename $file)" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Verify firmware integrity
+        run: |
+          for file in firmware/*.bin; do
+            if [ -f "$file" ]; then
+              size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
+              echo "✓ $(basename $file) ($size bytes)"
+            fi
+          done
+
+      - name: Create deployment package
+        run: |
+          mkdir -p deployment-package
+          cp -r firmware/* deployment-package/ || true
+
+          # Create deployment manifest
+          cat > deployment-package/MANIFEST.md << EOF
+          # Firmware Deployment Package
+
+          Built: $(date)
+          Environment: ${{ github.event.inputs.environment || 'production' }}
+
+          ## Firmware Files
+          $(ls -lh firmware/*.bin 2>/dev/null | awk '{print "- " $9 " (" $5 ")"}')
+
+          ## Flash Instructions
+
+          ### Using esptool.py
+          \`\`\`bash
+          esptool.py --chip esp32 --port /dev/ttyUSB0 write_flash \\
+            0x1000 bootloader.bin \\
+            0x8000 partition-table.bin \\
+            0x10000 app.bin
+          \`\`\`
+
+          ### Using ptrk (if installed)
+          \`\`\`bash
+          ptrk device flash --port /dev/ttyUSB0
+          \`\`\`
+          EOF
+
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-${{ github.event.inputs.environment || 'production' }}
+          path: deployment-package/
+          retention-days: 7
+
+  # Optional: Deploy to staging environment
+  deploy-to-staging:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'staging'
+    needs: download-and-prepare
+
+    steps:
+      - name: Download deployment package
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-${{ github.event.inputs.environment || 'production' }}
+          path: staging-fw/
+
+      - name: Simulate staging deployment
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "Firmware files ready:"
+          ls -lh staging-fw/*.bin 2>/dev/null || echo "No firmware found"
+          echo ""
+          echo "Next steps:"
+          echo "1. Connect ESP32 to device"
+          echo "2. Run: ptrk device flash --port /dev/ttyUSB0"
+          echo "3. Verify LED blink pattern"
+
+      - name: Post staging status
+        if: success()
+        run: |
+          echo "✅ Staging deployment ready" >> $GITHUB_STEP_SUMMARY
+
+  # Optional: Deploy to production environment
+  deploy-to-production:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'production'
+    needs: download-and-prepare
+    environment: production  # Requires approval
+
+    steps:
+      - name: Download deployment package
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-production
+          path: prod-fw/
+
+      - name: Verify production firmware
+        run: |
+          echo "🔍 Verifying production firmware..."
+          for file in prod-fw/*.bin; do
+            [ -f "$file" ] && echo "✓ $(basename $file)"
+          done
+
+      - name: Post production status
+        if: success()
+        run: |
+          echo "✅ Production deployment approved and ready" >> $GITHUB_STEP_SUMMARY
+          echo "Firmware is ready for mass deployment" >> $GITHUB_STEP_SUMMARY

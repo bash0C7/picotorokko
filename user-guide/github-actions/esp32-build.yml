@@ -3,17 +3,17 @@
 # **TARGET AUDIENCE**: PicoRuby application developers
 #
 # This workflow is a TEMPLATE for PicoRuby application developers to automate
-# ESP32 firmware builds using the pra gem.
+# ESP32 firmware builds using the ptrk gem.
 #
 # **Users**: Customize environment names, ESP-IDF versions, and build targets for your project.
 # **gem developers**: Do NOT modify this template without coordination.
 #
-# This workflow builds ESP32 firmware for PicoRuby applications using the pra tool.
+# This workflow builds ESP32 firmware for PicoRuby applications using the ptrk tool.
 # Copy this file to .github/workflows/esp32-build.yml in your project.
 #
 # Prerequisites:
-# 1. Install pra gem in your project (bundle add pra)
-# 2. Create .picoruby-env.yml with your R2P2-ESP32 configuration
+# 1. Install ptrk gem in your project (bundle add picotorokko)
+# 2. Create .ptrk_env/.picoruby-env.yml with your R2P2-ESP32 configuration
 # 3. (Optional) Configure CODECOV_TOKEN for coverage reports
 
 name: ESP32 Firmware Build
@@ -45,7 +45,7 @@ jobs:
       - name: Install picotorokko gem
         run: |
           gem install picotorokko
-          pra --version
+          ptrk --version
 
       - name: Setup ESP-IDF environment
         uses: espressif/esp-idf-ci-action@v1
@@ -53,42 +53,30 @@ jobs:
           esp_idf_version: v5.1
           target: esp32
 
-      - name: Fetch PicoRuby environment from cache
+      - name: Prepare build environment
         run: |
-          # Fetch the environment specified in .picoruby-env.yml
-          # Example: pra cache fetch stable-2024-11
-          # Adjust the environment name based on your configuration
-          if [ -f .picoruby-env.yml ]; then
-            ENV_NAME=$(grep -oP '(?<=^  )[^:]+' .picoruby-env.yml | head -1)
-            echo "Fetching environment: $ENV_NAME"
-            pra cache fetch "$ENV_NAME"
-          else
-            echo "Error: .picoruby-env.yml not found"
-            exit 1
-          fi
-
-      - name: Setup build environment
-        run: |
-          pra build setup
+          # Set up PicoRuby environment (creates .ptrk_env directory)
+          ptrk env set production
 
       - name: Build firmware
         run: |
-          pra device build
+          ptrk device build
 
       - name: List build artifacts
         run: |
-          find build/current/R2P2-ESP32/build -name "*.bin" -o -name "*.elf"
+          find .ptrk_build/production/R2P2-ESP32/build -name "*.bin" -o -name "*.elf" 2>/dev/null || echo "Build artifacts may not be available"
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
           name: esp32-firmware
           path: |
-            build/current/R2P2-ESP32/build/bootloader/bootloader.bin
-            build/current/R2P2-ESP32/build/partition_table/partition-table.bin
-            build/current/R2P2-ESP32/build/*.bin
-            build/current/R2P2-ESP32/build/*.elf
+            .ptrk_build/production/R2P2-ESP32/build/bootloader/bootloader.bin
+            .ptrk_build/production/R2P2-ESP32/build/partition_table/partition-table.bin
+            .ptrk_build/production/R2P2-ESP32/build/*.bin
+            .ptrk_build/production/R2P2-ESP32/build/*.elf
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Generate flash instructions
         if: success()
@@ -97,7 +85,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Download the artifacts and flash to your ESP32 using:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "pra device flash --port /dev/ttyUSB0" >> $GITHUB_STEP_SUMMARY
+          echo "ptrk device flash --port /dev/ttyUSB0" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Or use esptool.py directly:" >> $GITHUB_STEP_SUMMARY
@@ -109,9 +97,10 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   # Optional: Run Ruby tests if you have PicoRuby unit tests
+  # Enable this job by changing 'if: false' to 'if: true'
   test:
     runs-on: ubuntu-latest
-    if: false  # Enable this job by changing to 'true'
+    if: false
 
     steps:
       - uses: actions/checkout@v4
