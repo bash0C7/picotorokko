@@ -651,8 +651,29 @@ if __FILE__ == $0
     end
 
     begin
-      generator = MrbgemGenerator.new(repo_path, output_path)
-      generator.generate
+      # Read header files from repository
+      reader = HeaderFileReader.new(repo_path)
+      headers = reader.list_headers
+
+      if headers.empty?
+        puts "Warning: No header files found in #{repo_path}"
+        all_classes = []
+      else
+        # Parse all headers and extract classes
+        all_classes = []
+        detector = ApiPatternDetector.new
+        headers.each do |header_file|
+          content = reader.read_file(header_file)
+          parser = CppParser.new(content)
+          classes = parser.extract_classes
+          detected = detector.detect(classes)
+          all_classes.concat(detected)
+        end
+      end
+
+      # Generate mrbgem files
+      generator = MrbgemGenerator.new(output_path)
+      generator.generate(all_classes)
       puts "mrbgem generated at #{output_path}"
     rescue StandardError => e
       puts "Error: #{e.message}"
