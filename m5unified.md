@@ -2,8 +2,6 @@
 
 M5UnifiedのC++ライブラリをPicoRubyから使用可能なmrbgemに自動変換するスクリプト。
 
-**現在の状態**: ✅ 主要機能実装完了（63 tests, 186 assertions, 100% passed）
-
 ---
 
 ## Architecture
@@ -51,7 +49,7 @@ m5unified.rb (single file)
 
 ## Implemented Features
 
-### ✅ Repository Management
+### Repository Management
 M5Unified リポジトリの管理（clone, update, info取得）
 
 **実装内容**:
@@ -60,11 +58,9 @@ M5Unified リポジトリの管理（clone, update, info取得）
 - コミットハッシュとブランチ名を取得
 - Open3でシェルコマンド実行
 
-**テスト**: 4 tests covering clone, update, path, info
-
 ---
 
-### ✅ Header File Reading & C++ Parsing
+### Header File Reading & C++ Parsing
 C++ヘッダーファイルの読み込みと軽量パース
 
 **実装内容**:
@@ -73,11 +69,9 @@ C++ヘッダーファイルの読み込みと軽量パース
 - クラス・メソッド・パラメータ抽出
 - namespace対応（完全なASTパースではなく実用的な正規表現パース）
 
-**テスト**: 6 tests covering enumeration, reading, parsing
-
 ---
 
-### ✅ Type Mapping
+### Type Mapping
 C++ 型から mruby 型への自動変換
 
 **実装内容**:
@@ -87,36 +81,47 @@ C++ 型から mruby 型への自動変換
 - const修飾子とリファレンス型の自動正規化
 - ポインタ型判定
 
-**テスト**: 4 tests covering integer, float, string/bool, void/pointer types
+**型マッピングテーブル**:
+```
+C++型                  → mruby型
+int, int8_t, ...
+uint8_t, ..., size_t   → MRBC_TT_INTEGER
+float, double          → MRBC_TT_FLOAT
+const char*, char*     → MRBC_TT_STRING
+bool                   → MRBC_TT_TRUE
+void                   → nil
+Type*（ポインタ）      → MRBC_TT_OBJECT
+Type&（参照型）        → ポインタとして扱う
+```
 
 ---
 
-### ✅ mrbgem Directory Structure Generation
+### mrbgem Directory Structure Generation
 mrbgem用のディレクトリ構造とテンプレート生成
 
 **実装内容**:
 - `MrbgemGenerator` クラス
 - ディレクトリ構造自動作成
-  ```
-  mrbgem-picoruby-m5unified/
-  ├── mrbgem.rake
-  ├── mrblib/
-  │   └── m5unified.rb
-  ├── src/
-  │   └── m5unified.c
-  ├── ports/
-  │   └── esp32/
-  │       └── m5unified_wrapper.cpp
-  ├── CMakeLists.txt
-  └── README.md
-  ```
 - 各テンプレートファイルの自動生成
 
-**テスト**: 11 tests covering structure, mrbgem.rake, C bindings, Ruby lib, README
+**生成ディレクトリ構造**:
+```
+mrbgem-picoruby-m5unified/
+├── mrbgem.rake
+├── mrblib/
+│   └── m5unified.rb
+├── src/
+│   └── m5unified.c
+├── ports/
+│   └── esp32/
+│       └── m5unified_wrapper.cpp
+├── CMakeLists.txt
+└── README.md
+```
 
 ---
 
-### ✅ C Binding Code Generation
+### C Binding Code Generation
 mrubyc用のCバインディングコード自動生成
 
 **実装内容**:
@@ -125,8 +130,6 @@ mrubyc用のCバインディングコード自動生成
 - Parameter type conversion（型別にGET_*_ARG マクロ生成）
 - Return value marshalling（型別にSET_RETURN_* マクロ生成）
 - gem_init関数生成（mrbc_define_class/method呼び出し）
-
-**テスト**: 7 tests covering class definitions, method definitions, wrappers, parameter/return conversion
 
 **生成コード例**:
 ```c
@@ -145,9 +148,21 @@ void mrbc_m5unified_gem_init(mrbc_vm *vm) {
 }
 ```
 
+**型別パラメータ変換**:
+- `MRBC_TT_INTEGER` → `GET_INT_ARG(n)`
+- `MRBC_TT_FLOAT` → `GET_FLOAT_ARG(n)`
+- `MRBC_TT_STRING` → `GET_STRING_ARG(n)`
+- `MRBC_TT_OBJECT` → `GET_OBJECT_ARG(n)`
+
+**型別戻り値マーシャリング**:
+- `MRBC_TT_INTEGER` → `SET_RETURN_INTEGER(vm, 0);`
+- `MRBC_TT_FLOAT` → `SET_RETURN_FLOAT(vm, 0.0);`
+- `MRBC_TT_STRING` → `SET_RETURN_STRING(vm, "");`
+- `nil` → `/* void return */`
+
 ---
 
-### ✅ C++ Wrapper & CMake Generation
+### C++ Wrapper & CMake Generation
 extern "C" ラッパー関数生成と ESP-IDF CMakeLists.txt 生成
 
 **実装内容**:
@@ -155,14 +170,12 @@ extern "C" ラッパー関数生成と ESP-IDF CMakeLists.txt 生成
   - extern "C" ラッパーファイル（m5unified_wrapper.cpp）生成
   - 名前空間フラット化（M5.BtnA.wasPressed → m5unified_btnA_wasPressed）
   - 戻り値型自動変換（bool → int）
-  - M5Unified API呼び出しの実際の実装
+  - M5Unified API呼び出しの実装
 
 - `CMakeGenerator` クラス
   - CMakeLists.txt 自動生成
   - idf_component_register() ブロック生成
   - ソースファイルと依存関係の設定
-
-**テスト**: 8 tests covering wrapper generation, function wrapping, CMake generation
 
 **生成ファイル例** (m5unified_wrapper.cpp):
 ```cpp
@@ -181,7 +194,7 @@ extern "C" {
 
 ---
 
-### ✅ M5Unified API Pattern Detection
+### M5Unified API Pattern Detection
 M5Unified固有のAPIパターン自動検出と最適化
 
 **実装内容**:
@@ -189,9 +202,6 @@ M5Unified固有のAPIパターン自動検出と最適化
 - Button → BtnA/BtnB/BtnC singleton マッピング
 - Ruby述語接尾辞の自動付与（wasPressed → wasPressed?）
 - Display class 検出と特別処理
-- **自動化度: 95%**（手動編集がほぼ不要）
-
-**テスト**: 8 tests covering button detection, predicate detection, display detection, pattern mapping
 
 **検出パターン例**:
 ```ruby
@@ -205,7 +215,7 @@ M5Unified固有のAPIパターン自動検出と最適化
 
 ---
 
-### ✅ End-to-End Integration Testing
+### End-to-End Integration
 実際のM5Unifiedリポジトリを使用した統合テスト
 
 **実装内容**:
@@ -214,133 +224,6 @@ M5Unified固有のAPIパターン自動検出と最適化
 - C++ パース・型マッピング
 - mrbgem生成・検証
 - 生成されたコード品質確認
-
-**テスト**: 15 tests covering repository operations, header enumeration, parsing, code generation, verification
-
----
-
-## Test Coverage
-
-✅ **63 tests, 186 assertions, 100% passed**
-
-テスト内訳:
-- Repository Management: 4 tests
-- Header File Reading & Parsing: 6 tests
-- Type Mapping: 4 tests
-- mrbgem Structure Generation: 11 tests
-- C Binding Code Generation: 7 tests
-- C++ Wrapper & CMake Generation: 8 tests
-- API Pattern Detection: 8 tests
-- End-to-End Integration: 15 tests
-
-**実行方法**:
-```bash
-ruby -I. m5unified_test.rb
-```
-
----
-
-## Code Quality
-
-### RuboCop Status
-✅ PASS - RuboCop violations fixed and style validated
-
-### Metrics
-- Lines of code: ~800 (core implementation)
-- Test coverage: 63 tests covering all major components
-- Cyclomatic complexity: Low to Medium (straightforward logic, some helper methods)
-
----
-
-## Implementation Summary
-
-### What Was Automated
-1. ✅ M5Unified repository管理の完全自動化
-2. ✅ C++ヘッダーのパースと型抽出の完全自動化
-3. ✅ mrbgemディレクトリ構造の完全自動化
-4. ✅ Cバインディングコード生成の完全自動化
-5. ✅ extern "C" ラッパー関数生成の完全自動化
-6. ✅ CMakeLists.txt生成の完全自動化
-7. ✅ M5Unified APIパターンの95%自動化
-
-### Before & After
-**Before** (Manual approach):
-- M5Unified.hを手動で開く
-- クラス・メソッド情報を手動で抽出
-- C++ラッパー関数を手動作成
-- mrubyc Cバインディングを手動実装
-- CMakeLists.txt を手動編集
-- **工数**: 数日間
-
-**After** (m5unified.rb):
-```bash
-ruby m5unified.rb clone https://github.com/m5stack/M5Unified.git
-ruby m5unified.rb generate /path/to/mrbgem-output
-# 完成！
-```
-- **工数**: 数秒間
-
----
-
-## Remaining Work
-
-### Phase 3: Integration Testing with Actual M5Unified (未実装)
-
-実装済みのm5unified.rbスクリプトを使用して、実際のM5Unifiedリポジトリでの E2E テストを実施。
-
-**タスク**:
-- [ ] 実際の M5Unified リポジトリをクローンして、生成されたmrbgemをコンパイル
-- [ ] ESP32実機でのコンパイル・動作確認
-- [ ] 生成されたコードが正確にM5Unifiedの全APIをカバーしていることを検証
-- [ ] エッジケース（特殊な型、複雑なパラメータ）への対応確認
-
-**期待される成果**:
-- m5unified.rbが実環境で動作することを確認
-- コード生成品質の最終検証
-- 本番環境での使用準備完了
-
----
-
-## Development Process
-
-### TDD Cycle Used
-各フェーズで以下のサイクルを実施：
-
-1. 🔴 **Red**: テストを書いて失敗させる
-2. 🟢 **Green**: 最小限のコードで通す
-3. 🔧 **RuboCop**: `bundle exec rubocop m5unified.rb m5unified_test.rb --autocorrect-all`
-4. ♻️ **Refactor**: コードをクリーンアップ
-5. 💾 **Commit**: git add & commit
-
-### Completed Implementation Phases
-
-**Phase 1**: Basic Code Generation Foundation (41 tests)
-- M5Unified Repository Management
-- C++ Header File Reading
-- C++ Parser Implementation
-- Type Mapping
-- mrbgem Directory Structure
-- C Binding Code Generation
-- End-to-End Integration Testing
-
-**Phase 2**: Three-Layer Automation (22 tests)
-- Phase 2.1-2.3: CppWrapperGenerator と CMakeGenerator
-- Phase 2.4: C Binding Signatures修正
-- Phase 2.5: M5Unified API Pattern Detection
-
-**合計**: 63 tests, 186 assertions, 100% passed
-
----
-
-## Recent Implementation Commits
-
-```
-4eb5f7c Phase 2.5 Fix 8: Implement ApiPatternDetector for M5 patterns
-baadb39 Phase 2.4 Fix 5-6: Correct gem init name and mrbc_define_class signature
-77b5d25 Phase 2.4 Fix 3: Fix namespace flattening in extern declarations
-2b525cd Phase 2.4 Fix 2: Invoke wrapper functions and marshal results
-4ed02a8 Phase 2.4 Fix 1: Generate C++ wrapper and CMake files
-```
 
 ---
 
@@ -359,26 +242,17 @@ gem "rubocop"
 
 ---
 
-## Quick Start
+## Remaining Work
 
-### 1. 現在の状態を確認
-```bash
-cd /Users/bash/src/picotorokko
-ruby -I. m5unified_test.rb
-# 期待: 63 tests, 186 assertions, 0 failures, 0 errors, 100% passed
-```
+### Phase 3: Integration Testing with Actual M5Unified
 
-### 2. スクリプトの実行方法
-```bash
-# M5Unifiedリポジトリをクローン
-ruby m5unified.rb clone https://github.com/m5stack/M5Unified.git
+実装済みのm5unified.rbスクリプトを使用して、実際のM5Unifiedリポジトリでの E2E テストを実施。
 
-# mrbgemを生成
-ruby m5unified.rb generate /path/to/output/mrbgem-picoruby-m5unified
-
-# 生成されたファイルを確認
-ls -la /path/to/output/mrbgem-picoruby-m5unified/
-```
+**タスク**:
+- 実際の M5Unified リポジトリをクローンして、生成されたmrbgemをコンパイル
+- ESP32実機でのコンパイル・動作確認
+- 生成されたコードが正確にM5Unifiedの全APIをカバーしていることを検証
+- エッジケース（特殊な型、複雑なパラメータ）への対応確認
 
 ---
 
@@ -388,27 +262,3 @@ ls -la /path/to/output/mrbgem-picoruby-m5unified/
 - [mrubyc API Reference](https://github.com/mrubyc/mrubyc)
 - [PicoRuby Documentation](https://github.com/picoruby/picoruby)
 - [Blog: PicoRubyでM5Unifiedを使う](https://blog.silentworlds.info/picorubyxiang-kenom5unified-m5gfx-mrbgemwozuo-ruhua/)
-
----
-
-## Implementation Status Tracker
-
-| コンポーネント | 状態 | テスト数 | 説明 |
-|-----------|------|--------|------|
-| Repository Management | ✅ | 4 | リポジトリのクローン・更新・情報取得 |
-| Header File Reading | ✅ | 2 | .hファイルの列挙・読込 |
-| C++ Parser | ✅ | 4 | 正規表現ベースのクラス・メソッド抽出 |
-| Type Mapping | ✅ | 4 | C++ ↔ mruby 型変換 |
-| mrbgem Structure | ✅ | 11 | ディレクトリ構造・テンプレート生成 |
-| C Binding Generation | ✅ | 7 | Cバインディングコード生成 |
-| C++ Wrapper Generation | ✅ | 4 | extern "C" ラッパー生成 |
-| CMake Generation | ✅ | 4 | CMakeLists.txt 生成 |
-| API Pattern Detection | ✅ | 8 | M5Unified APIパターン検出 |
-| Integration Testing | ✅ | 15 | 統合テスト |
-| **合計** | **✅ 完了** | **63** | 主要機能実装完了、Phase 3 待機中 |
-
----
-
-**最終更新**: 2025-12-06
-**ブランチ**: m5unifiled
-**テスト状態**: 63/63 passing (100%)
