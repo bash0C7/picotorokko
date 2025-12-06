@@ -512,8 +512,8 @@ class M5UnifiedTest < Test::Unit::TestCase
       # Should have extern declarations for wrapper functions
       assert_match(/extern (void|int|float) m5unified_/, content)
 
-      # Should have mrbc_m5unified_gem_init function
-      assert_match(/void mrbc_m5unified_gem_init\(mrbc_vm \*vm\)/, content)
+      # Should have mrbc_mrbgem_picoruby_m5unified_gem_init function
+      assert_match(/void mrbc_mrbgem_picoruby_m5unified_gem_init\(mrbc_vm \*vm\)/, content)
 
       # Should have closing braces
       assert_match(/^}$/, content)
@@ -963,7 +963,7 @@ class M5UnifiedTest < Test::Unit::TestCase
       c_content = File.read(File.join(output_path, "src", "m5unified.c"))
       assert_match(/#include\s+<mrubyc\.h>/, c_content)
       assert_match(/extern void m5unified_/, c_content)
-      assert_match(/mrbc_m5unified_gem_init/, c_content)
+      assert_match(/mrbc_mrbgem_picoruby_m5unified_gem_init/, c_content)
 
       mrbgem_content = File.read(File.join(output_path, "mrbgem.rake"))
       assert_match(/MRuby::Gem::Specification/, mrbgem_content)
@@ -1049,5 +1049,36 @@ class M5UnifiedTest < Test::Unit::TestCase
 
     # M5Canvas class methods should have m5unified_m5canvas_ prefix
     assert_match(/extern.*m5unified_m5canvas_clear/, c_content)
+  end
+
+  # Test: Gem init function has correct name
+  def test_gem_init_function_name_correct
+    output_path = File.join(TEST_VENDOR_DIR, "test_gem_init_name")
+    generator = MrbgemGenerator.new(output_path)
+    generator.generate(@sample_cpp_data)
+
+    c_content = File.read(File.join(output_path, "src", "m5unified.c"))
+
+    # Should use gem naming convention: mrbc_<gemname_with_underscores>_gem_init
+    assert_match(/void mrbc_mrbgem_picoruby_m5unified_gem_init/, c_content)
+
+    # Should NOT use the old naming convention
+    assert_no_match(/void mrbc_m5unified_gem_init\(/, c_content)
+  end
+
+  # Test: mrbc_define_class uses 3-parameter form
+  def test_mrbc_define_class_uses_3_param_form
+    output_path = File.join(TEST_VENDOR_DIR, "test_mrbc_define")
+    generator = MrbgemGenerator.new(output_path)
+    generator.generate(@sample_cpp_data)
+
+    c_content = File.read(File.join(output_path, "src", "m5unified.c"))
+
+    # Should use 3-parameter form with mrbc_class_object
+    assert_match(/mrbc_define_class\(vm, "M5Display", mrbc_class_object\)/, c_content)
+    assert_match(/mrbc_define_class\(vm, "M5Canvas", mrbc_class_object\)/, c_content)
+
+    # Should NOT use old 5-parameter form with 0, 0, 0
+    assert_no_match(/mrbc_define_class\(.*0, 0, 0\)/, c_content)
   end
 end

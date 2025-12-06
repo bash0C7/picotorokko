@@ -407,11 +407,11 @@ class MrbgemGenerator
     end
   end
 
-  # Generate mrbc_m5unified_gem_init function
+  # Generate mrbc_mrbgem_picoruby_m5unified_gem_init function
   def generate_gem_init(cpp_data)
-    content = "void mrbc_m5unified_gem_init(mrbc_vm *vm) {\n"
+    content = "void mrbc_mrbgem_picoruby_m5unified_gem_init(mrbc_vm *vm) {\n"
     cpp_data.each do |klass|
-      content += "  c_#{klass[:name]} = mrbc_define_class(vm, \"#{klass[:name]}\", 0, 0, 0);\n"
+      content += "  c_#{klass[:name]} = mrbc_define_class(vm, \"#{klass[:name]}\", mrbc_class_object);\n"
       klass[:methods].each do |method|
         method_func = "mrbc_m5unified_#{method[:name]}"
         content += "  mrbc_define_method(vm, c_#{klass[:name]}, \"#{method[:name]}\", #{method_func});\n"
