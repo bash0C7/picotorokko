@@ -111,7 +111,33 @@ class LibClangParserTest < Test::Unit::TestCase
     assert_equal true, virtual_method[:is_virtual]
   end
 
-  private
+  def test_extract_inline_method
+    create_header_with_inline_method
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    inline_method = klass[:methods].find { |m| m[:name] == "wasClicked" }
+    assert_not_nil inline_method, "Inline method wasClicked should be extracted"
+    assert_equal "bool", inline_method[:return_type]
+    assert_equal true, inline_method[:is_const]
+  end
+
+  def test_extract_multiple_inline_methods
+    create_header_with_multiple_inline_methods
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    assert_equal "Button", klass[:name]
+
+    method_names = klass[:methods].map { |m| m[:name] }
+    assert_includes method_names, "wasClicked", "Should extract wasClicked"
+    assert_includes method_names, "wasPressed", "Should extract wasPressed"
+    assert_includes method_names, "isHolding", "Should extract isHolding"
+    assert klass[:methods].length >= 3, "Should extract at least 3 inline methods"
+  end
+
   private
 
   def create_simple_header
@@ -133,38 +159,6 @@ class LibClangParserTest < Test::Unit::TestCase
       };
     CPP
   end
-
-  def test_extract_static_method
-    create_header_with_static_method
-    parser = M5LibGen::LibClangParser.new(@test_header)
-    classes = parser.extract_classes
-
-    klass = classes[0]
-    static_method = klass[:methods].find { |m| m[:name] == "getInstance" }
-    assert_equal true, static_method[:is_static]
-  end
-
-  def test_extract_const_method
-    create_header_with_const_method
-    parser = M5LibGen::LibClangParser.new(@test_header)
-    classes = parser.extract_classes
-
-    klass = classes[0]
-    const_method = klass[:methods].find { |m| m[:name] == "getValue" }
-    assert_equal true, const_method[:is_const]
-  end
-
-  def test_extract_virtual_method
-    create_header_with_virtual_method
-    parser = M5LibGen::LibClangParser.new(@test_header)
-    classes = parser.extract_classes
-
-    klass = classes[0]
-    virtual_method = klass[:methods].find { |m| m[:name] == "draw" }
-    assert_equal true, virtual_method[:is_virtual]
-  end
-
-  private
 
   def create_header_with_static_method
     File.write(@test_header, <<~CPP)
@@ -192,6 +186,34 @@ class LibClangParserTest < Test::Unit::TestCase
       public:
         virtual void draw();
         void update();
+      };
+    CPP
+  end
+
+  def create_header_with_inline_method
+    File.write(@test_header, <<~CPP)
+      class SimpleButton {
+      public:
+        bool wasClicked() const { return _clicked; }
+      private:
+        bool _clicked;
+      };
+    CPP
+  end
+
+  def create_header_with_multiple_inline_methods
+    File.write(@test_header, <<~CPP)
+      class Button {
+      public:
+        bool wasClicked() const { return _state == 1; }
+        bool wasPressed() const { return !_oldPress && _press; }
+        bool isHolding() const { return _press && _holdTime > 500; }
+        void update() { _oldPress = _press; }
+      private:
+        int _state;
+        bool _oldPress;
+        bool _press;
+        int _holdTime;
       };
     CPP
   end
