@@ -4,8 +4,10 @@ Current status and roadmap for M5LibGen development.
 
 ## Current Status
 
-**Phase**: PRODUCTION READY 🎉🚀
+**Phase**: ⚠️ CRITICAL ISSUES FOUND - NOT PRODUCTION READY
 **Last Updated**: 2025-12-08
+
+**See FINDINGS.md for detailed coverage analysis**
 
 ### Completed ✅
 
@@ -31,8 +33,39 @@ Current status and roadmap for M5LibGen development.
 - ✅ **Cycles 17-18**: ApiPatternDetector - M5Unified patterns
 - ✅ **Cycle 19**: CLI - bin/m5libgen command-line tool
 
-**Test Coverage**: 26+ tests, 100% pass
+**Test Coverage**: 26+ tests, 100% pass (unit tests only)
 **RuboCop**: Clean
+
+### ⚠️ CRITICAL ISSUES DISCOVERED
+
+**CLI Execution Results** (2025-12-08):
+```bash
+./bin/m5libgen clone https://github.com/m5stack/M5Unified.git
+./bin/m5libgen generate ../../output/mrbgem-m5unified-full
+```
+
+**Findings**:
+- ❌ Only 14 methods extracted (expected 200+) - **~7% coverage**
+- ❌ Generated C++ wrapper has syntax errors (won't compile)
+- ❌ Generated C bindings are stub implementations (non-functional)
+- ❌ **Button_Class**: 0 methods extracted (expected 24+)
+- ❌ **M5Unified main class**: 0 methods extracted
+- ❌ 25 out of 31 classes have ZERO methods extracted
+
+**Root Causes**:
+1. **Inline method extraction failure** - Parser doesn't handle inline definitions:
+   ```cpp
+   bool wasClicked(void) const { return _state == clicked; }  // NOT extracted
+   ```
+2. **Code generation bugs** - Produces invalid C++ syntax:
+   ```cpp
+   int begin(void void) { ... }  // Duplicate "void void"
+   const format, ... ...         // Invalid varargs
+   ```
+3. **Method overloading** - Generates duplicate symbol names
+4. **Missing implementation** - All mrubyc wrappers are TODO stubs
+
+**Impact**: Generated mrbgem is completely non-functional
 
 ### Complete Feature Set 🎯
 
@@ -54,8 +87,17 @@ Current status and roadmap for M5LibGen development.
 - ✅ Pointer/object types
 - ✅ Const qualifiers
 
-**Remaining Work:**
-- ❌ Cycle 20: Integration test with real M5Unified
+**Required Fixes (CRITICAL):**
+- ❌ **Cycle 21**: Fix inline method extraction (LibClangParser)
+- ❌ **Cycle 22**: Fix C++ wrapper code generation (CppWrapperGenerator)
+- ❌ **Cycle 23**: Implement actual mrubyc wrapper functions
+- ❌ **Cycle 24**: Fix method overloading (unique symbol names)
+- ❌ **Cycle 25**: Extract M5Unified main class methods
+- ❌ **Cycle 26**: Extract Button_Class methods
+- ❌ **Cycle 27**: Add compilation test (verify generated code compiles)
+- ❌ **Cycle 28**: Complete coverage test (all classes have methods)
+
+**Future Work:**
 - ❌ Phase 8: ESP32 compilation validation
 - ❌ Phase 9: Device testing
 
@@ -286,13 +328,15 @@ Current status and roadmap for M5LibGen development.
 
 - ✅ Can clone M5Unified repository
 - ✅ Can parse C++ headers with libclang
-- ✅ Can extract classes, methods, parameters, return types
+- ⚠️ Can extract classes, methods, parameters, return types (partial - only 7% coverage)
 - ✅ Can generate complete mrbgem directory structure
-- ✅ Generated C code has valid syntax
+- ❌ Generated C code has valid syntax (has syntax errors)
 - ✅ Generated CMakeLists.txt is valid
-- ✅ All tests pass (100%)
+- ⚠️ All tests pass (100% of unit tests, but no integration tests)
 - ✅ RuboCop clean (0 offenses)
 - ✅ CLI works (`m5libgen clone`, `m5libgen generate`)
+
+**MVP STATUS**: ❌ NOT ACHIEVED - Critical issues prevent production use
 
 ### Stretch Goals
 
@@ -310,11 +354,36 @@ Current status and roadmap for M5LibGen development.
 
 ### Current Blockers
 
-None (initial development)
+1. **Inline Method Extraction** (CRITICAL)
+   - LibClangParser fails to extract inline methods defined in class body
+   - Affects Button_Class (24+ methods), and many other classes
+   - Estimated coverage loss: 90%+
+
+2. **Generated Code Syntax Errors** (CRITICAL)
+   - CppWrapperGenerator produces invalid C++ syntax
+   - Examples: `void void`, `const format, ... ...`, `constructor`
+   - Generated mrbgem does not compile
+
+3. **Method Overloading** (HIGH)
+   - Multiple methods with same name generate duplicate symbols
+   - Example: I2C_Class::begin() has multiple overloads
+   - Causes linker errors
+
+4. **Stub Implementations** (CRITICAL)
+   - All mrubyc wrapper functions are TODO stubs
+   - No actual parameter marshalling or function calls
+   - Generated gem is non-functional
 
 ### Technical Debt
 
-None (greenfield project)
+1. Unit tests don't verify generated code compiles
+2. No integration test with real M5Unified extraction
+3. Type system doesn't handle:
+   - Varargs methods
+   - Constructors
+   - Default parameters
+   - Template methods
+   - Operator overloading
 
 ---
 

@@ -11,7 +11,7 @@ module M5LibGen
       @repo_path = repo_path
     end
 
-    # List all .h files in src/ and include/ directories
+    # List all .h and .hpp files in src/ and include/ directories
     def list_headers
       headers = []
       search_dirs = ["src", "include"]
@@ -20,7 +20,8 @@ module M5LibGen
         dir_path = File.join(@repo_path, dir)
         next unless Dir.exist?(dir_path)
 
-        Dir.glob(File.join(dir_path, "**", "*.h")).each do |file|
+        # Search for both .h and .hpp files
+        Dir.glob(File.join(dir_path, "**", "*.{h,hpp}")).each do |file|
           headers << file
         end
       end

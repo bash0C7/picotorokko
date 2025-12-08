@@ -55,7 +55,7 @@ module M5LibGen
     end
 
     def initialize_with_fallback
-      @content = File.read(@header_path)
+      @content = File.read(@header_path, encoding: "UTF-8")
     end
 
     def extract_classes_with_libclang
