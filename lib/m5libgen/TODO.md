@@ -4,54 +4,65 @@ Current status and roadmap for M5LibGen development.
 
 ## Current Status
 
-**Phase**: Initial Development
+**Phase**: Foundation Complete (Cycles 1-3)
 **Last Updated**: 2025-12-08
 
-### Completed
+### Completed ✅
 
 - ✅ Project structure designed
 - ✅ README.md created with architecture overview
-- ✅ TODO.md created (this file)
+- ✅ TODO.md created with detailed roadmap
+- ✅ Gemspec and Gemfile configured
+- ✅ **TDD Cycle 1**: Version & Entry Point (4 tests, 100% pass)
+- ✅ **TDD Cycle 2**: RepositoryManager (7 tests, 100% pass)
+- ✅ **TDD Cycle 3**: HeaderReader (7 tests, 100% pass)
+- ✅ Old files deleted (m5unified.rb, m5unified.md, M5UNIFIED_HANDOFF.md, m5unified_test.rb)
+- ✅ RuboCop: All files clean (0 offenses)
 
-### In Progress
+**Total Test Coverage**: 18 tests, 100% pass
 
-- 🔄 Core implementation with TDD
+### In Progress 🔄
 
-### Not Started
+None (Foundation complete)
 
-- ❌ libclang-based C++ parser
-- ❌ Complete type mapping system
-- ❌ mrbgem generation logic
-- ❌ CLI implementation
-- ❌ Integration tests with M5Unified
+### Next Steps
+
+- ❌ **TDD Cycle 4-8**: libclang-based C++ parser
+- ❌ **TDD Cycle 9-10**: Complete type mapping system
+- ❌ **TDD Cycle 11-16**: mrbgem generation logic
+- ❌ **TDD Cycle 17-18**: M5Unified API pattern detection
+- ❌ **TDD Cycle 19-20**: CLI implementation & integration tests
 
 ---
 
 ## Roadmap
 
-### Phase 1: Foundation (TDD Cycle 1-3)
+### Phase 1: Foundation (TDD Cycle 1-3) ✅ COMPLETE
 
 **Goal**: Basic gem structure and core components
 
-#### Cycle 1: Version & Entry Point
-- [ ] Create `lib/m5libgen/version.rb`
-- [ ] Create `lib/m5libgen.rb` (entry point)
-- [ ] Test: require 'm5libgen' works
-- [ ] Test: M5LibGen::VERSION defined
+#### Cycle 1: Version & Entry Point ✅
+- [x] Create `lib/m5libgen/version.rb`
+- [x] Create `lib/m5libgen.rb` (entry point)
+- [x] Test: require 'm5libgen' works
+- [x] Test: M5LibGen::VERSION defined
+- [x] RuboCop pass
 
-#### Cycle 2: RepositoryManager
-- [ ] Implement `lib/m5libgen/repository_manager.rb`
-- [ ] Test: clone repository
-- [ ] Test: update repository
-- [ ] Test: get repository info
-- [ ] RuboCop pass
+#### Cycle 2: RepositoryManager ✅
+- [x] Implement `lib/m5libgen/repository_manager.rb`
+- [x] Test: clone repository
+- [x] Test: update repository
+- [x] Test: get repository info
+- [x] Custom error classes (CloneError, UpdateError, InfoError)
+- [x] RuboCop pass
 
-#### Cycle 3: HeaderReader
-- [ ] Implement `lib/m5libgen/header_reader.rb`
-- [ ] Test: list header files
-- [ ] Test: read header content
-- [ ] Test: filter by pattern
-- [ ] RuboCop pass
+#### Cycle 3: HeaderReader ✅
+- [x] Implement `lib/m5libgen/header_reader.rb`
+- [x] Test: list header files from src/ and include/
+- [x] Test: read header content
+- [x] Test: sorted file paths
+- [x] Custom error class (FileNotFoundError)
+- [x] RuboCop pass
 
 ---
 
