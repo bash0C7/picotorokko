@@ -1,0 +1,107 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../lib/m5libgen"
+
+def show_usage
+  puts "Usage: m5libgen <command> [options]"
+  puts ""
+  puts "Commands:"
+  puts "  clone <url> [branch]      Clone M5Unified repository"
+  puts "  generate <output_path>    Generate mrbgem from cloned repository"
+  puts "  --version                 Show version"
+  puts "  --help                    Show this help"
+  exit 0
+end
+
+command = ARGV[0]
+
+case command
+when "clone"
+  url = ARGV[1]
+  branch = ARGV[2] || "master"
+
+  unless url
+    puts "Error: URL required"
+    puts "Usage: m5libgen clone <url> [branch]"
+    exit 1
+  end
+
+  repo_path = "vendor/m5unified"
+  manager = M5LibGen::RepositoryManager.new(repo_path)
+
+  begin
+    puts "Cloning #{url}..."
+    manager.clone(url: url, branch: branch)
+    puts "✓ Repository cloned to #{repo_path}"
+  rescue StandardError => e
+    puts "Error: #{e.message}"
+    exit 1
+  end
+
+when "generate"
+  output_path = ARGV[1]
+
+  unless output_path
+    puts "Error: Output path required"
+    puts "Usage: m5libgen generate <output_path>"
+    exit 1
+  end
+
+  repo_path = "vendor/m5unified"
+
+  unless Dir.exist?(repo_path)
+    puts "Error: Repository not found at #{repo_path}"
+    puts "Run: m5libgen clone <url>"
+    exit 1
+  end
+
+  begin
+    puts "Reading header files from #{repo_path}..."
+    reader = M5LibGen::HeaderReader.new(repo_path)
+    headers = reader.list_headers
+
+    if headers.empty?
+      puts "Warning: No header files found"
+      all_classes = []
+    else
+      puts "Found #{headers.length} header files"
+      puts "Parsing C++ code..."
+
+      all_classes = []
+      headers.each do |header_file|
+        reader.read_file(header_file)
+        parser = M5LibGen::LibClangParser.new(header_file)
+        classes = parser.extract_classes
+        all_classes.concat(classes)
+      end
+
+      puts "Extracted #{all_classes.length} classes"
+    end
+
+    puts "Generating mrbgem at #{output_path}..."
+    generator = M5LibGen::MrbgemGenerator.new(output_path)
+    generator.generate(all_classes)
+    puts "✓ mrbgem generated successfully"
+    puts ""
+    puts "Files created:"
+    puts "  #{output_path}/mrbgem.rake"
+    puts "  #{output_path}/src/m5unified.c"
+    puts "  #{output_path}/ports/esp32/m5unified_wrapper.cpp"
+    puts "  #{output_path}/CMakeLists.txt"
+  rescue StandardError => e
+    puts "Error: #{e.message}"
+    puts e.backtrace.first(5)
+    exit 1
+  end
+
+when "--version", "-v"
+  puts "m5libgen version #{M5LibGen::VERSION}"
+
+when "--help", "-h", nil
+  show_usage
+
+else
+  puts "Unknown command: #{command}"
+  show_usage
+end
