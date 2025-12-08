@@ -59,8 +59,16 @@ module M5LibGen
       content += "\n/* Extern function declarations */\n"
       cpp_data.each do |klass|
         klass[:methods].each do |method|
-          func_name = "m5unified_#{klass[:name].downcase}_#{method[:name]}"
-          content += "extern void #{func_name}(void);\n"
+          func_name = "m5unified_#{klass[:name].downcase}_#{method[:name].downcase}"
+          # Convert bool return type to int, keep others as-is
+          return_type = method[:return_type] == "bool" ? "int" : method[:return_type]
+          # Build parameter list
+          params = if method[:parameters].empty?
+                     "void"
+                   else
+                     method[:parameters].map { |p| "#{p[:type]} #{p[:name]}" }.join(", ")
+                   end
+          content += "extern #{return_type} #{func_name}(#{params});\n"
         end
       end
       "#{content}\n"
