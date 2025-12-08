@@ -81,6 +81,37 @@ class LibClangParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_extract_static_method
+    create_header_with_static_method
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    static_method = klass[:methods].find { |m| m[:name] == "getInstance" }
+    assert_equal true, static_method[:is_static]
+  end
+
+  def test_extract_const_method
+    create_header_with_const_method
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    const_method = klass[:methods].find { |m| m[:name] == "getValue" }
+    assert_equal true, const_method[:is_const]
+  end
+
+  def test_extract_virtual_method
+    create_header_with_virtual_method
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    virtual_method = klass[:methods].find { |m| m[:name] == "draw" }
+    assert_equal true, virtual_method[:is_virtual]
+  end
+
+  private
   private
 
   def create_simple_header
@@ -99,6 +130,68 @@ class LibClangParserTest < Test::Unit::TestCase
         int add(int a, int b);
         int subtract(int a, int b);
         void reset();
+      };
+    CPP
+  end
+
+  def test_extract_static_method
+    create_header_with_static_method
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    static_method = klass[:methods].find { |m| m[:name] == "getInstance" }
+    assert_equal true, static_method[:is_static]
+  end
+
+  def test_extract_const_method
+    create_header_with_const_method
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    const_method = klass[:methods].find { |m| m[:name] == "getValue" }
+    assert_equal true, const_method[:is_const]
+  end
+
+  def test_extract_virtual_method
+    create_header_with_virtual_method
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    virtual_method = klass[:methods].find { |m| m[:name] == "draw" }
+    assert_equal true, virtual_method[:is_virtual]
+  end
+
+  private
+
+  def create_header_with_static_method
+    File.write(@test_header, <<~CPP)
+      class Singleton {
+      public:
+        static Singleton* getInstance();
+        void doSomething();
+      };
+    CPP
+  end
+
+  def create_header_with_const_method
+    File.write(@test_header, <<~CPP)
+      class Reader {
+      public:
+        int getValue() const;
+        void setValue(int v);
+      };
+    CPP
+  end
+
+  def create_header_with_virtual_method
+    File.write(@test_header, <<~CPP)
+      class Drawable {
+      public:
+        virtual void draw();
+        void update();
       };
     CPP
   end

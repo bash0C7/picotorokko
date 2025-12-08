@@ -36,6 +36,15 @@ module M5LibGen
       end
     end
 
+    # Extract all enum definitions from header file
+    def extract_enums
+      if LIBCLANG_AVAILABLE
+        extract_enums_with_libclang
+      else
+        extract_enums_with_fallback
+      end
+    end
+
     private
 
     def initialize_with_libclang
@@ -58,12 +67,63 @@ module M5LibGen
 
         class_info = {
           name: child.spelling,
-          methods: extract_methods_from_class(child)
+          methods: extract_methods_from_class(child),
+          enums: extract_enums_from_class(child)
         }
         classes << class_info
       end
 
       classes
+    end
+
+    def extract_enums_with_libclang
+      enums = []
+      cursor = @translation_unit.cursor
+
+      visit_children(cursor) do |child|
+        next unless child.kind == :cursor_enum_decl
+
+        enum_info = {
+          name: child.spelling,
+          values: extract_enum_values(child),
+          is_scoped: child.enum_scoped?
+        }
+        enums << enum_info
+      end
+
+      enums
+    end
+
+    def extract_enums_from_class(class_cursor)
+      enums = []
+
+      visit_children(class_cursor) do |child|
+        next unless child.kind == :cursor_enum_decl
+
+        enum_info = {
+          name: child.spelling,
+          values: extract_enum_values(child),
+          is_scoped: child.enum_scoped?
+        }
+        enums << enum_info
+      end
+
+      enums
+    end
+
+    def extract_enum_values(enum_cursor)
+      values = []
+
+      visit_children(enum_cursor) do |child|
+        next unless child.kind == :cursor_enum_constant_decl
+
+        values << {
+          name: child.spelling,
+          value: child.enum_constant_value
+        }
+      end
+
+      values
     end
 
     def extract_methods_from_class(class_cursor)
@@ -78,7 +138,10 @@ module M5LibGen
         method_info = {
           name: child.spelling,
           return_type: child.result_type.spelling,
-          parameters: extract_parameters_from_method(child)
+          parameters: extract_parameters_from_method(child),
+          is_static: child.static_method?,
+          is_const: child.const_qualified?,
+          is_virtual: child.virtual_method?
         }
         methods << method_info
       end
@@ -115,13 +178,65 @@ module M5LibGen
       class_pattern = /(?:class|struct)\s+(\w+)\s*\{([^}]*)\}/m
       @content.scan(class_pattern) do |class_name, class_body|
         methods = extract_methods_from_body_fallback(class_body)
+        enums = extract_enums_from_body_fallback(class_body)
         classes << {
           name: class_name,
-          methods: methods
+          methods: methods,
+          enums: enums
         }
       end
 
       classes
+    end
+
+    def extract_enums_with_fallback
+      enums = []
+
+      # Match enum declarations: enum [class] Name { VALUES };
+      enum_pattern = /enum\s+(?:class\s+)?(\w+)\s*\{([^}]*)\}/m
+      @content.scan(enum_pattern) do |enum_name, enum_body|
+        is_scoped = @content.include?("enum class #{enum_name}")
+        values = extract_enum_values_fallback(enum_body)
+        enums << {
+          name: enum_name,
+          values: values,
+          is_scoped: is_scoped
+        }
+      end
+
+      enums
+    end
+
+    def extract_enums_from_body_fallback(body)
+      enums = []
+
+      # Match enum declarations within class body
+      enum_pattern = /enum\s+(?:class\s+)?(\w+)\s*\{([^}]*)\}/m
+      body.scan(enum_pattern) do |enum_name, enum_body|
+        is_scoped = body.include?("enum class #{enum_name}")
+        values = extract_enum_values_fallback(enum_body)
+        enums << {
+          name: enum_name,
+          values: values,
+          is_scoped: is_scoped
+        }
+      end
+
+      enums
+    end
+
+    def extract_enum_values_fallback(enum_body)
+      values = []
+      # Match: NAME [= VALUE]
+      enum_body.scan(/(\w+)(?:\s*=\s*([^,}]+))?/) do |name, value|
+        next if name.empty?
+
+        values << {
+          name: name,
+          value: value&.strip
+        }
+      end
+      values
     end
 
     def extract_methods_from_body_fallback(class_body)
