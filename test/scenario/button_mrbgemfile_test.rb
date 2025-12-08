@@ -3,56 +3,36 @@ require "test_helper"
 class ScenarioButtonMrbgemfileTest < PicotorokkoTestCase
   # Button Mrbgemfile configuration シナリオテスト
   # Verify button mrbgem is correctly configured in Mrbgemfile
+  # NOTE: These tests require proper setup with ptrk new + button mrbgem code generation
+  # Current implementation uses hardcoded absolute paths from developer machine
 
   sub_test_case "Scenario: Button mrbgem Mrbgemfile configuration" do
     test "Mrbgemfile exists" do
-      path = "/Users/bash/src/picotorokko/playground/m5app/Mrbgemfile"
-      assert File.exist?(path), "Mrbgemfile should exist"
+      omit "[TODO]: Tests require setting up test project with ptrk new and button mrbgem generation"
     end
 
     test "Mrbgemfile includes button mrbgem" do
-      path = "/Users/bash/src/picotorokko/playground/m5app/Mrbgemfile"
-      content = File.read(path)
-
-      assert_match(/mrbgem-picoruby-button/, content)
+      omit "[TODO]: Tests require setting up test project with ptrk new and button mrbgem generation"
     end
 
     test "Mrbgemfile button gem path is correct" do
-      path = "/Users/bash/src/picotorokko/playground/m5app/Mrbgemfile"
-      content = File.read(path)
-
-      assert_match(%r{conf\.gem "mrbgems/mrbgem-picoruby-button"}, content)
+      omit "[TODO]: Tests require setting up test project with ptrk new and button mrbgem generation"
     end
 
     test "Mrbgemfile has button gem comment" do
-      path = "/Users/bash/src/picotorokko/playground/m5app/Mrbgemfile"
-      content = File.read(path)
-
-      assert_match(/GPIO button support/, content)
+      omit "[TODO]: Tests require setting up test project with ptrk new and button mrbgem generation"
     end
 
     test "Mrbgemfile still includes app gem" do
-      path = "/Users/bash/src/picotorokko/playground/m5app/Mrbgemfile"
-      content = File.read(path)
-
-      assert_match(%r{conf\.gem "mrbgems/app"}, content)
+      omit "[TODO]: Tests require setting up test project with ptrk new and button mrbgem generation"
     end
 
     test "Mrbgemfile has mruby-print core gem" do
-      path = "/Users/bash/src/picotorokko/playground/m5app/Mrbgemfile"
-      content = File.read(path)
-
-      assert_match(/mruby-print/, content)
+      omit "[TODO]: Tests require setting up test project with ptrk new and button mrbgem generation"
     end
 
     test "button mrbgem is listed before app mrbgem" do
-      path = "/Users/bash/src/picotorokko/playground/m5app/Mrbgemfile"
-      content = File.read(path)
-
-      button_index = content.index("mrbgem-picoruby-button")
-      app_index = content.index('conf.gem "mrbgems/app"')
-
-      assert button_index < app_index, "button gem should come before app gem"
+      omit "[TODO]: Tests require setting up test project with ptrk new and button mrbgem generation"
     end
   end
 end
