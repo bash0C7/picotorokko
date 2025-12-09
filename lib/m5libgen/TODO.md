@@ -438,6 +438,187 @@ Button_Class& getButton(size_t index) { return _buttons[index]; }
 
 ---
 
+### Alternative Strategy: Static Analysis at Build Time 🎯 RECOMMENDED
+
+**Concept**: Automatically detect and fix issues during `ptrk device prepare`
+
+Instead of fixing m5libgen generation logic, **validate and repair generated code at build time**.
+
+#### Advantages
+
+1. **Separation of Concerns**:
+   - m5libgen: Focus on extraction accuracy (100% coverage achieved ✅)
+   - ptrk: Handle platform-specific constraints (ESP32 memory, linking)
+
+2. **Flexibility**:
+   - Different devices may need different fixes
+   - Can adapt to M5Unified API changes without touching m5libgen
+
+3. **User Experience**:
+   - Automatic - no manual intervention required
+   - Clear error messages with auto-fix suggestions
+   - Works with any mrbgem, not just M5Unified
+
+#### Implementation: Static Analysis Checker
+
+**Location**: `lib/picotorokko/device/mrbgem_validator.rb`
+
+**Executed During**: `ptrk device prepare` (before ESP-IDF build)
+
+**Checks & Fixes**:
+
+```ruby
+class MrbgemValidator
+  # Check 1: Invalid Parameter Names
+  def check_parameter_names(wrapper_cpp)
+    # Detect: param names with `.`, `->`, etc.
+    invalid_params = wrapper_cpp.scan(/\w+\s+(\w+\.\w+|\w+->\w+)\s*[,)]/)
+
+    if invalid_params.any?
+      warn "⚠️  Found #{invalid_params.size} invalid parameter names"
+      sanitize_parameter_names!(wrapper_cpp)
+      info "✅ Auto-fixed: replaced with generic names (param_0, param_1, ...)"
+    end
+  end
+
+  # Check 2: Function Name Collisions
+  def check_function_collisions(wrapper_cpp)
+    # Extract all function signatures
+    functions = extract_function_signatures(wrapper_cpp)
+    duplicates = functions.group_by { |f| f[:name] }.select { |_, v| v.size > 1 }
+
+    if duplicates.any?
+      warn "⚠️  Found #{duplicates.size} function name collisions"
+      resolve_collisions!(wrapper_cpp, duplicates)
+      info "✅ Auto-fixed: added type-based suffixes"
+    end
+  end
+
+  # Check 3: Memory Footprint (ESP32-specific)
+  def check_memory_footprint(mrbgem_path)
+    method_count = count_registered_methods(mrbgem_path)
+    estimated_size = method_count * 350  # bytes per method (rough estimate)
+
+    if estimated_size > 150_000  # 150KB threshold
+      warn "⚠️  Large mrbgem detected: #{method_count} methods (~#{estimated_size / 1024}KB)"
+      warn "💡 Consider using modular variant: mrbgem-m5unified-core"
+
+      if ENV['PTRK_AUTO_MODULAR'] == '1'
+        info "🔧 Auto-generating core variant..."
+        generate_core_variant(mrbgem_path)
+      end
+    end
+  end
+
+  # Auto-fix: Sanitize parameter names
+  def sanitize_parameter_names!(cpp_code)
+    # Replace: foo(Type param.member) → foo(Type param_0)
+    cpp_code.gsub!(/(\w+)\s+([\w:]+)\s+(\w+)\.(\w+)/) do
+      type = $2
+      "#{$1} #{type} param_#{generate_param_id}"
+    end
+  end
+
+  # Auto-fix: Resolve name collisions with type-based suffix
+  def resolve_collisions!(cpp_code, duplicates)
+    duplicates.each do |func_name, overloads|
+      overloads.each_with_index do |func, idx|
+        # Extract parameter type
+        param_type = extract_param_type(func[:signature])
+        type_suffix = normalize_type_name(param_type)
+
+        # Replace: m5unified_dsp_1 → m5unified_dsp_atomdisplay
+        cpp_code.gsub!(func[:signature],
+                       func[:signature].gsub(func_name, "#{func_name}_#{type_suffix}"))
+      end
+    end
+  end
+end
+```
+
+#### Integration with `ptrk device prepare`
+
+**Workflow**:
+
+```bash
+$ ptrk device prepare
+
+📦 Preparing device build...
+✓ Found mrbgem: mrbgem-m5unified (587 methods)
+
+🔍 Running static analysis...
+  ⚠️  Found 23 invalid parameter names
+  ✅ Auto-fixed: sanitized to param_0, param_1, ...
+
+  ⚠️  Found 7 function name collisions
+  ✅ Auto-fixed: added type-based suffixes
+
+  ⚠️  Large mrbgem: 587 methods (~205KB estimated)
+  💡 Consider: ptrk device prepare --variant=core
+
+✓ Static analysis complete
+✓ Copying to build workspace: .ptrk_build/20251209_153000/
+✓ Ready for ESP-IDF build
+
+Next: ptrk device build
+```
+
+#### Configuration
+
+**File**: `project/.ptrk_device.yml`
+
+```yaml
+mrbgem_validation:
+  enabled: true
+
+  auto_fix:
+    parameter_names: true      # Auto-sanitize invalid names
+    function_collisions: true  # Auto-resolve with type suffixes
+
+  memory_check:
+    enabled: true
+    threshold_kb: 150
+    auto_modular: false        # Set to true for automatic core variant
+
+  report:
+    verbose: true              # Show detailed analysis
+    save_to: .ptrk_build/validation_report.txt
+```
+
+#### Benefits for Users
+
+1. **Zero Configuration**: Works out of the box
+2. **Transparent**: Clear messages about what was fixed
+3. **Opt-out Available**: Can disable via config if needed
+4. **Works with Any mrbgem**: Not specific to M5Unified
+
+#### Implementation Priority
+
+**After Phase 11 P1 investigation**, choose approach:
+
+- **Option A**: Fix in m5libgen (root cause)
+  - Pros: Cleaner generated code
+  - Cons: Complex parser changes, affects all users
+
+- **Option B**: Fix in ptrk device prepare (build-time)
+  - Pros: Flexible, device-specific, easier to maintain
+  - Cons: Runtime overhead during build
+
+**Recommendation**: **Option B (build-time validation)** - better separation of concerns
+
+#### Tasks for Implementation
+
+- [ ] Create `lib/picotorokko/device/mrbgem_validator.rb`
+- [ ] Add validation step to `device prepare` command
+- [ ] Implement parameter name sanitization
+- [ ] Implement function collision resolution
+- [ ] Add memory footprint analysis
+- [ ] Write unit tests for validator
+- [ ] Document in `docs/DEVICE_PREPARE.md`
+- [ ] Add user configuration via `.ptrk_device.yml`
+
+---
+
 **Status**: ⏸️ PAUSED - Awaiting strategic planning session
 
 **Next Action**: Schedule planning discussion to decide implementation approaches
