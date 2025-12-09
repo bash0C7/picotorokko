@@ -84,11 +84,39 @@ module M5LibGen
       "#{content}\n"
     end
 
-    def generate_method_wrapper(_class_name, method)
-      func_name = "mrbc_m5_#{method[:name]}"
+    def generate_method_wrapper(class_name, method)
+      func_name = "mrbc_m5_#{method[:name].downcase}"
+      extern_func = "m5unified_#{class_name.downcase}_#{method[:name].downcase}"
+
       content = "static void #{func_name}(mrbc_vm *vm, mrbc_value *v, int argc) {\n"
-      content += "  /* TODO: Call wrapper function */\n"
-      content += "  SET_RETURN(mrbc_nil_value());\n"
+
+      # Extract parameters from mruby stack
+      method[:parameters].each_with_index do |param, idx|
+        arg_index = idx + 1
+        param_name = param[:name]
+
+        # For now, assume all parameters are int (will extend later)
+        content += "  int #{param_name} = GET_INT_ARG(#{arg_index});\n"
+      end
+
+      # Build extern function call
+      param_names = method[:parameters].map { |p| p[:name] }.join(", ")
+
+      if method[:return_type] == "void"
+        # Void return - just call and return nil
+        content += "  #{extern_func}(#{param_names});\n"
+        content += "  SET_RETURN(mrbc_nil_value());\n"
+      elsif method[:return_type] == "bool"
+        # Bool return - call, store result, convert to bool
+        content += "  int result = #{extern_func}(#{param_names});\n"
+        content += "  SET_BOOL_RETURN(result);\n"
+      else
+        # Other return types - call and return
+        return_type = method[:return_type]
+        content += "  #{return_type} result = #{extern_func}(#{param_names});\n"
+        content += "  SET_INT_RETURN(result);\n"
+      end
+
       content += "}\n\n"
       content
     end
@@ -98,7 +126,7 @@ module M5LibGen
       cpp_data.each do |klass|
         content += "  c_#{klass[:name]} = mrbc_define_class(vm, \"#{klass[:name]}\", mrbc_class_object);\n"
         klass[:methods].each do |method|
-          method_func = "mrbc_m5_#{method[:name]}"
+          method_func = "mrbc_m5_#{method[:name].downcase}"
           content += "  mrbc_define_method(vm, c_#{klass[:name]}, \"#{method[:name]}\", #{method_func});\n"
         end
       end

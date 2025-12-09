@@ -85,4 +85,107 @@ class MrbgemGeneratorTest < Test::Unit::TestCase
     # Should have correct parameter types
     assert_match(/extern int m5unified_i2c_class_begin\(int sda, int scl\);/, c_file)
   end
+
+  def test_wrapper_function_calls_extern_with_no_params
+    cpp_data = [
+      {
+        name: "LED_Class",
+        methods: [
+          {
+            name: "begin",
+            return_type: "void",
+            parameters: []
+          }
+        ]
+      }
+    ]
+
+    generator = M5LibGen::MrbgemGenerator.new(@output_path)
+    generator.generate(cpp_data)
+
+    c_file = File.read(File.join(@output_path, "src", "m5unified.c"))
+
+    # Should call extern function
+    assert_match(/m5unified_led_class_begin\(\);/, c_file)
+    # Should not have TODO stub
+    refute_match(/\/\* TODO: Call wrapper function \*\//, c_file)
+  end
+
+  def test_wrapper_function_with_int_parameters
+    cpp_data = [
+      {
+        name: "I2C_Class",
+        methods: [
+          {
+            name: "begin",
+            return_type: "bool",
+            parameters: [
+              { type: "int", name: "sda" },
+              { type: "int", name: "scl" }
+            ]
+          }
+        ]
+      }
+    ]
+
+    generator = M5LibGen::MrbgemGenerator.new(@output_path)
+    generator.generate(cpp_data)
+
+    c_file = File.read(File.join(@output_path, "src", "m5unified.c"))
+
+    # Should extract parameters from mruby stack
+    assert_match(/GET_INT_ARG\(1\)/, c_file)
+    assert_match(/GET_INT_ARG\(2\)/, c_file)
+    # Should call extern function with parameters
+    assert_match(/m5unified_i2c_class_begin\(.*sda.*scl\)/, c_file)
+  end
+
+  def test_wrapper_function_with_bool_return
+    cpp_data = [
+      {
+        name: "Button_Class",
+        methods: [
+          {
+            name: "wasPressed",
+            return_type: "bool",
+            parameters: []
+          }
+        ]
+      }
+    ]
+
+    generator = M5LibGen::MrbgemGenerator.new(@output_path)
+    generator.generate(cpp_data)
+
+    c_file = File.read(File.join(@output_path, "src", "m5unified.c"))
+
+    # Should convert int result (0/1) back to bool
+    assert_match(/int result = m5unified_button_class_waspressed\(\);/, c_file)
+    assert_match(/SET_BOOL_RETURN\(result\)/, c_file)
+  end
+
+  def test_wrapper_function_with_void_return
+    cpp_data = [
+      {
+        name: "Display_Class",
+        methods: [
+          {
+            name: "clear",
+            return_type: "void",
+            parameters: []
+          }
+        ]
+      }
+    ]
+
+    generator = M5LibGen::MrbgemGenerator.new(@output_path)
+    generator.generate(cpp_data)
+
+    c_file = File.read(File.join(@output_path, "src", "m5unified.c"))
+
+    # Should call function without return
+    assert_match(/m5unified_display_class_clear\(\);/, c_file)
+    # Should return nil
+    assert_match(/SET_RETURN\(mrbc_nil_value\(\)\);/, c_file)
+  end
 end
