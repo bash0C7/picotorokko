@@ -1,0 +1,309 @@
+📦 Cloning M5Unified repository...
+✅ Clone complete
+
+====================================================================================================
+COMPLETE M5UNIFIED CLASS AND METHOD INVENTORY
+====================================================================================================
+
+ 1. AXP2101_Class                   81 methods  (AXP2101_Class.hpp)
+    - bool begin()
+    - int8_t getBatteryLevel()
+    - void setBatteryCharge(bool enable)
+    - void setPreChargeCurrent(std::uint16_t max_mA)
+    - void setChargeCurrent(std::uint16_t max_mA)
+    ... (76 more methods)
+
+ 2. M5Unified                       58 methods  (M5Unified.hpp)
+    - return getButton(index index)
+    - return getDisplay(index index)
+    - size_t addDisplay(M5GFX& dsp)
+    - int32_t getDisplayIndex(m5gfx::board_t board)
+    - int32_t getDisplayIndex(std::initializer_list<m5gfx::board_t> board_list)
+    ... (53 more methods)
+
+ 3. AXP192_Class                    50 methods  (AXP192_Class.hpp)
+    - bool begin()
+    - int8_t getBatteryLevel()
+    - void setBatteryCharge(bool enable)
+    - void setChargeCurrent(std::uint16_t max_mA)
+    - void setChargeVoltage(std::uint16_t max_mV)
+    ... (45 more methods)
+
+ 4. IMU_Class                       40 methods  (IMU_Class.hpp)
+    - bool begin(I2C_Class* i2c = nullptr, board_t board = board_t::board_unknown)
+    - return begin(i2c i2c)
+    - bool sleep()
+    - void setClock(std::uint32_t freq)
+    - sensor_mask_t update()
+    ... (35 more methods)
+
+ 5. RTC_Class                       35 methods  (RTC_Class.hpp)
+    - bool begin(I2C_Class* i2c = nullptr, board_t board = board_t::board_unknown)
+    - return begin(i2c i2c)
+    - bool getDateTime(rtc_date_t* date, rtc_time_t* time) [const]
+    - return getDateTime(date date, nullptr nullptr)
+    - return getDateTime(nullptr nullptr, time time)
+    ... (30 more methods)
+
+ 6. Power_Class                     29 methods  (Power_Class.hpp)
+    - bool begin()
+    - bool getExtOutput()
+    - void setUsbOutput(bool enable)
+    - bool getUsbOutput()
+    - void setLed(uint8_t brightness = 255)
+    ... (24 more methods)
+
+ 7. Button_Class                    29 methods  (Button_Class.hpp)
+    - return wasDecideClickCount()
+    - return wasReleaseFor(ms ms)
+    - void setRawState(std::uint32_t msec, bool press)
+    - void setState(std::uint32_t msec, button_state_t state)
+    - bool wasClicked() [const]
+    ... (24 more methods)
+
+ 8. LED_Class                       27 methods  (LED_Class.hpp)
+    - bool begin()
+    - void display()
+    - size_t getCount() [const]
+    - RGBColor* getBuffer()
+    - void setBrightness(uint8_t brightness)
+    ... (22 more methods)
+
+ 9. Touch_Class                     27 methods  (Touch_Class.hpp)
+    - void update(std::uint32_t msec)
+    - bool update_detail(touch_detail_t* dt, std::uint32_t msec, bool pressed, m5gfx::touch_point_t* tp)
+    - bool update_detail(touch_detail_t* dt, std::uint32_t msec)
+    - int deltaX() [const]
+    - int deltaY() [const]
+    ... (22 more methods)
+
+10. Speaker_Class                   27 methods  (Speaker_Class.hpp)
+    - bool begin()
+    - void end()
+    - void stop()
+    - void stop(uint8_t channel)
+    - bool playWav(const uint8_t* wav_data, size_t data_len = ~0u, uint32_t repeat = 1, int channel = -1, bool stop_current_sound = false)
+    ... (22 more methods)
+
+11. M5Timer                         23 methods  (M5Timer.h)
+    - constructor M5Timer()
+    - void run()
+    - int_fast8_t setTimer(uint32_t interval_msec, timer_callback function, uint32_t times)
+    - return setTimer(interval_msec interval_msec, function function, 0 0)
+    - return setTimer(interval_msec interval_msec, function function, 1 1)
+    ... (18 more methods)
+
+12. I2C_Class                       22 methods  (I2C_Class.hpp)
+    - void setPort(i2c_port_t port_num, int pin_sda, int pin_scl)
+    - bool begin(i2c_port_t port_num, int pin_sda, int pin_scl)
+    - bool begin()
+    - bool release() [const]
+    - bool start(std::uint8_t address, bool read, std::uint32_t freq) [const]
+    ... (17 more methods)
+
+13. Mic_Class                       20 methods  (Mic_Class.hpp)
+    - bool begin()
+    - void end()
+    - return _rec_raw(rec_data rec_data, array_len array_len, false false, sample_rate sample_rate, stereo stereo)
+    - return _rec_raw(rec_data rec_data, array_len array_len, true true, sample_rate sample_rate, stereo stereo)
+    - return _rec_raw(rec_data rec_data, array_len array_len, false false, _cfg.sample_rate _cfg.sample_rate, false false)
+    ... (15 more methods)
+
+14. Log_Class                       18 methods  (Log_Class.hpp)
+    - void printf(const char* format)
+    - return printf("%s" "%s", string string)
+    - return printf("%s\n" "%s\n", string string)
+    - return printf(str_crlf str_crlf)
+    - void setDisplay(M5GFX* target)
+    ... (13 more methods)
+
+15. touch_detail_t                  18 methods  (Touch_Class.hpp)
+    - int deltaX() [const]
+    - int deltaY() [const]
+    - int distanceX() [const]
+    - int distanceY() [const]
+    - bool isPressed() [const]
+    ... (13 more methods)
+
+16. I2C_Device                      12 methods  (I2C_Class.hpp)
+    - bool writeRegister8Array(const std::uint8_t* reg_data_array, std::size_t length) [const]
+    - void setPort(I2C_Class* i2c)
+    - void setClock(std::uint32_t freq)
+    - void setAddress(std::uint8_t i2c_addr)
+    - uint8_t getAddress() [const]
+    ... (7 more methods)
+
+17. INA226_Class                     8 methods  (INA226_Class.hpp)
+    - bool begin()
+    - void config(const config_t& cfg)
+    - float getBusVoltage()
+    - float getShuntVoltage()
+    - float getShuntCurrent()
+    ... (3 more methods)
+
+18. AW32001_Class                    8 methods  (AW32001_Class.hpp)
+    - bool begin()
+    - bool setBatteryCharge(bool enable)
+    - bool setChargeCurrent(std::uint16_t max_mA)
+    - bool setChargeVoltage(std::uint16_t max_mV)
+    - bool isCharging()
+    ... (3 more methods)
+
+19. IMU_Base                         8 methods  (IMU_Base.hpp)
+    - bool getTempAdc(int16_t* adc) [virtual, const]
+    - bool sleep() [virtual]
+    - bool getAccelAdc(std::int16_t* ax, std::int16_t* ay, std::int16_t* az) [virtual, const]
+    - bool getGyroAdc(std::int16_t* gx, std::int16_t* gy, std::int16_t* gz) [virtual, const]
+    - bool getAccel(float* ax, float* ay, float* az) [virtual, const]
+    ... (3 more methods)
+
+20. INA3221_Class                    8 methods  (INA3221_Class.hpp)
+    - bool begin()
+    - float getBusVoltage(uint8_t channel)
+    - float getShuntVoltage(uint8_t channel)
+    - float getCurrent(uint8_t channel)
+    - int_fast16_t getBusMilliVoltage(uint8_t channel)
+    ... (3 more methods)
+
+21. timer_info_t                     8 methods  (M5Timer.h)
+    - void set(uint32_t interval_msec, timer_callback function, uint32_t times)
+    - bool run(uint32_t interval_msec)
+    - void clear()
+    - timer_callback getCallback() [const]
+    - bool getEnabled() [const]
+    ... (3 more methods)
+
+22. IP5306_Class                     7 methods  (IP5306_Class.hpp)
+    - bool begin()
+    - int8_t getBatteryLevel()
+    - void setBatteryCharge(bool enable)
+    - void setChargeCurrent(std::uint16_t max_mA)
+    - void setChargeVoltage(std::uint16_t max_mV)
+    ... (2 more methods)
+
+23. BQ27220_Class                    7 methods  (BQ27220_Class.hpp)
+    - bool read_MuxAddrdata(uint8_t regAddr, uint16_t subReg, uint8_t *regData = nullptr, uint8_t length = 0)
+    - bool opration_status_check()
+    - bool begin()
+    - int16_t getCurrent_mA()
+    - int16_t getVoltage_mV()
+    ... (2 more methods)
+
+24. MPU6886_Class                    7 methods  (MPU6886_Class.hpp)
+    - void getConvertParam(imu_convert_param_t* param) [const]
+    - void enableFIFO(Fodr output_data_rate)
+    - void disableFIFO()
+    - bool setGyroAdcOffset(std::int16_t gx, std::int16_t gy, std::int16_t gz)
+    - void setGyroFsr(Gscale scale)
+    ... (2 more methods)
+
+25. RTC_Base                         6 methods  (RTC_Base.hpp)
+    - uint32_t setTimerIRQ(std::uint32_t timer_msec)
+    - int setAlarmIRQ(const rtc_date_t *date, const rtc_time_t *time) [virtual]
+    - bool getIRQstatus() [virtual]
+    - void clearIRQ() [virtual]
+    - void disableIRQ() [virtual]
+    ... (1 more methods)
+
+26. BMI270_Class                     5 methods  (BMI270_Class.hpp)
+    - uint8_t WhoAmI()
+    - bool _upload_file(const std::uint8_t *config_data, std::size_t index, std::size_t write_len)
+    - bool auxSetupMode(std::uint8_t i2c_addr)
+    - bool auxWriteRegister8(std::uint8_t reg, std::uint8_t data)
+    - uint8_t auxReadRegister8(std::uint8_t reg)
+
+27. offset_point_t                   4 methods  (IMU_Class.hpp)
+    - uint_fast8_t updateStillness(const IMU_Base::point3d_i16_t& dst)
+    - void calibration()
+    - void setValue16(size_t index, int16_t val)
+    - int32_t getValue16(size_t index) [const]
+
+28. LedBus_Base                      3 methods  (LED_Strip_Class.hpp)
+    - void config(const config_t& cfg)
+    - void setConfig(const config_t& cfg)
+    - void setBus(std::shared_ptr<LedBus_Base> bus)
+
+29. LED_Strip_Class                  3 methods  (LED_Strip_Class.hpp)
+    - void config(const config_t& cfg)
+    - void setConfig(const config_t& cfg)
+    - void setBus(std::shared_ptr<LedBus_Base> bus)
+
+30. LedBus_RMT                       2 methods  (LED_Strip_Class.hpp)
+    - void config(const config_t& cfg)
+    - void setConfig(const config_t& cfg)
+
+31. LED_Base                         2 methods  (LED_Base.hpp)
+    - led_type_t getLedType(size_t index) [virtual, const]
+    - RGBColor* getBuffer() [virtual]
+
+32. RX8130_Class                     1 methods  (RX8130_Class.hpp)
+    - uint32_t setTimerIRQ(std::uint32_t timer_msec)
+
+33. SH200Q_Class                     1 methods  (SH200Q_Class.hpp)
+    - uint8_t WhoAmI()
+
+34. PI4IOE5V6408_Class               1 methods  (PI4IOE5V6408_Class.hpp)
+    - bool begin()
+
+35. BMM150_Class                     1 methods  (BMM150_Class.hpp)
+    - uint8_t WhoAmI()
+
+36. AK8963_Class                     1 methods  (AK8963_Class.hpp)
+    - uint8_t WhoAmI()
+
+37. wav_info_t                       1 methods  (Speaker_Class.hpp)
+    - void clear()
+
+38. Sampling                         0 methods  (INA226_Class.hpp) [DATA STRUCTURE]
+39. ConversionTime                   0 methods  (INA226_Class.hpp) [DATA STRUCTURE]
+40. Mode                             0 methods  (INA226_Class.hpp) [DATA STRUCTURE]
+41. Alert                            0 methods  (INA226_Class.hpp) [DATA STRUCTURE]
+42. config_t                         0 methods  (INA226_Class.hpp) [DATA STRUCTURE]
+43. config_t                         0 methods  (M5Unified.hpp) [DATA STRUCTURE]
+44. speaker_config_t                 0 methods  (Speaker_Class.hpp) [DATA STRUCTURE]
+45. PCF8563_Class                    0 methods  (PCF8563_Class.hpp) [DATA STRUCTURE]
+46. __attribute__                    0 methods  (RTC_Base.hpp) [DATA STRUCTURE]
+47. __attribute__                    0 methods  (RTC_Base.hpp) [DATA STRUCTURE]
+48. __attribute__                    0 methods  (RTC_Base.hpp) [DATA STRUCTURE]
+49. RTC_PowerHub_Class               0 methods  (RTC_PowerHub_Class.hpp) [DATA STRUCTURE]
+50. ext_port_bus_t                   0 methods  (Power_Class.hpp) [DATA STRUCTURE]
+51. imu_3d_t                         0 methods  (IMU_Class.hpp) [DATA STRUCTURE]
+52. recording_info_t                 0 methods  (Mic_Class.hpp) [DATA STRUCTURE]
+53. imu_data_t                       0 methods  (IMU_Class.hpp) [DATA STRUCTURE]
+54. imu_offset_data_t                0 methods  (IMU_Class.hpp) [DATA STRUCTURE]
+55. config_t                         0 methods  (LED_Strip_Class.hpp) [DATA STRUCTURE]
+56. channel_info_t                   0 methods  (Speaker_Class.hpp) [DATA STRUCTURE]
+57. mic_config_t                     0 methods  (Mic_Class.hpp) [DATA STRUCTURE]
+58. config_t                         0 methods  (LED_Strip_Class.hpp) [DATA STRUCTURE]
+59. point_t                          0 methods  (Touch_Class.hpp) [DATA STRUCTURE]
+60. LED_PowerHub_Class               0 methods  (LED_PowerHub_Class.hpp) [DATA STRUCTURE]
+61. IOExpander_Base                  0 methods  (IOExpander_Base.hpp) [DATA STRUCTURE]
+62. imu_convert_param_t              0 methods  (IMU_Base.hpp) [DATA STRUCTURE]
+63. imu_raw_data_t                   0 methods  (IMU_Base.hpp) [DATA STRUCTURE]
+64. point3d_i16_t                    0 methods  (IMU_Base.hpp) [DATA STRUCTURE]
+====================================================================================================
+SUMMARY
+====================================================================================================
+Total classes: 64
+Functional classes (methods > 0): 37
+Data structures (methods = 0): 27
+Total methods: 608
+
+====================================================================================================
+EXPECTED CLASSES CHECK
+====================================================================================================
+✅ M5Unified                      FOUND (58 methods)
+✅ Button_Class                   FOUND (29 methods)
+✅ Touch_Class                    FOUND (27 methods)
+✅ Speaker_Class                  FOUND (27 methods)
+✅ Mic_Class                      FOUND (20 methods)
+✅ IMU_Class                      FOUND (40 methods)
+✅ Power_Class                    FOUND (29 methods)
+✅ RTC_Class                      FOUND (35 methods)
+✅ I2C_Class                      FOUND (22 methods)
+❌ Display_Class                  NOT FOUND
+❌ In_I2C                         NOT FOUND
+❌ Ex_I2C                         NOT FOUND
+✅ AXP192_Class                   FOUND (50 methods)
+✅ AXP2101_Class                  FOUND (81 methods)
+✅ IP5306_Class                   FOUND (7 methods)
