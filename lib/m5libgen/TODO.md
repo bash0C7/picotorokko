@@ -120,6 +120,182 @@ Current status and roadmap for M5LibGen development.
 **Future Work:**
 - ❌ Phase 8: ESP32 compilation validation
 - ❌ Phase 9: Device testing
+- ❌ Phase 10: M5Unified coverage tracking system (see below)
+
+---
+
+## Phase 10: M5Unified Coverage Tracking System
+
+**Goal**: Automatically detect and track M5Unified API changes over time
+
+**Status**: 📋 Planned
+
+### Strategy: C++ Parser-based Automatic Diff Detection
+
+**Approach**: Use existing LibClangParser to compare versions - NO new tests needed.
+
+### Implementation Plan
+
+#### Priority 1: Version Comparison Script ⚠️ HIGH PRIORITY
+
+**Script**: `scripts/compare_versions.rb`
+
+**Features**:
+- Parse current M5Unified (vendor/m5unified) using LibClangParser
+- Clone and parse latest M5Unified from GitHub
+- Generate diff report: new/deleted/modified classes and methods
+- Output format: Markdown with statistics and detailed changes
+
+**Output Example**:
+```markdown
+✅ M5Unified v0.1.15 → v0.1.16 比較
+
+📊 統計:
+  - 新規クラス: 2 (WiFi_Class, Bluetooth_Class)
+  - 削除クラス: 0
+  - 新規メソッド: 15
+  - 削除メソッド: 3
+  - 変更メソッド: 5 (引数・戻り値変更)
+
+🆕 新規クラス:
+  - WiFi_Class (12 methods)
+  - Bluetooth_Class (8 methods)
+
+➕ 新規メソッド:
+  - M5Unified::getWiFi() : WiFi_Class&
+  - M5Unified::getBluetooth() : Bluetooth_Class&
+  ...
+```
+
+**Implementation Notes**:
+- Reuse existing LibClangParser (already tested, 100% working)
+- Pure data comparison - no complex logic
+- No new tests required (parser tests cover all cases)
+
+#### Priority 2: Coverage History Tracking
+
+**File**: `coverage_history.json`
+
+**Structure**:
+```json
+{
+  "versions": [
+    {
+      "version": "0.1.15",
+      "date": "2025-12-09",
+      "commit": "abc123...",
+      "classes": 64,
+      "methods": 587,
+      "functional_classes": 37,
+      "data_structures": 27
+    },
+    {
+      "version": "0.1.16",
+      "date": "2025-12-15",
+      "commit": "def456...",
+      "classes": 66,
+      "methods": 602,
+      "diff": {
+        "new_classes": ["WiFi_Class", "Bluetooth_Class"],
+        "new_methods": 15,
+        "deleted_methods": 0
+      }
+    }
+  ]
+}
+```
+
+**Purpose**:
+- Version-to-version change tracking
+- Coverage trend visualization data
+- Automatic CHANGELOG generation source
+
+#### Priority 3: CLI Integration
+
+**Command**: `m5libgen check-updates`
+
+**Usage**:
+```bash
+$ m5libgen check-updates
+
+📦 Checking M5Unified updates...
+✓ Current version: v0.1.15 (587 methods, 64 classes)
+✓ Latest version:  v0.1.16 (602 methods, 66 classes)
+
+⚠️  Updates detected!
+
+🆕 New classes (2):
+  - WiFi_Class (12 methods)
+  - Bluetooth_Class (8 methods)
+
+➕ New methods (15):
+  - M5Unified::getWiFi() : WiFi_Class&
+  - M5Unified::getBluetooth() : Bluetooth_Class&
+  ...
+
+📝 Recommendation:
+  1. Run: m5libgen clone --update
+  2. Run: m5libgen generate output/mrbgem-m5unified
+  3. Update COVERAGE_REPORT.md
+  4. Commit changes
+```
+
+#### Priority 4: CI Automation (Future)
+
+**GitHub Actions**: `.github/workflows/m5unified-coverage-check.yml`
+
+**Features**:
+- Weekly automatic check (every Monday)
+- Manual trigger support
+- Auto-create GitHub Issue when updates detected
+- Coverage report artifact upload
+
+**Workflow Sketch**:
+```yaml
+name: M5Unified Coverage Check
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Every Monday
+  workflow_dispatch:
+jobs:
+  check-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check updates
+        run: bundle exec ruby scripts/compare_versions.rb
+      - name: Create issue if diff found
+        if: steps.check.outputs.has_diff == 'true'
+        uses: actions/github-script@v7
+```
+
+### Why Tests Are NOT Needed
+
+✅ **LibClangParser is fully tested**:
+- 14 tests, 100% pass
+- Covers all C++ parsing scenarios
+- Already validated with M5Unified (587 methods, 64 classes)
+
+✅ **Diff detection is simple data comparison**:
+- Compare two Hash/JSON structures
+- No complex parsing logic
+- Straightforward Ruby operations
+
+✅ **Existing scripts prove the approach**:
+- `complete_inventory.rb` - working production script
+- `final_coverage_validation.rb` - proven validation approach
+
+### Maintenance Workflow
+
+**When M5Unified updates**:
+
+1. **Detect**: Run `m5libgen check-updates`
+2. **Review**: Check diff report for new APIs
+3. **Update**: Re-generate mrbgem with `m5libgen generate`
+4. **Document**: Update COVERAGE_REPORT.md with new stats
+5. **Commit**: Push changes to repository
+
+**Expected Frequency**: Monthly to quarterly (based on M5Unified release cycle)
 
 ---
 
