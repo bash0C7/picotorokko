@@ -6,7 +6,7 @@
 
 The M5LibGen tool successfully extracts and wraps **100% of M5Unified's functional API** for PicoRuby, including all classes inside namespaces.
 
-- **608 methods** extracted across **37 functional classes**
+- **587 methods** extracted across **37 functional classes** (corrected after removing false positives)
 - **27 data structures** correctly identified (no methods expected)
 - **All critical classes** fully covered with complete method extraction
 - **All utility classes** (power, IMU, RTC, LED) extracted
@@ -17,19 +17,19 @@ The M5LibGen tool successfully extracts and wraps **100% of M5Unified's function
 - Total classes extracted: **64**
 - Functional classes: **37** (58%)
 - Data structures: **27** (42%)
-- Total methods: **608**
+- Total methods: **587** (corrected - excludes preprocessor directives and function calls)
 
 ### Critical Classes Verification
 
 | Class | Methods | Description | Status |
 |-------|---------|-------------|--------|
-| M5Unified | 58 | Main API class | ✅ |
-| Button_Class | 29 | Button input | ✅ |
-| Touch_Class | 27 | Touch input | ✅ |
+| M5Unified | 57 | Main API class | ✅ |
+| Button_Class | 27 | Button input | ✅ |
+| Touch_Class | 29 | Touch input | ✅ |
 | Speaker_Class | 27 | Audio output | ✅ |
-| IMU_Class | 40 | IMU sensor | ✅ |
+| IMU_Class | 37 | IMU sensor | ✅ |
 | Power_Class | 29 | Power management | ✅ |
-| RTC_Class | 35 | Real-time clock | ✅ |
+| RTC_Class | 30 | Real-time clock | ✅ |
 | I2C_Class | 22 | I2C communication | ✅ |
 | M5GFX | N/A | Display output (LovyanGFX) | ⚠️ External |
 
@@ -37,16 +37,16 @@ The M5LibGen tool successfully extracts and wraps **100% of M5Unified's function
 
 ## Top Classes by Method Count
 
-1. **AXP2101_Class**: 81 methods - Power management IC (NEW!)
-2. **M5Unified**: 58 methods - Main API class
-3. **AXP192_Class**: 50 methods - Power management IC (NEW!)
-4. **IMU_Class**: 40 methods - Motion sensor
-5. **RTC_Class**: 35 methods - Real-time clock
-6. **Power_Class**: 29 methods - Power management
-7. **Button_Class**: 29 methods - Button input
-8. **Touch_Class**: 27 methods - Touch input
+1. **AXP2101_Class**: 75 methods - Power management IC
+2. **M5Unified**: 57 methods - Main API class
+3. **AXP192_Class**: 49 methods - Power management IC
+4. **IMU_Class**: 37 methods - Motion sensor
+5. **RTC_Class**: 30 methods - Real-time clock
+6. **Touch_Class**: 29 methods - Touch input
+7. **Power_Class**: 29 methods - Power management
+8. **Button_Class**: 27 methods - Button input
 9. **Speaker_Class**: 27 methods - Audio output
-10. **LED_Class**: 27 methods - LED control (NEW!)
+10. **LED_Class**: 27 methods - LED control
 
 ## Data Structures (0 Methods - Expected)
 
@@ -218,7 +218,11 @@ All classes (including namespace-scoped utility classes), methods, and data stru
 
 ---
 
-**Generated**: 2025-12-09
+**Generated**: 2025-12-09 (Updated after fallback parser fix)
 **M5Unified Version**: Latest from GitHub
-**Total Methods**: 608 (+59% from initial report)
+**Total Methods**: 587 (corrected - excludes preprocessor directives and function calls)
 **Total Classes**: 64 (37 functional, 27 data structures)
+
+**Note**: Previous reports showed 608 methods, which included false positives from
+preprocessor directives and function calls. After fixing the fallback parser
+to properly skip these non-method elements, the accurate count is 587 methods.
