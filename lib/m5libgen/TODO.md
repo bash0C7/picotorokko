@@ -121,6 +121,326 @@ Current status and roadmap for M5LibGen development.
 - ❌ Phase 8: ESP32 compilation validation
 - ❌ Phase 9: Device testing
 - ❌ Phase 10: M5Unified coverage tracking system (see below)
+- 🔴 **Phase 11: Critical Production Issues** (see below) - REQUIRES STRATEGIC PLANNING
+
+---
+
+## Phase 11: Critical Production Issues 🔴 URGENT
+
+**Status**: 🚨 Blocking production use - requires strategic planning before implementation
+
+**Discovered**: 2025-12-09 - Post-coverage validation analysis
+
+### Overview
+
+While 100% method coverage (587 methods, 64 classes) has been achieved, **the generated code has critical issues that prevent production use**. These require careful strategic planning before implementation.
+
+---
+
+### 🔴 Priority 1: CRITICAL - Blocks Compilation
+
+#### Issue 1-1: Parameter Name Mis-extraction
+
+**Problem**: Generated C++ code contains invalid parameter names
+
+**Example**:
+```cpp
+// ❌ INVALID - won't compile
+M5AtomDisplay m5unified_m5unified_dsp_1(cfg.atom_display cfg.atom_display) {
+  return M5.M5Unified.dsp(cfg.atom_display);
+}
+```
+
+**Root Cause**:
+- LibClangParser (or fallback) extracts struct member access (`.`) as parameter name
+- Original C++ signature: `M5AtomDisplay dsp(const config_t& cfg)` with `cfg.atom_display` in method body
+- Parser confuses method body code with parameter declaration
+
+**Impact**:
+- ✅ ESP32 compilation will fail
+- ✅ Estimated ~20-50 methods affected (all methods with complex parameter types)
+
+**Strategic Questions**:
+1. Should we fix parameter extraction in parser, or post-process generated code?
+2. How to handle parameters with no explicit names in C++ headers?
+3. Need to decide: generate generic names (arg0, arg1) or preserve semantic meaning?
+
+**Potential Approaches**:
+- **A**: Fix LibClangParser to extract canonical parameter names (via AST cursor.spelling)
+- **B**: Add post-processing step to sanitize parameter names (remove `.`, `->`, etc.)
+- **C**: Use fallback naming: `param_0`, `param_1`, `param_2` when extraction fails
+
+**Test Strategy**:
+- Add test case with struct member access in parameters
+- Verify sanitized names compile correctly
+
+---
+
+#### Issue 1-2: Method Overloading Name Collision
+
+**Problem**: Multiple overloaded methods generate identical function names
+
+**Example**:
+```cpp
+// ❌ COLLISION - all have _1 suffix (1 parameter each)
+M5AtomDisplay m5unified_m5unified_dsp_1(cfg.atom_display cfg.atom_display) { ... }
+M5ModuleDisplay m5unified_m5unified_dsp_1(cfg.module_display cfg.module_display) { ... }
+M5UnitOLED m5unified_m5unified_dsp_1(cfg.unit_oled cfg.unit_oled) { ... }
+M5UnitMiniOLED m5unified_m5unified_dsp_1(cfg.unit_mini_oled cfg.unit_mini_oled) { ... }
+M5UnitGLASS m5unified_m5unified_dsp_1(cfg.unit_glass cfg.unit_glass) { ... }
+M5UnitGLASS2 m5unified_m5unified_dsp_1(cfg.unit_glass2 cfg.unit_glass2) { ... }
+M5UnitLCD m5unified_m5unified_dsp_1(cfg.unit_lcd cfg.unit_lcd) { ... }
+// 7 definitions of m5unified_m5unified_dsp_1() - link error!
+```
+
+**Root Cause**:
+- Current naming: `{class}_{method}_{param_count}`
+- All `dsp()` overloads take 1 parameter → same suffix `_1`
+- Parameter count alone is insufficient for uniqueness
+
+**Impact**:
+- ✅ Linker error: "multiple definition of symbol"
+- ✅ Estimated ~50-100 overloaded methods affected
+- ✅ Common pattern in M5Unified (begin, dsp, setConfig, etc.)
+
+**Strategic Questions**:
+1. Use parameter types in naming? (long names, but unique)
+2. Use sequential numbering per method name? (short, but less semantic)
+3. Generate separate files per class to avoid global namespace pollution?
+
+**Potential Approaches**:
+- **A**: Type-based naming: `m5unified_dsp_atomdisplay()`, `m5unified_dsp_moduledisplay()`
+- **B**: Hash-based suffix: `m5unified_dsp_a1b2c3()` (hash of param types)
+- **C**: Sequential per-method: `m5unified_dsp_0()`, `m5unified_dsp_1()`, `m5unified_dsp_2()`
+
+**Trade-offs**:
+| Approach | Name Length | Uniqueness | Readability | Implementation |
+|----------|-------------|------------|-------------|----------------|
+| A: Type-based | Long | ✅ Guaranteed | ✅ Clear | Medium |
+| B: Hash-based | Short | ✅ Guaranteed | ❌ Cryptic | Easy |
+| C: Sequential | Short | ✅ Guaranteed | ⚠️ Needs doc | Easy |
+
+**Recommendation**: **Approach A (type-based)** - prioritize correctness and clarity over brevity
+
+**Test Strategy**:
+- Add test with multiple overloads (same param count, different types)
+- Verify unique names generated
+- Check linker accepts all definitions
+
+---
+
+### 🟡 Priority 2: Important - Must Address Before Production
+
+#### Issue 2-1: mrubyc Bindings Unverified
+
+**Problem**: Generated `src/m5unified.c` has not been inspected or tested
+
+**Unknown Factors**:
+- Parameter marshalling (Ruby → C++) - correct conversion?
+- Return value conversion (C++ → Ruby) - proper type mapping?
+- Object reference handling (`&`, `*`) - memory management?
+- Error propagation - C++ exceptions → Ruby errors?
+
+**Strategic Questions**:
+1. Auto-generate bindings vs. template-based approach?
+2. How to handle unsupported parameter types (callbacks, templates)?
+3. Memory management strategy for object references?
+
+**Investigation Required**:
+```bash
+# Examine generated bindings
+head -200 /tmp/mrbgem-m5unified-fixed/src/m5unified.c
+
+# Key things to check:
+# - mrbc_define_class() calls
+# - mrbc_define_method() registrations
+# - GET_*_ARG() parameter extraction
+# - SET_*_RETURN() value conversion
+```
+
+**Test Strategy**:
+- Create minimal PicoRuby test script
+- Call basic methods (M5.begin, BtnA.wasPressed)
+- Verify on actual ESP32 device
+
+---
+
+#### Issue 2-2: ESP32 Memory Constraints
+
+**Problem**: 587 methods × (code + metadata) may exceed ESP32 RAM limits
+
+**Facts**:
+- ESP32 SRAM: ~520KB total
+- WiFi/Bluetooth reserved: ~100KB
+- PicoRuby VM: ~50-100KB
+- Application code: ~200-300KB remaining
+- 587 C wrapper functions: **size unknown** ⚠️
+
+**Strategic Questions**:
+1. Generate full mrbgem (587 methods) or subset versions?
+2. Implement lazy loading / dynamic linking?
+3. Profile actual memory usage on device?
+
+**Potential Approaches**:
+- **A**: Full mrbgem (all 587 methods) - test on device first
+- **B**: Modular mrbgems:
+  - `mrbgem-m5unified-core` (M5, Button, Display management) ~100 methods
+  - `mrbgem-m5unified-sensors` (IMU, RTC) ~100 methods
+  - `mrbgem-m5unified-power` (AXP, IP5306) ~150 methods
+  - `mrbgem-m5unified-full` (all) 587 methods
+- **C**: User-configurable generation (select classes via config file)
+
+**Test Strategy**:
+- Flash full mrbgem to ESP32
+- Monitor free heap with `esp_get_free_heap_size()`
+- Measure actual memory consumption
+
+---
+
+#### Issue 2-3: Complex Type Unsupported
+
+**Problem**: Some C++ types cannot be properly wrapped
+
+**Unsupported Types**:
+- Function pointers: `void (*callback)(int)`
+- Template types: `std::vector<T>`, `std::function<>`
+- Varargs: `printf(const char* fmt, ...)`
+- Rvalue references: `Type&&`
+
+**Current Behavior**:
+- Parser extracts these methods
+- Generated code may not compile or work correctly
+
+**Strategic Questions**:
+1. Skip unsupported methods automatically?
+2. Generate stub implementations (raise NotImplementedError)?
+3. Provide manual override mechanism?
+
+**Potential Approaches**:
+- **A**: Blacklist pattern - skip known unsupported types
+- **B**: Type capability check - parser validates before generating
+- **C**: Manual wrapper directory - developers provide custom implementations
+
+**Test Strategy**:
+- Create test header with unsupported types
+- Verify parser skips or handles gracefully
+- Document unsupported patterns
+
+---
+
+### 🟢 Priority 3: Future Improvements
+
+#### Issue 3-1: Error Handling Strategy
+
+**Problem**: C++ exceptions not handled in wrappers
+
+**Example**:
+```cpp
+// What if M5.begin() throws?
+extern "C" int m5unified_begin_0() {
+  M5.begin();  // ← May throw std::exception
+  return 1;
+}
+```
+
+**Strategic Options**:
+1. Wrap all calls in try-catch, return error codes
+2. Let exceptions crash (ESP32 reboots) - fail-fast
+3. Convert to mrubyc exceptions (if supported)
+
+---
+
+#### Issue 3-2: Object Lifetime Management
+
+**Problem**: C++ references vs. Ruby object lifecycle
+
+**Example**:
+```cpp
+Button_Class& getButton(size_t index) { return _buttons[index]; }
+```
+
+**Questions**:
+- How long does Ruby object wrapping `Button_Class&` live?
+- What if C++ side invalidates the reference?
+- GC implications?
+
+**Strategy**: Needs research into mrubyc object model
+
+---
+
+#### Issue 3-3: libclang Availability
+
+**Problem**: Different parsing results based on environment
+
+**Impact**: Developer experience inconsistency
+
+**Strategy**: Provide Docker image with libclang pre-installed
+
+---
+
+### Implementation Roadmap (Requires Planning)
+
+#### Step 1: Strategic Planning Session (NEXT)
+
+**Goal**: Decide on approaches for P1 issues before coding
+
+**Decisions Needed**:
+1. Parameter name sanitization strategy (A/B/C?)
+2. Overload naming convention (A/B/C?)
+3. Test-first or investigate-first approach?
+
+**Participants**: Development team discussion
+
+**Output**: Detailed implementation plan with chosen approaches
+
+---
+
+#### Step 2: P1 Issue Resolution (After Planning)
+
+**Estimated Effort**: 2-3 TDD cycles
+
+**Tasks**:
+- [ ] Cycle X: Fix parameter name extraction (chosen approach)
+- [ ] Cycle Y: Fix overload naming collision (chosen approach)
+- [ ] Cycle Z: Integration test with real M5Unified headers
+- [ ] Validation: Re-generate mrbgem, verify compilation
+
+---
+
+#### Step 3: P2 Investigation & Testing
+
+**Estimated Effort**: 1-2 weeks
+
+**Tasks**:
+- [ ] Inspect generated mrubyc bindings
+- [ ] Create PicoRuby test suite
+- [ ] Flash to ESP32, measure memory usage
+- [ ] Document unsupported type patterns
+
+---
+
+### Decision Points
+
+**Before proceeding, team must decide**:
+
+1. **Naming Strategy**:
+   - [ ] Parameter names: Generic (arg0) vs. Sanitized (remove dots) vs. Semantic (parse better)
+   - [ ] Overload names: Type-based vs. Hash-based vs. Sequential
+
+2. **Scope Strategy**:
+   - [ ] Full mrbgem (587 methods) vs. Modular approach vs. User-configurable
+
+3. **Quality Strategy**:
+   - [ ] Fix all issues before first release vs. MVP with known limitations
+
+4. **Testing Strategy**:
+   - [ ] Unit tests only vs. Integration tests vs. Device tests
+
+---
+
+**Status**: ⏸️ PAUSED - Awaiting strategic planning session
+
+**Next Action**: Schedule planning discussion to decide implementation approaches
 
 ---
 
