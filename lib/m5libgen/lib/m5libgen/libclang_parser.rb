@@ -284,9 +284,23 @@ module M5LibGen
     def extract_methods_from_body_fallback(class_body)
       methods = []
 
+      # Remove preprocessor directives to avoid false matches (keep method declarations)
+      clean_body = class_body.dup
+      clean_body.gsub!(/^\s*#\s*(if|ifdef|ifndef|elif|else|endif|define|undef|include|pragma).*$/, "")
+
       # Match method declarations: [static] [virtual] return_type method_name(params) [const];
-      decl_pattern = /(?:(static)\s+)?(?:(virtual)\s+)?(\w+(?:\s*\*)?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*;/
-      class_body.scan(decl_pattern) do |static_kw, virtual_kw, return_type, method_name, params_str, const_kw|
+      # Enhanced pattern to support:
+      # - Reference types: Type&
+      # - Pointer types: Type*
+      # - Template types: std::vector<int>
+      # - Multi-word types: unsigned int, const char*
+      # - Namespace-qualified types: std::string, m5gfx::point_t
+      decl_pattern = /(?:(static)\s+)?(?:(virtual)\s+)?((?:const\s+)?(?:unsigned\s+|signed\s+)?\w+(?:::\w+)*(?:\s*<[^>]+>)?(?:\s*[*&])?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*;/
+
+      clean_body.scan(decl_pattern) do |static_kw, virtual_kw, return_type, method_name, params_str, const_kw|
+        next if return_type.strip.empty?
+        next if preprocessor_keyword?(return_type)
+
         parameters = extract_parameters_fallback(params_str)
         methods << {
           name: method_name,
@@ -299,9 +313,12 @@ module M5LibGen
       end
 
       # Match inline method definitions: [static] [virtual] return_type method_name(params) [const] { body }
-      # This pattern handles methods with inline implementations
-      inline_pattern = /(?:(static)\s+)?(?:(virtual)\s+)?(\w+(?:\s*\*)?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*\{/m
-      class_body.scan(inline_pattern) do |static_kw, virtual_kw, return_type, method_name, params_str, const_kw|
+      inline_pattern = /(?:(static)\s+)?(?:(virtual)\s+)?((?:const\s+)?(?:unsigned\s+|signed\s+)?\w+(?:::\w+)*(?:\s*<[^>]+>)?(?:\s*[*&])?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*\{/m
+
+      clean_body.scan(inline_pattern) do |static_kw, virtual_kw, return_type, method_name, params_str, const_kw|
+        next if return_type.strip.empty?
+        next if preprocessor_keyword?(return_type)
+
         parameters = extract_parameters_fallback(params_str)
         methods << {
           name: method_name,
@@ -314,6 +331,11 @@ module M5LibGen
       end
 
       methods
+    end
+
+    def preprocessor_keyword?(text)
+      # Check if text looks like a preprocessor keyword
+      text.strip.match?(/^(if|ifdef|ifndef|else|elif|endif|define|undef|include|pragma|return)$/)
     end
 
     def extract_parameters_fallback(params_str)
@@ -332,7 +354,7 @@ module M5LibGen
         parts = param.split(/\s+/)
         if parts.length >= 2
           parameters << {
-            type: parts[0...-1].join(" "),  # Support multi-word types like "unsigned int"
+            type: parts[0...-1].join(" "), # Support multi-word types like "unsigned int"
             name: parts[-1]
           }
         elsif parts.length == 1

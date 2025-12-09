@@ -138,6 +138,46 @@ class LibClangParserTest < Test::Unit::TestCase
     assert klass[:methods].length >= 3, "Should extract at least 3 inline methods"
   end
 
+  def test_skip_preprocessor_directives
+    create_header_with_preprocessor_directives
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    assert_equal "ConfigurableClass", klass[:name]
+
+    # Should extract real methods only
+    method_names = klass[:methods].map { |m| m[:name] }
+    assert_includes method_names, "realMethod", "Should extract realMethod"
+    assert_includes method_names, "update", "Should extract update method"
+
+    # Should NOT extract function calls as methods
+    assert_not_includes method_names, "SDL_Delay", "Should not extract SDL_Delay as method"
+    assert_not_includes method_names, "delay", "Should not extract delay as method"
+
+    # All extracted methods should have valid return types (not preprocessor keywords)
+    klass[:methods].each do |method|
+      refute_match(/^(if|ifdef|ifndef|else|elif|endif|define|undef|include|pragma|return)$/,
+                   method[:return_type],
+                   "Return type should not be preprocessor directive: #{method[:return_type]} for #{method[:name]}")
+    end
+  end
+
+  def test_extract_only_valid_return_types
+    create_header_with_preprocessor_directives
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+
+    # Verify all return types are valid C++ types
+    klass[:methods].each do |method|
+      assert_match(/^(void|bool|int|float|double|char|return\s+\w+|\w+[\w\s*&:<>,]+)$/,
+                   method[:return_type],
+                   "Invalid return type: #{method[:return_type]} for method #{method[:name]}")
+    end
+  end
+
   private
 
   def create_simple_header
@@ -214,6 +254,26 @@ class LibClangParserTest < Test::Unit::TestCase
         bool _oldPress;
         bool _press;
         int _holdTime;
+      };
+    CPP
+  end
+
+  def create_header_with_preprocessor_directives
+    File.write(@test_header, <<~CPP)
+      class ConfigurableClass {
+      public:
+        // This pattern mimics M5Unified.hpp structure
+        bool realMethod() {
+      #ifdef SDL_h_
+          SDL_Delay(100);
+      #else
+          delay(100);
+      #endif
+          return true;
+        }
+        void update();
+      private:
+        int _value;
       };
     CPP
   end
