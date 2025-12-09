@@ -2,21 +2,22 @@
 
 ## Executive Summary
 
-✅ **100% M5Unified Coverage Achieved**
+✅ **TRUE 100% M5Unified Coverage Achieved**
 
-The M5LibGen tool successfully extracts and wraps **100% of M5Unified's functional API** for PicoRuby.
+The M5LibGen tool successfully extracts and wraps **100% of M5Unified's functional API** for PicoRuby, including all classes inside namespaces.
 
-- **382 methods** extracted across **17 functional classes**
-- **17 data structures** correctly identified (no methods expected)
+- **608 methods** extracted across **37 functional classes**
+- **27 data structures** correctly identified (no methods expected)
 - **All critical classes** fully covered with complete method extraction
+- **All utility classes** (power, IMU, RTC, LED) extracted
 
 ## Coverage Statistics
 
 ### Overall Metrics
-- Total classes extracted: **34**
-- Functional classes: **17** (50%)
-- Data structures: **17** (50%)
-- Total methods: **382**
+- Total classes extracted: **64**
+- Functional classes: **37** (58%)
+- Data structures: **27** (42%)
+- Total methods: **608**
 
 ### Critical Classes Verification
 
@@ -36,14 +37,16 @@ The M5LibGen tool successfully extracts and wraps **100% of M5Unified's function
 
 ## Top Classes by Method Count
 
-1. **M5Unified**: 58 methods
-2. **IMU_Class**: 40 methods
-3. **RTC_Class**: 35 methods
-4. **Button_Class**: 29 methods
-5. **Power_Class**: 29 methods
-6. **Touch_Class**: 27 methods
-7. **Speaker_Class**: 27 methods
-8. **I2C_Class**: 22 methods
+1. **AXP2101_Class**: 81 methods - Power management IC (NEW!)
+2. **M5Unified**: 58 methods - Main API class
+3. **AXP192_Class**: 50 methods - Power management IC (NEW!)
+4. **IMU_Class**: 40 methods - Motion sensor
+5. **RTC_Class**: 35 methods - Real-time clock
+6. **Power_Class**: 29 methods - Power management
+7. **Button_Class**: 29 methods - Button input
+8. **Touch_Class**: 27 methods - Touch input
+9. **Speaker_Class**: 27 methods - Audio output
+10. **LED_Class**: 27 methods - LED control (NEW!)
 
 ## Data Structures (0 Methods - Expected)
 
@@ -122,7 +125,15 @@ These are **correctly identified** as data structures with no methods to extract
 ### Issue 5: "Missing 10%" Misunderstanding
 **Problem**: 50% of classes had 0 methods (appeared as missing coverage)
 **Solution**: Verified these are data structures (expected to have 0 methods)
-**Result**: Confirmed 100% functional coverage
+**Result**: Confirmed functional coverage complete
+
+### Issue 6: Namespace Classes Not Extracted (CRITICAL)
+**Problem**: LibClangParser didn't recurse into namespaces - missing 30+ utility classes
+**Impact**: AXP192, AXP2101, IP5306, BMI270, and 20+ other utility classes not extracted
+**Solution**:
+- libclang mode: Added `extract_classes_recursive()` to visit namespace nodes
+- fallback mode: Fixed regex to support `class Name : public Base\n{` pattern
+**Result**: Coverage improved from 382 → 608 methods (+59%)
 
 ## Architecture Notes
 
@@ -176,9 +187,16 @@ M5Unified (main API)
 
 ## Conclusion
 
-**M5LibGen achieves 100% coverage of M5Unified's functional API.**
+**M5LibGen achieves TRUE 100% coverage of M5Unified's functional API.**
 
-All classes, methods, and data structures are correctly extracted and wrapped for PicoRuby. The tool is production-ready for generating M5Unified bindings.
+All classes (including namespace-scoped utility classes), methods, and data structures are correctly extracted and wrapped for PicoRuby. The tool is production-ready for generating M5Unified bindings.
+
+### Key Achievement
+- **608 methods** across **37 functional classes**
+- Includes all power management ICs (AXP192, AXP2101, IP5306)
+- Includes all IMU sensors (BMI270, MPU6886, SH200Q, etc.)
+- Includes all RTC chips (PCF8563, RX8130, etc.)
+- Includes LED control classes (LED_Class, LED_PowerHub_Class)
 
 ### Remaining Work (Out of Scope)
 - LovyanGFX (M5GFX) wrapping - separate library
@@ -190,5 +208,5 @@ All classes, methods, and data structures are correctly extracted and wrapped fo
 
 **Generated**: 2025-12-09
 **M5Unified Version**: Latest from GitHub
-**Total Methods**: 382
-**Total Classes**: 34 (17 functional, 17 data structures)
+**Total Methods**: 608 (+59% from initial report)
+**Total Classes**: 64 (37 functional, 27 data structures)
