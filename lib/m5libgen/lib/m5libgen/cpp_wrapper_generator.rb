@@ -22,7 +22,9 @@ module M5LibGen
     private
 
     def generate_wrapper_function(class_name, method)
-      func_name = "m5unified_#{class_name.downcase}_#{method[:name].downcase}"
+      # Add parameter count to function name to handle overloading
+      param_count = method[:parameters].length
+      func_name = "m5unified_#{class_name.downcase}_#{method[:name].downcase}_#{param_count}"
       return_type = method[:return_type] == "bool" ? "int" : method[:return_type]
       params = if method[:parameters].empty?
                  "void"

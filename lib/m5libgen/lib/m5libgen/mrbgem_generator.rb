@@ -59,7 +59,9 @@ module M5LibGen
       content += "\n/* Extern function declarations */\n"
       cpp_data.each do |klass|
         klass[:methods].each do |method|
-          func_name = "m5unified_#{klass[:name].downcase}_#{method[:name].downcase}"
+          # Add parameter count to handle overloading
+          param_count = method[:parameters].length
+          func_name = "m5unified_#{klass[:name].downcase}_#{method[:name].downcase}_#{param_count}"
           # Convert bool return type to int, keep others as-is
           return_type = method[:return_type] == "bool" ? "int" : method[:return_type]
           # Build parameter list
@@ -85,8 +87,10 @@ module M5LibGen
     end
 
     def generate_method_wrapper(class_name, method)
-      func_name = "mrbc_m5_#{method[:name].downcase}"
-      extern_func = "m5unified_#{class_name.downcase}_#{method[:name].downcase}"
+      # Add parameter count to handle overloading
+      param_count = method[:parameters].length
+      func_name = "mrbc_m5_#{method[:name].downcase}_#{param_count}"
+      extern_func = "m5unified_#{class_name.downcase}_#{method[:name].downcase}_#{param_count}"
 
       content = "static void #{func_name}(mrbc_vm *vm, mrbc_value *v, int argc) {\n"
 
@@ -126,7 +130,9 @@ module M5LibGen
       cpp_data.each do |klass|
         content += "  c_#{klass[:name]} = mrbc_define_class(vm, \"#{klass[:name]}\", mrbc_class_object);\n"
         klass[:methods].each do |method|
-          method_func = "mrbc_m5_#{method[:name].downcase}"
+          # Add parameter count to handle overloading
+          param_count = method[:parameters].length
+          method_func = "mrbc_m5_#{method[:name].downcase}_#{param_count}"
           content += "  mrbc_define_method(vm, c_#{klass[:name]}, \"#{method[:name]}\", #{method_func});\n"
         end
       end
