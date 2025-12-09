@@ -60,20 +60,26 @@ module M5LibGen
 
     def extract_classes_with_libclang
       classes = []
-      cursor = @translation_unit.cursor
-
-      visit_children(cursor) do |child|
-        next unless %i[cursor_class_decl cursor_struct_decl].include?(child.kind)
-
-        class_info = {
-          name: child.spelling,
-          methods: extract_methods_from_class(child),
-          enums: extract_enums_from_class(child)
-        }
-        classes << class_info
-      end
-
+      extract_classes_recursive(@translation_unit.cursor, classes)
       classes
+    end
+
+    def extract_classes_recursive(cursor, classes)
+      visit_children(cursor) do |child|
+        case child.kind
+        when :cursor_class_decl, :cursor_struct_decl
+          # Found a class/struct - extract it
+          class_info = {
+            name: child.spelling,
+            methods: extract_methods_from_class(child),
+            enums: extract_enums_from_class(child)
+          }
+          classes << class_info
+        when :cursor_namespace
+          # Found a namespace - recurse into it
+          extract_classes_recursive(child, classes)
+        end
+      end
     end
 
     def extract_enums_with_libclang
@@ -175,15 +181,15 @@ module M5LibGen
       classes = []
 
       # Match class/struct declarations with balanced braces
-      # First, find class/struct keyword and name
-      class_start_pattern = /(?:class|struct)\s+(\w+)\s*\{/
+      # Support inheritance and newlines: class Name : public Base \n {
+      class_start_pattern = /(?:class|struct)\s+(\w+)(?:\s*:\s*public\s+\w+)?[^{;]*?\{/m
       @content.scan(class_start_pattern).each do |class_name_match|
         class_name = class_name_match[0]
         # Find the start position of this class
-        start_pos = @content.index(/(?:class|struct)\s+#{Regexp.escape(class_name)}\s*\{/)
+        start_pos = @content.index(/(?:class|struct)\s+#{Regexp.escape(class_name)}\b/)
         next unless start_pos
 
-        # Find the matching closing brace
+        # Find the matching opening brace
         brace_start = @content.index("{", start_pos)
         next unless brace_start
 
