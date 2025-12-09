@@ -317,12 +317,16 @@ module M5LibGen
       params_str.split(",").each do |param|
         param = param.strip
         next if param.empty?
+        # Skip "void" parameter - it means no parameters
+        next if param == "void"
+        # Skip varargs "..." - not supported in mrubyc bindings
+        next if param == "..."
 
         # Extract type and name: "int x" => type: "int", name: "x"
         parts = param.split(/\s+/)
         if parts.length >= 2
           parameters << {
-            type: parts[0],
+            type: parts[0...-1].join(" "),  # Support multi-word types like "unsigned int"
             name: parts[-1]
           }
         elsif parts.length == 1
