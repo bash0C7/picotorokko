@@ -36,7 +36,7 @@ def complete_inventory
           klass[:source_file] = File.basename(header)
           all_classes << klass
         end
-      rescue => e
+      rescue StandardError
         # Skip problematic headers
       end
     end
@@ -55,7 +55,7 @@ def complete_inventory
       method_count = klass[:methods].length
       total_methods += method_count
 
-      if method_count > 0
+      if method_count.positive?
         puts "#{(idx + 1).to_s.rjust(2)}. #{klass[:name].ljust(30)} #{method_count.to_s.rjust(3)} methods  (#{klass[:source_file]})"
 
         # Show first 5 methods as sample
@@ -79,7 +79,7 @@ def complete_inventory
     puts "SUMMARY"
     puts "=" * 100
     puts "Total classes: #{all_classes.length}"
-    puts "Functional classes (methods > 0): #{all_classes.count { |c| c[:methods].length > 0 }}"
+    puts "Functional classes (methods > 0): #{all_classes.count { |c| c[:methods].length.positive? }}"
     puts "Data structures (methods = 0): #{all_classes.count { |c| c[:methods].empty? }}"
     puts "Total methods: #{total_methods}"
     puts
@@ -99,7 +99,7 @@ def complete_inventory
       "Power_Class",
       "RTC_Class",
       "I2C_Class",
-      "Display_Class",  # Might not exist (M5GFX)
+      "Display_Class", # Might not exist (M5GFX)
       "In_I2C",
       "Ex_I2C",
       "AXP192_Class",
@@ -115,12 +115,9 @@ def complete_inventory
         puts "❌ #{expected.ljust(30)} NOT FOUND"
       end
     end
-
   ensure
     FileUtils.rm_rf(tmpdir)
   end
 end
 
-if __FILE__ == $0
-  complete_inventory
-end
+complete_inventory if __FILE__ == $PROGRAM_NAME

@@ -45,7 +45,7 @@ def analyze_m5unified_coverage
           klass[:source_file] = File.basename(header)
           all_classes << klass
         end
-      rescue => e
+      rescue StandardError => e
         puts "⚠️  Error parsing #{File.basename(header)}: #{e.message}"
         skipped_headers << header
       end
@@ -59,7 +59,7 @@ def analyze_m5unified_coverage
 
     # Overall stats
     total_classes = all_classes.length
-    classes_with_methods = all_classes.select { |c| c[:methods].length > 0 }.length
+    classes_with_methods = all_classes.count { |c| c[:methods].length.positive? }
     total_methods = all_classes.sum { |c| c[:methods].length }
 
     puts "📊 OVERALL STATISTICS:"
@@ -82,7 +82,7 @@ def analyze_m5unified_coverage
     # Top classes by method count
     puts "🏆 TOP 10 CLASSES BY METHOD COUNT:"
     all_classes
-      .select { |c| c[:methods].length > 0 }
+      .select { |c| c[:methods].length.positive? }
       .sort_by { |c| -c[:methods].length }
       .take(10)
       .each_with_index do |klass, idx|
@@ -105,7 +105,7 @@ def analyze_m5unified_coverage
     critical_classes.each do |class_name, description|
       klass = all_classes.find { |c| c[:name] == class_name }
       if klass
-        status = klass[:methods].length > 0 ? "✅" : "❌"
+        status = klass[:methods].length.positive? ? "✅" : "❌"
         puts "  #{status} #{class_name} (#{description}): #{klass[:methods].length} methods"
       else
         puts "  ❓ #{class_name} (#{description}): NOT FOUND"
@@ -129,7 +129,7 @@ def analyze_m5unified_coverage
       .sort_by { |c| [-c[:methods].length, c[:name]] }
       .each do |klass|
         method_count = klass[:methods].length
-        status = method_count > 0 ? "✅" : "❌"
+        status = method_count.positive? ? "✅" : "❌"
         puts "  #{status} #{klass[:name]}: #{method_count} methods (#{klass[:source_file]})"
       end
     puts
@@ -144,12 +144,9 @@ def analyze_m5unified_coverage
     puts
 
     all_classes
-
   ensure
     FileUtils.rm_rf(tmpdir)
   end
 end
 
-if __FILE__ == $0
-  analyze_m5unified_coverage
-end
+analyze_m5unified_coverage if __FILE__ == $PROGRAM_NAME

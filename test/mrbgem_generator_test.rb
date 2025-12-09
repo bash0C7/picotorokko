@@ -56,7 +56,7 @@ class MrbgemGeneratorTest < Test::Unit::TestCase
     assert_match(/extern int m5unified_led_class_isready_0\(void\);/, c_file)
 
     # Should NOT have generic "extern void func(void)" for all methods
-    refute_match(/extern void m5unified_led_class_setbrightness_1\(void\);/,  c_file,
+    refute_match(/extern void m5unified_led_class_setbrightness_1\(void\);/, c_file,
                  "Should not have void(void) for method with parameters")
   end
 
@@ -108,7 +108,7 @@ class MrbgemGeneratorTest < Test::Unit::TestCase
     # Should call extern function with param count suffix
     assert_match(/m5unified_led_class_begin_0\(\);/, c_file)
     # Should not have TODO stub
-    refute_match(/\/\* TODO: Call wrapper function \*\//, c_file)
+    refute_match(%r{/\* TODO: Call wrapper function \*/}, c_file)
   end
 
   def test_wrapper_function_with_int_parameters

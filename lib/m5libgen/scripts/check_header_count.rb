@@ -53,12 +53,9 @@ def check_header_count
     power_headers.each do |header|
       puts File.basename(header)
     end
-
   ensure
     FileUtils.rm_rf(tmpdir)
   end
 end
 
-if __FILE__ == $0
-  check_header_count
-end
+check_header_count if __FILE__ == $PROGRAM_NAME

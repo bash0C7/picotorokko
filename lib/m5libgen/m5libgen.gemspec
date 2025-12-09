@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/bash0C7/picotorokko"
   spec.metadata["changelog_uri"] = "https://github.com/bash0C7/picotorokko/blob/main/CHANGELOG.md"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   spec.files = Dir["lib/**/*", "bin/*", "README.md", "TODO.md", "LICENSE"]
   spec.bindir = "bin"

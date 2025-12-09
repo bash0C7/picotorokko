@@ -36,7 +36,7 @@ def final_coverage_validation
           klass[:source_file] = File.basename(header)
           all_classes << klass
         end
-      rescue => e
+      rescue StandardError
         # Skip problematic headers
       end
     end
@@ -48,7 +48,7 @@ def final_coverage_validation
 
     # Overall stats
     total_classes = all_classes.length
-    functional_classes = all_classes.select { |c| c[:methods].length > 0 }
+    functional_classes = all_classes.select { |c| c[:methods].length.positive? }
     data_structures = all_classes.select { |c| c[:methods].empty? }
     total_methods = all_classes.sum { |c| c[:methods].length }
 
@@ -76,19 +76,17 @@ def final_coverage_validation
     all_critical_ok = true
     critical.each do |class_name, description|
       klass = all_classes.find { |c| c[:name] == class_name }
-      if klass && klass[:methods].length > 0
+      if klass && klass[:methods].length.positive?
         puts "  ✅ #{class_name.ljust(20)} #{klass[:methods].length.to_s.rjust(3)} methods - #{description}"
       elsif klass
         puts "  ❌ #{class_name.ljust(20)} #{klass[:methods].length.to_s.rjust(3)} methods - #{description} (MISSING METHODS!)"
         all_critical_ok = false
-      else
+      elsif class_name == "M5GFX"
         # M5GFX is from external LovyanGFX library (optional)
-        if class_name == "M5GFX"
-          puts "  ⚠️  #{class_name.ljust(20)}       EXTERNAL - #{description}"
-        else
-          puts "  ❌ #{class_name.ljust(20)}       NOT FOUND - #{description}"
-          all_critical_ok = false
-        end
+        puts "  ⚠️  #{class_name.ljust(20)}       EXTERNAL - #{description}"
+      else
+        puts "  ❌ #{class_name.ljust(20)}       NOT FOUND - #{description}"
+        all_critical_ok = false
       end
     end
     puts
@@ -117,12 +115,9 @@ def final_coverage_validation
     end
     puts "=" * 80
     puts
-
   ensure
     FileUtils.rm_rf(tmpdir)
   end
 end
 
-if __FILE__ == $0
-  final_coverage_validation
-end
+final_coverage_validation if __FILE__ == $PROGRAM_NAME
