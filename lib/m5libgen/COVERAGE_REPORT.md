@@ -76,12 +76,24 @@ These are **correctly identified** as data structures with no methods to extract
 3. **Header Reader** - Discovers all header files in M5Unified
 
 ### Validation Process
+
+**CRITICAL**: All validation uses the **production LibClangParser** - the same parser that generates actual mrbgems. **NO regular expressions** are used for method counting or class detection.
+
 1. Clone M5Unified repository from GitHub
-2. Parse all headers using same LibClangParser as production
-3. Extract classes and methods
+2. Parse all headers using **LibClangParser** (same as production)
+3. Extract classes and methods using **AST-based parsing** (not regex)
 4. Verify critical classes are present
 5. Confirm data structures have no methods
 6. Validate total method count
+
+**Validation scripts (all parser-based):**
+- `final_coverage_validation.rb` - Comprehensive validation
+- `complete_inventory.rb` - Full class/method listing
+- `analyze_m5unified_coverage.rb` - Coverage analysis
+- `parse_all_headers.rb` - Header-by-header parsing
+- `verify_zero_method_extraction.rb` - Data structure verification
+
+**See VALIDATION.md for detailed methodology.**
 
 ### Key Findings
 
