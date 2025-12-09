@@ -22,7 +22,9 @@ module M5LibGen
     private
 
     def generate_wrapper_function(class_name, method)
-      func_name = "m5unified_#{class_name.downcase}_#{method[:name]}"
+      # Add parameter count to function name to handle overloading
+      param_count = method[:parameters].length
+      func_name = "m5unified_#{class_name.downcase}_#{method[:name].downcase}_#{param_count}"
       return_type = method[:return_type] == "bool" ? "int" : method[:return_type]
       params = if method[:parameters].empty?
                  "void"
@@ -35,7 +37,8 @@ module M5LibGen
       content = "#{return_type} #{func_name}(#{params}) {\n"
       api_call = "M5.#{class_name}.#{method[:name]}"
       param_names = method[:parameters].map { |p| p[:name] }.join(", ")
-      api_call += "(#{param_names})" unless param_names.empty?
+      # Always add parentheses for method calls
+      api_call += "(#{param_names})"
 
       content += if return_type == "int" && method[:return_type] == "bool"
                    "  return #{api_call} ? 1 : 0;\n"

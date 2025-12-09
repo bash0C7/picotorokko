@@ -60,20 +60,26 @@ module M5LibGen
 
     def extract_classes_with_libclang
       classes = []
-      cursor = @translation_unit.cursor
-
-      visit_children(cursor) do |child|
-        next unless %i[cursor_class_decl cursor_struct_decl].include?(child.kind)
-
-        class_info = {
-          name: child.spelling,
-          methods: extract_methods_from_class(child),
-          enums: extract_enums_from_class(child)
-        }
-        classes << class_info
-      end
-
+      extract_classes_recursive(@translation_unit.cursor, classes)
       classes
+    end
+
+    def extract_classes_recursive(cursor, classes)
+      visit_children(cursor) do |child|
+        case child.kind
+        when :cursor_class_decl, :cursor_struct_decl
+          # Found a class/struct - extract it
+          class_info = {
+            name: child.spelling,
+            methods: extract_methods_from_class(child),
+            enums: extract_enums_from_class(child)
+          }
+          classes << class_info
+        when :cursor_namespace
+          # Found a namespace - recurse into it
+          extract_classes_recursive(child, classes)
+        end
+      end
     end
 
     def extract_enums_with_libclang
@@ -174,9 +180,22 @@ module M5LibGen
     def extract_classes_with_fallback
       classes = []
 
-      # Match class/struct declarations: class ClassName { ... };
-      class_pattern = /(?:class|struct)\s+(\w+)\s*\{([^}]*)\}/m
-      @content.scan(class_pattern) do |class_name, class_body|
+      # Match class/struct declarations with balanced braces
+      # Support inheritance and newlines: class Name : public Base \n {
+      class_start_pattern = /(?:class|struct)\s+(\w+)(?:\s*:\s*public\s+\w+)?[^{;]*?\{/m
+      @content.scan(class_start_pattern).each do |class_name_match|
+        class_name = class_name_match[0]
+        # Find the start position of this class
+        start_pos = @content.index(/(?:class|struct)\s+#{Regexp.escape(class_name)}\b/)
+        next unless start_pos
+
+        # Find the matching opening brace
+        brace_start = @content.index("{", start_pos)
+        next unless brace_start
+
+        class_body = extract_balanced_braces(@content, brace_start)
+        next unless class_body
+
         methods = extract_methods_from_body_fallback(class_body)
         enums = extract_enums_from_body_fallback(class_body)
         classes << {
@@ -187,6 +206,29 @@ module M5LibGen
       end
 
       classes
+    end
+
+    # Extract content between balanced braces { ... }
+    def extract_balanced_braces(content, start_pos)
+      brace_count = 0
+      i = start_pos
+      body_start = nil
+
+      while i < content.length
+        char = content[i]
+
+        if char == "{"
+          brace_count += 1
+          body_start = i + 1 if brace_count == 1
+        elsif char == "}"
+          brace_count -= 1
+          return content[body_start...i] if brace_count.zero?
+        end
+
+        i += 1
+      end
+
+      nil
     end
 
     def extract_enums_with_fallback
@@ -242,14 +284,32 @@ module M5LibGen
     def extract_methods_from_body_fallback(class_body)
       methods = []
 
-      # Match method declarations: return_type method_name(params);
-      method_pattern = /(\w+(?:\s*\*)?)\s+(\w+)\s*\(([^)]*)\)\s*;/
-      class_body.scan(method_pattern) do |return_type, method_name, params_str|
+      # Match method declarations: [static] [virtual] return_type method_name(params) [const];
+      decl_pattern = /(?:(static)\s+)?(?:(virtual)\s+)?(\w+(?:\s*\*)?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*;/
+      class_body.scan(decl_pattern) do |static_kw, virtual_kw, return_type, method_name, params_str, const_kw|
         parameters = extract_parameters_fallback(params_str)
         methods << {
           name: method_name,
           return_type: return_type.strip,
-          parameters: parameters
+          parameters: parameters,
+          is_static: !static_kw.nil?,
+          is_const: !const_kw.nil?,
+          is_virtual: !virtual_kw.nil?
+        }
+      end
+
+      # Match inline method definitions: [static] [virtual] return_type method_name(params) [const] { body }
+      # This pattern handles methods with inline implementations
+      inline_pattern = /(?:(static)\s+)?(?:(virtual)\s+)?(\w+(?:\s*\*)?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*\{/m
+      class_body.scan(inline_pattern) do |static_kw, virtual_kw, return_type, method_name, params_str, const_kw|
+        parameters = extract_parameters_fallback(params_str)
+        methods << {
+          name: method_name,
+          return_type: return_type.strip,
+          parameters: parameters,
+          is_static: !static_kw.nil?,
+          is_const: !const_kw.nil?,
+          is_virtual: !virtual_kw.nil?
         }
       end
 
@@ -263,12 +323,16 @@ module M5LibGen
       params_str.split(",").each do |param|
         param = param.strip
         next if param.empty?
+        # Skip "void" parameter - it means no parameters
+        next if param == "void"
+        # Skip varargs "..." - not supported in mrubyc bindings
+        next if param == "..."
 
         # Extract type and name: "int x" => type: "int", name: "x"
         parts = param.split(/\s+/)
         if parts.length >= 2
           parameters << {
-            type: parts[0],
+            type: parts[0...-1].join(" "),  # Support multi-word types like "unsigned int"
             name: parts[-1]
           }
         elsif parts.length == 1
