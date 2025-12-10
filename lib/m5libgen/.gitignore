@@ -4,6 +4,12 @@ vendor/
 # Bundler
 .bundle/
 vendor/bundle/
+bin/racc
+bin/rake
+bin/rubocop
+bin/ruby-parse
+bin/ruby-rewrite
+bin/test-unit
 
 # RubyGems
 *.gem
