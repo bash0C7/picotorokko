@@ -186,4 +186,106 @@ class IntegrationTest < Test::Unit::TestCase
     # C calls the function
     assert_includes c_content, "m5unified_button_waspressed_void()"
   end
+
+  # Issue #3: Type-aware parameter extraction
+  def test_float_parameter_conversion
+    generator = M5LibGen::MrbgemGenerator.new(@output_path)
+    test_data = [
+      {
+        name: "Sensor",
+        methods: [
+          {
+            name: "setThreshold",
+            return_type: "void",
+            parameters: [
+              { type: "float", name: "value" }
+            ],
+            is_static: false,
+            is_const: false,
+            is_virtual: false
+          }
+        ]
+      }
+    ]
+
+    generator.generate(test_data)
+
+    c_content = File.read(File.join(@output_path, "src", "m5unified.c"))
+
+    # Should use GET_FLOAT_ARG for float parameter
+    assert_includes c_content, "GET_FLOAT_ARG",
+                    "Should use GET_FLOAT_ARG for float parameters"
+    assert_includes c_content, "float value = GET_FLOAT_ARG(1)",
+                    "Should extract float parameter correctly"
+  end
+
+  # Issue #3: Type-aware return value handling
+  def test_float_return_conversion
+    generator = M5LibGen::MrbgemGenerator.new(@output_path)
+    test_data = [
+      {
+        name: "Sensor",
+        methods: [
+          {
+            name: "getTemperature",
+            return_type: "float",
+            parameters: [],
+            is_static: false,
+            is_const: true,
+            is_virtual: false
+          }
+        ]
+      }
+    ]
+
+    generator.generate(test_data)
+
+    c_content = File.read(File.join(@output_path, "src", "m5unified.c"))
+
+    # Should use SET_FLOAT_RETURN for float return
+    assert_includes c_content, "SET_FLOAT_RETURN",
+                    "Should use SET_FLOAT_RETURN for float return values"
+    assert_includes c_content, "float result = m5unified_sensor_gettemperature_void()",
+                    "Should store float return value correctly"
+  end
+
+  # Integration: Multi-type method
+  def test_mixed_type_method
+    generator = M5LibGen::MrbgemGenerator.new(@output_path)
+    test_data = [
+      {
+        name: "Display",
+        methods: [
+          {
+            name: "drawCircle",
+            return_type: "bool",
+            parameters: [
+              { type: "int", name: "x" },
+              { type: "int", name: "y" },
+              { type: "float", name: "radius" }
+            ],
+            is_static: false,
+            is_const: false,
+            is_virtual: false
+          }
+        ]
+      }
+    ]
+
+    generator.generate(test_data)
+
+    c_content = File.read(File.join(@output_path, "src", "m5unified.c"))
+
+    # Should use correct type for each parameter
+    assert_includes c_content, "int x = GET_INT_ARG(1)",
+                    "First int parameter should use GET_INT_ARG"
+    assert_includes c_content, "int y = GET_INT_ARG(2)",
+                    "Second int parameter should use GET_INT_ARG"
+    assert_includes c_content, "float radius = GET_FLOAT_ARG(3)",
+                    "Float parameter should use GET_FLOAT_ARG"
+
+    # Bool return should use SET_BOOL_RETURN
+    assert_includes c_content, "SET_BOOL_RETURN",
+                    "Bool return should use SET_BOOL_RETURN"
+  end
 end

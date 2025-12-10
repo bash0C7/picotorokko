@@ -61,5 +61,75 @@ module M5LibGen
 
       false
     end
+
+    # Get mrubyc GET_*_ARG macro for extracting parameter from stack
+    def self.get_arg_macro(cpp_type)
+      normalized = normalize_type(cpp_type)
+
+      case normalized
+      when "bool"
+        "GET_INT_ARG"  # bool is represented as int in C
+      when "int", "int8_t", "int16_t", "int32_t", "int64_t",
+           "uint8_t", "uint16_t", "uint32_t", "uint64_t",
+           "unsigned int", "long", "unsigned long", "size_t"
+        "GET_INT_ARG"
+      when "float", "double"
+        "GET_FLOAT_ARG"
+      when "char*", "const char*"
+        "GET_STRING_ARG"
+      else
+        # Pointers and objects
+        if pointer_type?(normalized) || cpp_type.include?("&")
+          "GET_INT_ARG"  # Treat as opaque pointer (integer)
+        else
+          "GET_INT_ARG"  # Default fallback
+        end
+      end
+    end
+
+    # Get mrubyc SET_*_RETURN macro for setting return value
+    def self.set_return_macro(cpp_type)
+      normalized = normalize_type(cpp_type)
+
+      case normalized
+      when "void"
+        "SET_NIL_RETURN"
+      when "bool"
+        "SET_BOOL_RETURN"  # Special handling for bool
+      when "int", "int8_t", "int16_t", "int32_t", "int64_t",
+           "uint8_t", "uint16_t", "uint32_t", "uint64_t",
+           "unsigned int", "long", "unsigned long", "size_t"
+        "SET_INT_RETURN"
+      when "float", "double"
+        "SET_FLOAT_RETURN"
+      when "char*", "const char*"
+        "SET_STRING_RETURN"
+      else
+        # Pointers and objects
+        if pointer_type?(normalized) || cpp_type.include?("&")
+          "SET_INT_RETURN"  # Treat as opaque pointer (integer)
+        else
+          "SET_INT_RETURN"  # Default fallback
+        end
+      end
+    end
+
+    # Get C type for mrubyc variable declaration
+    def self.get_c_type_for_param(cpp_type)
+      normalized = normalize_type(cpp_type)
+
+      case normalized
+      when "bool"
+        "int"  # bool is represented as int in C
+      when "float"
+        "float"
+      when "double"
+        "double"
+      when "char*", "const char*"
+        "const char*"
+      else
+        cpp_type  # Use original type
+      end
+    end
   end
 end

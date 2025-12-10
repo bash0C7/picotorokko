@@ -136,18 +136,20 @@ module M5LibGen
 
       content = "static void #{func_name}(mrbc_vm *vm, mrbc_value *v, int argc) {\n"
 
-      # Extract parameters from mruby stack with sanitized names
+      # Extract parameters from mruby stack with type-aware conversion
       method[:parameters].each_with_index do |param, idx|
         arg_index = idx + 1
         param_name = sanitize_parameter_name(param[:name], idx)
+        param_c_type = TypeMapper.get_c_type_for_param(param[:type])
+        get_macro = TypeMapper.get_arg_macro(param[:type])
 
-        # For now, assume all parameters are int (will extend later)
-        content += "  int #{param_name} = GET_INT_ARG(#{arg_index});\n"
+        content += "  #{param_c_type} #{param_name} = #{get_macro}(#{arg_index});\n"
       end
 
       # Build extern function call with sanitized parameter names
       param_names = get_sanitized_param_names(method)
 
+      # Type-aware return value handling
       if method[:return_type] == "void"
         # Void return - just call and return nil
         content += "  #{extern_func}(#{param_names});\n"
@@ -157,10 +159,11 @@ module M5LibGen
         content += "  int result = #{extern_func}(#{param_names});\n"
         content += "  SET_BOOL_RETURN(result);\n"
       else
-        # Other return types - call and return
-        return_type = method[:return_type]
-        content += "  #{return_type} result = #{extern_func}(#{param_names});\n"
-        content += "  SET_INT_RETURN(result);\n"
+        # Use TypeMapper to determine correct return handling
+        return_c_type = TypeMapper.get_c_type_for_param(method[:return_type])
+        set_macro = TypeMapper.set_return_macro(method[:return_type])
+        content += "  #{return_c_type} result = #{extern_func}(#{param_names});\n"
+        content += "  #{set_macro}(result);\n"
       end
 
       content += "}\n\n"
