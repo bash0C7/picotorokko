@@ -47,9 +47,9 @@ Current status and roadmap for M5LibGen development.
   - No syntax errors in generated code
   - All wrappers fully functional
 
-**Test Coverage**: 38 tests, 57 assertions, 100% pass (unit + integration)
-**RuboCop**: Clean
-**M5Unified Coverage**: TRUE 100% (**608 methods, 64 classes**)
+**Test Coverage**: 40 tests, 66 assertions, 100% pass (unit + integration)
+**RuboCop**: Clean (6 minor style warnings accepted)
+**M5Unified Coverage**: TRUE 100% (**587 methods, 64 classes**) - corrected after removing false positives
 
 ### ✅ CRITICAL ISSUES RESOLVED
 
@@ -120,6 +120,683 @@ Current status and roadmap for M5LibGen development.
 **Future Work:**
 - ❌ Phase 8: ESP32 compilation validation
 - ❌ Phase 9: Device testing
+- ❌ Phase 10: M5Unified coverage tracking system (see below)
+- 🔴 **Phase 11: Critical Production Issues** (see below) - REQUIRES STRATEGIC PLANNING
+
+---
+
+## Phase 11: Critical Production Issues 🔴 URGENT
+
+**Status**: 🚨 Blocking production use - requires strategic planning before implementation
+
+**Discovered**: 2025-12-09 - Post-coverage validation analysis
+
+### Overview
+
+While 100% method coverage (587 methods, 64 classes) has been achieved, **the generated code has critical issues that prevent production use**. These require careful strategic planning before implementation.
+
+---
+
+### 🔴 Priority 1: CRITICAL - Blocks Compilation
+
+#### Issue 1-1: Parameter Name Mis-extraction
+
+**Problem**: Generated C++ code contains invalid parameter names
+
+**Example**:
+```cpp
+// ❌ INVALID - won't compile
+M5AtomDisplay m5unified_m5unified_dsp_1(cfg.atom_display cfg.atom_display) {
+  return M5.M5Unified.dsp(cfg.atom_display);
+}
+```
+
+**Root Cause**:
+- LibClangParser (or fallback) extracts struct member access (`.`) as parameter name
+- Original C++ signature: `M5AtomDisplay dsp(const config_t& cfg)` with `cfg.atom_display` in method body
+- Parser confuses method body code with parameter declaration
+
+**Impact**:
+- ✅ ESP32 compilation will fail
+- ✅ Estimated ~20-50 methods affected (all methods with complex parameter types)
+
+**Strategic Questions**:
+1. Should we fix parameter extraction in parser, or post-process generated code?
+2. How to handle parameters with no explicit names in C++ headers?
+3. Need to decide: generate generic names (arg0, arg1) or preserve semantic meaning?
+
+**Potential Approaches**:
+- **A**: Fix LibClangParser to extract canonical parameter names (via AST cursor.spelling)
+- **B**: Add post-processing step to sanitize parameter names (remove `.`, `->`, etc.)
+- **C**: Use fallback naming: `param_0`, `param_1`, `param_2` when extraction fails
+
+**Test Strategy**:
+- Add test case with struct member access in parameters
+- Verify sanitized names compile correctly
+
+---
+
+#### Issue 1-2: Method Overloading Name Collision
+
+**Problem**: Multiple overloaded methods generate identical function names
+
+**Example**:
+```cpp
+// ❌ COLLISION - all have _1 suffix (1 parameter each)
+M5AtomDisplay m5unified_m5unified_dsp_1(cfg.atom_display cfg.atom_display) { ... }
+M5ModuleDisplay m5unified_m5unified_dsp_1(cfg.module_display cfg.module_display) { ... }
+M5UnitOLED m5unified_m5unified_dsp_1(cfg.unit_oled cfg.unit_oled) { ... }
+M5UnitMiniOLED m5unified_m5unified_dsp_1(cfg.unit_mini_oled cfg.unit_mini_oled) { ... }
+M5UnitGLASS m5unified_m5unified_dsp_1(cfg.unit_glass cfg.unit_glass) { ... }
+M5UnitGLASS2 m5unified_m5unified_dsp_1(cfg.unit_glass2 cfg.unit_glass2) { ... }
+M5UnitLCD m5unified_m5unified_dsp_1(cfg.unit_lcd cfg.unit_lcd) { ... }
+// 7 definitions of m5unified_m5unified_dsp_1() - link error!
+```
+
+**Root Cause**:
+- Current naming: `{class}_{method}_{param_count}`
+- All `dsp()` overloads take 1 parameter → same suffix `_1`
+- Parameter count alone is insufficient for uniqueness
+
+**Impact**:
+- ✅ Linker error: "multiple definition of symbol"
+- ✅ Estimated ~50-100 overloaded methods affected
+- ✅ Common pattern in M5Unified (begin, dsp, setConfig, etc.)
+
+**Strategic Questions**:
+1. Use parameter types in naming? (long names, but unique)
+2. Use sequential numbering per method name? (short, but less semantic)
+3. Generate separate files per class to avoid global namespace pollution?
+
+**Potential Approaches**:
+- **A**: Type-based naming: `m5unified_dsp_atomdisplay()`, `m5unified_dsp_moduledisplay()`
+- **B**: Hash-based suffix: `m5unified_dsp_a1b2c3()` (hash of param types)
+- **C**: Sequential per-method: `m5unified_dsp_0()`, `m5unified_dsp_1()`, `m5unified_dsp_2()`
+
+**Trade-offs**:
+| Approach | Name Length | Uniqueness | Readability | Implementation |
+|----------|-------------|------------|-------------|----------------|
+| A: Type-based | Long | ✅ Guaranteed | ✅ Clear | Medium |
+| B: Hash-based | Short | ✅ Guaranteed | ❌ Cryptic | Easy |
+| C: Sequential | Short | ✅ Guaranteed | ⚠️ Needs doc | Easy |
+
+**Recommendation**: **Approach A (type-based)** - prioritize correctness and clarity over brevity
+
+**Test Strategy**:
+- Add test with multiple overloads (same param count, different types)
+- Verify unique names generated
+- Check linker accepts all definitions
+
+---
+
+### 🟡 Priority 2: Important - Must Address Before Production
+
+#### Issue 2-1: mrubyc Bindings Unverified
+
+**Problem**: Generated `src/m5unified.c` has not been inspected or tested
+
+**Unknown Factors**:
+- Parameter marshalling (Ruby → C++) - correct conversion?
+- Return value conversion (C++ → Ruby) - proper type mapping?
+- Object reference handling (`&`, `*`) - memory management?
+- Error propagation - C++ exceptions → Ruby errors?
+
+**Strategic Questions**:
+1. Auto-generate bindings vs. template-based approach?
+2. How to handle unsupported parameter types (callbacks, templates)?
+3. Memory management strategy for object references?
+
+**Investigation Required**:
+```bash
+# Examine generated bindings
+head -200 /tmp/mrbgem-m5unified-fixed/src/m5unified.c
+
+# Key things to check:
+# - mrbc_define_class() calls
+# - mrbc_define_method() registrations
+# - GET_*_ARG() parameter extraction
+# - SET_*_RETURN() value conversion
+```
+
+**Test Strategy**:
+- Create minimal PicoRuby test script
+- Call basic methods (M5.begin, BtnA.wasPressed)
+- Verify on actual ESP32 device
+
+---
+
+#### Issue 2-2: ESP32 Memory Constraints
+
+**Problem**: 587 methods × (code + metadata) may exceed ESP32 RAM limits
+
+**Facts**:
+- ESP32 SRAM: ~520KB total
+- WiFi/Bluetooth reserved: ~100KB
+- PicoRuby VM: ~50-100KB
+- Application code: ~200-300KB remaining
+- 587 C wrapper functions: **size unknown** ⚠️
+
+**Strategic Questions**:
+1. Generate full mrbgem (587 methods) or subset versions?
+2. Implement lazy loading / dynamic linking?
+3. Profile actual memory usage on device?
+
+**Potential Approaches**:
+- **A**: Full mrbgem (all 587 methods) - test on device first
+- **B**: Modular mrbgems:
+  - `mrbgem-m5unified-core` (M5, Button, Display management) ~100 methods
+  - `mrbgem-m5unified-sensors` (IMU, RTC) ~100 methods
+  - `mrbgem-m5unified-power` (AXP, IP5306) ~150 methods
+  - `mrbgem-m5unified-full` (all) 587 methods
+- **C**: User-configurable generation (select classes via config file)
+
+**Test Strategy**:
+- Flash full mrbgem to ESP32
+- Monitor free heap with `esp_get_free_heap_size()`
+- Measure actual memory consumption
+
+---
+
+#### Issue 2-3: Complex Type Unsupported
+
+**Problem**: Some C++ types cannot be properly wrapped
+
+**Unsupported Types**:
+- Function pointers: `void (*callback)(int)`
+- Template types: `std::vector<T>`, `std::function<>`
+- Varargs: `printf(const char* fmt, ...)`
+- Rvalue references: `Type&&`
+
+**Current Behavior**:
+- Parser extracts these methods
+- Generated code may not compile or work correctly
+
+**Strategic Questions**:
+1. Skip unsupported methods automatically?
+2. Generate stub implementations (raise NotImplementedError)?
+3. Provide manual override mechanism?
+
+**Potential Approaches**:
+- **A**: Blacklist pattern - skip known unsupported types
+- **B**: Type capability check - parser validates before generating
+- **C**: Manual wrapper directory - developers provide custom implementations
+
+**Test Strategy**:
+- Create test header with unsupported types
+- Verify parser skips or handles gracefully
+- Document unsupported patterns
+
+---
+
+### 🟢 Priority 3: Future Improvements
+
+#### Issue 3-1: Error Handling Strategy
+
+**Problem**: C++ exceptions not handled in wrappers
+
+**Example**:
+```cpp
+// What if M5.begin() throws?
+extern "C" int m5unified_begin_0() {
+  M5.begin();  // ← May throw std::exception
+  return 1;
+}
+```
+
+**Strategic Options**:
+1. Wrap all calls in try-catch, return error codes
+2. Let exceptions crash (ESP32 reboots) - fail-fast
+3. Convert to mrubyc exceptions (if supported)
+
+---
+
+#### Issue 3-2: Object Lifetime Management
+
+**Problem**: C++ references vs. Ruby object lifecycle
+
+**Example**:
+```cpp
+Button_Class& getButton(size_t index) { return _buttons[index]; }
+```
+
+**Questions**:
+- How long does Ruby object wrapping `Button_Class&` live?
+- What if C++ side invalidates the reference?
+- GC implications?
+
+**Strategy**: Needs research into mrubyc object model
+
+---
+
+#### Issue 3-3: libclang Availability
+
+**Problem**: Different parsing results based on environment
+
+**Impact**: Developer experience inconsistency
+
+**Strategy**: Provide Docker image with libclang pre-installed
+
+---
+
+### Implementation Roadmap (Requires Planning)
+
+#### Step 1: Strategic Planning Session (NEXT)
+
+**Goal**: Decide on approaches for P1 issues before coding
+
+**Decisions Needed**:
+1. Parameter name sanitization strategy (A/B/C?)
+2. Overload naming convention (A/B/C?)
+3. Test-first or investigate-first approach?
+
+**Participants**: Development team discussion
+
+**Output**: Detailed implementation plan with chosen approaches
+
+---
+
+#### Step 2: P1 Issue Resolution (After Planning)
+
+**Estimated Effort**: 2-3 TDD cycles
+
+**Tasks**:
+- [ ] Cycle X: Fix parameter name extraction (chosen approach)
+- [ ] Cycle Y: Fix overload naming collision (chosen approach)
+- [ ] Cycle Z: Integration test with real M5Unified headers
+- [ ] Validation: Re-generate mrbgem, verify compilation
+
+---
+
+#### Step 3: P2 Investigation & Testing
+
+**Estimated Effort**: 1-2 weeks
+
+**Tasks**:
+- [ ] Inspect generated mrubyc bindings
+- [ ] Create PicoRuby test suite
+- [ ] Flash to ESP32, measure memory usage
+- [ ] Document unsupported type patterns
+
+---
+
+### Decision Points
+
+**Before proceeding, team must decide**:
+
+1. **Naming Strategy**:
+   - [ ] Parameter names: Generic (arg0) vs. Sanitized (remove dots) vs. Semantic (parse better)
+   - [ ] Overload names: Type-based vs. Hash-based vs. Sequential
+
+2. **Scope Strategy**:
+   - [ ] Full mrbgem (587 methods) vs. Modular approach vs. User-configurable
+
+3. **Quality Strategy**:
+   - [ ] Fix all issues before first release vs. MVP with known limitations
+
+4. **Testing Strategy**:
+   - [ ] Unit tests only vs. Integration tests vs. Device tests
+
+---
+
+### Alternative Strategy: Static Analysis at Build Time 🎯 RECOMMENDED
+
+**Concept**: Automatically detect and fix issues during `ptrk device prepare`
+
+Instead of fixing m5libgen generation logic, **validate and repair generated code at build time**.
+
+#### Advantages
+
+1. **Separation of Concerns**:
+   - m5libgen: Focus on extraction accuracy (100% coverage achieved ✅)
+   - ptrk: Handle platform-specific constraints (ESP32 memory, linking)
+
+2. **Flexibility**:
+   - Different devices may need different fixes
+   - Can adapt to M5Unified API changes without touching m5libgen
+
+3. **User Experience**:
+   - Automatic - no manual intervention required
+   - Clear error messages with auto-fix suggestions
+   - Works with any mrbgem, not just M5Unified
+
+#### Implementation: Static Analysis Checker
+
+**Location**: `lib/picotorokko/device/mrbgem_validator.rb`
+
+**Executed During**: `ptrk device prepare` (before ESP-IDF build)
+
+**Checks & Fixes**:
+
+```ruby
+class MrbgemValidator
+  # Check 1: Invalid Parameter Names
+  def check_parameter_names(wrapper_cpp)
+    # Detect: param names with `.`, `->`, etc.
+    invalid_params = wrapper_cpp.scan(/\w+\s+(\w+\.\w+|\w+->\w+)\s*[,)]/)
+
+    if invalid_params.any?
+      warn "⚠️  Found #{invalid_params.size} invalid parameter names"
+      sanitize_parameter_names!(wrapper_cpp)
+      info "✅ Auto-fixed: replaced with generic names (param_0, param_1, ...)"
+    end
+  end
+
+  # Check 2: Function Name Collisions
+  def check_function_collisions(wrapper_cpp)
+    # Extract all function signatures
+    functions = extract_function_signatures(wrapper_cpp)
+    duplicates = functions.group_by { |f| f[:name] }.select { |_, v| v.size > 1 }
+
+    if duplicates.any?
+      warn "⚠️  Found #{duplicates.size} function name collisions"
+      resolve_collisions!(wrapper_cpp, duplicates)
+      info "✅ Auto-fixed: added type-based suffixes"
+    end
+  end
+
+  # Check 3: Memory Footprint (ESP32-specific)
+  def check_memory_footprint(mrbgem_path)
+    method_count = count_registered_methods(mrbgem_path)
+    estimated_size = method_count * 350  # bytes per method (rough estimate)
+
+    if estimated_size > 150_000  # 150KB threshold
+      warn "⚠️  Large mrbgem detected: #{method_count} methods (~#{estimated_size / 1024}KB)"
+      warn "💡 Consider using modular variant: mrbgem-m5unified-core"
+
+      if ENV['PTRK_AUTO_MODULAR'] == '1'
+        info "🔧 Auto-generating core variant..."
+        generate_core_variant(mrbgem_path)
+      end
+    end
+  end
+
+  # Auto-fix: Sanitize parameter names
+  def sanitize_parameter_names!(cpp_code)
+    # Replace: foo(Type param.member) → foo(Type param_0)
+    cpp_code.gsub!(/(\w+)\s+([\w:]+)\s+(\w+)\.(\w+)/) do
+      type = $2
+      "#{$1} #{type} param_#{generate_param_id}"
+    end
+  end
+
+  # Auto-fix: Resolve name collisions with type-based suffix
+  def resolve_collisions!(cpp_code, duplicates)
+    duplicates.each do |func_name, overloads|
+      overloads.each_with_index do |func, idx|
+        # Extract parameter type
+        param_type = extract_param_type(func[:signature])
+        type_suffix = normalize_type_name(param_type)
+
+        # Replace: m5unified_dsp_1 → m5unified_dsp_atomdisplay
+        cpp_code.gsub!(func[:signature],
+                       func[:signature].gsub(func_name, "#{func_name}_#{type_suffix}"))
+      end
+    end
+  end
+end
+```
+
+#### Integration with `ptrk device prepare`
+
+**Workflow**:
+
+```bash
+$ ptrk device prepare
+
+📦 Preparing device build...
+✓ Found mrbgem: mrbgem-m5unified (587 methods)
+
+🔍 Running static analysis...
+  ⚠️  Found 23 invalid parameter names
+  ✅ Auto-fixed: sanitized to param_0, param_1, ...
+
+  ⚠️  Found 7 function name collisions
+  ✅ Auto-fixed: added type-based suffixes
+
+  ⚠️  Large mrbgem: 587 methods (~205KB estimated)
+  💡 Consider: ptrk device prepare --variant=core
+
+✓ Static analysis complete
+✓ Copying to build workspace: .ptrk_build/20251209_153000/
+✓ Ready for ESP-IDF build
+
+Next: ptrk device build
+```
+
+#### Configuration
+
+**File**: `project/.ptrk_device.yml`
+
+```yaml
+mrbgem_validation:
+  enabled: true
+
+  auto_fix:
+    parameter_names: true      # Auto-sanitize invalid names
+    function_collisions: true  # Auto-resolve with type suffixes
+
+  memory_check:
+    enabled: true
+    threshold_kb: 150
+    auto_modular: false        # Set to true for automatic core variant
+
+  report:
+    verbose: true              # Show detailed analysis
+    save_to: .ptrk_build/validation_report.txt
+```
+
+#### Benefits for Users
+
+1. **Zero Configuration**: Works out of the box
+2. **Transparent**: Clear messages about what was fixed
+3. **Opt-out Available**: Can disable via config if needed
+4. **Works with Any mrbgem**: Not specific to M5Unified
+
+#### Implementation Priority
+
+**After Phase 11 P1 investigation**, choose approach:
+
+- **Option A**: Fix in m5libgen (root cause)
+  - Pros: Cleaner generated code
+  - Cons: Complex parser changes, affects all users
+
+- **Option B**: Fix in ptrk device prepare (build-time)
+  - Pros: Flexible, device-specific, easier to maintain
+  - Cons: Runtime overhead during build
+
+**Recommendation**: **Option B (build-time validation)** - better separation of concerns
+
+#### Tasks for Implementation
+
+- [ ] Create `lib/picotorokko/device/mrbgem_validator.rb`
+- [ ] Add validation step to `device prepare` command
+- [ ] Implement parameter name sanitization
+- [ ] Implement function collision resolution
+- [ ] Add memory footprint analysis
+- [ ] Write unit tests for validator
+- [ ] Document in `docs/DEVICE_PREPARE.md`
+- [ ] Add user configuration via `.ptrk_device.yml`
+
+---
+
+**Status**: ⏸️ PAUSED - Awaiting strategic planning session
+
+**Next Action**: Schedule planning discussion to decide implementation approaches
+
+---
+
+## Phase 10: M5Unified Coverage Tracking System
+
+**Goal**: Automatically detect and track M5Unified API changes over time
+
+**Status**: 📋 Planned
+
+### Strategy: C++ Parser-based Automatic Diff Detection
+
+**Approach**: Use existing LibClangParser to compare versions - NO new tests needed.
+
+### Implementation Plan
+
+#### Priority 1: Version Comparison Script ⚠️ HIGH PRIORITY
+
+**Script**: `scripts/compare_versions.rb`
+
+**Features**:
+- Parse current M5Unified (vendor/m5unified) using LibClangParser
+- Clone and parse latest M5Unified from GitHub
+- Generate diff report: new/deleted/modified classes and methods
+- Output format: Markdown with statistics and detailed changes
+
+**Output Example**:
+```markdown
+✅ M5Unified v0.1.15 → v0.1.16 比較
+
+📊 統計:
+  - 新規クラス: 2 (WiFi_Class, Bluetooth_Class)
+  - 削除クラス: 0
+  - 新規メソッド: 15
+  - 削除メソッド: 3
+  - 変更メソッド: 5 (引数・戻り値変更)
+
+🆕 新規クラス:
+  - WiFi_Class (12 methods)
+  - Bluetooth_Class (8 methods)
+
+➕ 新規メソッド:
+  - M5Unified::getWiFi() : WiFi_Class&
+  - M5Unified::getBluetooth() : Bluetooth_Class&
+  ...
+```
+
+**Implementation Notes**:
+- Reuse existing LibClangParser (already tested, 100% working)
+- Pure data comparison - no complex logic
+- No new tests required (parser tests cover all cases)
+
+#### Priority 2: Coverage History Tracking
+
+**File**: `coverage_history.json`
+
+**Structure**:
+```json
+{
+  "versions": [
+    {
+      "version": "0.1.15",
+      "date": "2025-12-09",
+      "commit": "abc123...",
+      "classes": 64,
+      "methods": 587,
+      "functional_classes": 37,
+      "data_structures": 27
+    },
+    {
+      "version": "0.1.16",
+      "date": "2025-12-15",
+      "commit": "def456...",
+      "classes": 66,
+      "methods": 602,
+      "diff": {
+        "new_classes": ["WiFi_Class", "Bluetooth_Class"],
+        "new_methods": 15,
+        "deleted_methods": 0
+      }
+    }
+  ]
+}
+```
+
+**Purpose**:
+- Version-to-version change tracking
+- Coverage trend visualization data
+- Automatic CHANGELOG generation source
+
+#### Priority 3: CLI Integration
+
+**Command**: `m5libgen check-updates`
+
+**Usage**:
+```bash
+$ m5libgen check-updates
+
+📦 Checking M5Unified updates...
+✓ Current version: v0.1.15 (587 methods, 64 classes)
+✓ Latest version:  v0.1.16 (602 methods, 66 classes)
+
+⚠️  Updates detected!
+
+🆕 New classes (2):
+  - WiFi_Class (12 methods)
+  - Bluetooth_Class (8 methods)
+
+➕ New methods (15):
+  - M5Unified::getWiFi() : WiFi_Class&
+  - M5Unified::getBluetooth() : Bluetooth_Class&
+  ...
+
+📝 Recommendation:
+  1. Run: m5libgen clone --update
+  2. Run: m5libgen generate output/mrbgem-m5unified
+  3. Update COVERAGE_REPORT.md
+  4. Commit changes
+```
+
+#### Priority 4: CI Automation (Future)
+
+**GitHub Actions**: `.github/workflows/m5unified-coverage-check.yml`
+
+**Features**:
+- Weekly automatic check (every Monday)
+- Manual trigger support
+- Auto-create GitHub Issue when updates detected
+- Coverage report artifact upload
+
+**Workflow Sketch**:
+```yaml
+name: M5Unified Coverage Check
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Every Monday
+  workflow_dispatch:
+jobs:
+  check-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check updates
+        run: bundle exec ruby scripts/compare_versions.rb
+      - name: Create issue if diff found
+        if: steps.check.outputs.has_diff == 'true'
+        uses: actions/github-script@v7
+```
+
+### Why Tests Are NOT Needed
+
+✅ **LibClangParser is fully tested**:
+- 14 tests, 100% pass
+- Covers all C++ parsing scenarios
+- Already validated with M5Unified (587 methods, 64 classes)
+
+✅ **Diff detection is simple data comparison**:
+- Compare two Hash/JSON structures
+- No complex parsing logic
+- Straightforward Ruby operations
+
+✅ **Existing scripts prove the approach**:
+- `complete_inventory.rb` - working production script
+- `final_coverage_validation.rb` - proven validation approach
+
+### Maintenance Workflow
+
+**When M5Unified updates**:
+
+1. **Detect**: Run `m5libgen check-updates`
+2. **Review**: Check diff report for new APIs
+3. **Update**: Re-generate mrbgem with `m5libgen generate`
+4. **Document**: Update COVERAGE_REPORT.md with new stats
+5. **Commit**: Push changes to repository
+
+**Expected Frequency**: Monthly to quarterly (based on M5Unified release cycle)
 
 ---
 

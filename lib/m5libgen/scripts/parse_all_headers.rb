@@ -51,7 +51,7 @@ def parse_all_headers
           end
         end
         success_count += 1
-      rescue => e
+      rescue StandardError => e
         puts "❌ #{header_name} - ERROR: #{e.message}"
         fail_count += 1
       end
@@ -73,12 +73,9 @@ def parse_all_headers
     power_classes.each do |klass|
       puts "  - #{klass[:name]} (#{klass[:methods].length} methods) from #{klass[:source_file]}"
     end
-
   ensure
     FileUtils.rm_rf(tmpdir)
   end
 end
 
-if __FILE__ == $0
-  parse_all_headers
-end
+parse_all_headers if __FILE__ == $PROGRAM_NAME

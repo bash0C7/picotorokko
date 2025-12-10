@@ -32,7 +32,7 @@ class M5UnifiedIntegrationTest < Test::Unit::TestCase
   end
 
   def test_extract_button_class_methods
-    skip "Skipping slow integration test" unless ENV["RUN_INTEGRATION_TESTS"]
+    omit "Skipping slow integration test" unless ENV["RUN_INTEGRATION_TESTS"]
 
     repo = M5LibGen::RepositoryManager.new(@repo_path)
     repo.clone(url: "https://github.com/m5stack/M5Unified.git")
@@ -61,7 +61,7 @@ class M5UnifiedIntegrationTest < Test::Unit::TestCase
   end
 
   def test_generate_complete_mrbgem
-    skip "Skipping slow integration test" unless ENV["RUN_INTEGRATION_TESTS"]
+    omit "Skipping slow integration test" unless ENV["RUN_INTEGRATION_TESTS"]
 
     repo = M5LibGen::RepositoryManager.new(@repo_path)
     repo.clone(url: "https://github.com/m5stack/M5Unified.git")
@@ -101,7 +101,7 @@ class M5UnifiedIntegrationTest < Test::Unit::TestCase
 
     # Verify generated C code has no TODO stubs
     c_file = File.read(File.join(@output_path, "src", "m5unified.c"))
-    refute_match(/\/\* TODO: Call wrapper function \*\//, c_file,
+    refute_match(%r{/\* TODO: Call wrapper function \*/}, c_file,
                  "Should not have TODO stubs in generated code")
 
     # Verify generated C++ code has proper syntax

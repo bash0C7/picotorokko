@@ -1,0 +1,23 @@
+# M5Unified repository (cloned during testing/generation)
+vendor/
+
+# Bundler
+.bundle/
+vendor/bundle/
+
+# RubyGems
+*.gem
+Gemfile.lock
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+*.tmp
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

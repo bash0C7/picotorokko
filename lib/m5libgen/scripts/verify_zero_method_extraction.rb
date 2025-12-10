@@ -24,9 +24,9 @@ def verify_zero_method_extraction
     headers = header_reader.list_headers
 
     # Target classes with 0 methods from analysis
-    target_classes = ["config_t", "imu_3d_t", "point_t", "speaker_config_t"]
+    target_classes = %w[config_t imu_3d_t point_t speaker_config_t]
 
-    puts "\n" + "=" * 80
+    puts "\n#{"=" * 80}"
     puts "VERIFYING LIBCLANGPARSER EXTRACTION FOR ZERO-METHOD CLASSES"
     puts "=" * 80
     puts
@@ -70,18 +70,15 @@ def verify_zero_method_extraction
         else
           puts "  ⚠️  Class NOT found by parser (might be nested or typedef)"
         end
-      rescue => e
+      rescue StandardError => e
         puts "  ❌ Parser error: #{e.message}"
       end
 
       puts
     end
-
   ensure
     FileUtils.rm_rf(tmpdir)
   end
 end
 
-if __FILE__ == $0
-  verify_zero_method_extraction
-end
+verify_zero_method_extraction if __FILE__ == $PROGRAM_NAME
