@@ -46,5 +46,20 @@ module M5LibGen
     def self.pointer_type?(cpp_type)
       cpp_type.end_with?("*")
     end
+
+    # Detect if a C++ type is unsupported for mrubyc binding
+    def self.unsupported_type?(cpp_type)
+      # Function pointers: void (*callback)(int)
+      return true if cpp_type.include?("(*")
+
+      # Rvalue references: Type&&
+      return true if cpp_type.include?("&&")
+
+      # Template types: std::function<>, CustomTemplate<>
+      # Note: We could whitelist specific safe templates in the future
+      return true if cpp_type.include?("<") && cpp_type.include?(">")
+
+      false
+    end
   end
 end

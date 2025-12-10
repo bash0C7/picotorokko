@@ -178,6 +178,47 @@ class LibClangParserTest < Test::Unit::TestCase
     end
   end
 
+  # Issue 1-1: Parameter name sanitization
+  def test_sanitize_parameter_names_with_member_access
+    create_header_with_struct_member_parameter
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes.find { |c| c[:name] == "Display" }
+    assert_not_nil klass, "Should extract Display class"
+
+    dsp_method = klass[:methods].find { |m| m[:name] == "configure" }
+    assert_not_nil dsp_method, "Should extract configure method"
+
+    # Parameter names should not contain '.' or '->' operators
+    dsp_method[:parameters].each do |param|
+      refute_match(/\./, param[:name], "Parameter name should not contain '.': #{param[:name]}")
+      refute_match(/->/, param[:name], "Parameter name should not contain '->': #{param[:name]}")
+    end
+
+    # Should have valid parameter name (either original or sanitized to param_N)
+    assert_match(/^(cfg|param_\d+)$/, dsp_method[:parameters][0][:name],
+                 "Parameter name should be 'cfg' or sanitized to 'param_0'")
+  end
+
+  def test_generate_generic_names_for_empty_parameter_names
+    create_header_with_unnamed_parameters
+    parser = M5LibGen::LibClangParser.new(@test_header)
+    classes = parser.extract_classes
+
+    klass = classes[0]
+    method = klass[:methods].find { |m| m[:name] == "process" }
+    assert_not_nil method
+
+    # All parameters should have valid names (not empty)
+    method[:parameters].each_with_index do |param, idx|
+      refute_empty param[:name], "Parameter #{idx} should have a name"
+      # Should be generic name if original was empty
+      assert_match(/^(param_\d+|\w+)$/, param[:name],
+                   "Parameter name should be valid identifier")
+    end
+  end
+
   private
 
   def create_simple_header
@@ -274,6 +315,32 @@ class LibClangParserTest < Test::Unit::TestCase
         void update();
       private:
         int _value;
+      };
+    CPP
+  end
+
+  def create_header_with_struct_member_parameter
+    File.write(@test_header, <<~CPP)
+      struct config_t {
+        int atom_display;
+        int module_display;
+      };
+
+      class Display {
+      public:
+        // This mimics M5Unified::dsp(const config_t& cfg) pattern
+        int configure(const config_t& cfg) {
+          return cfg.atom_display;  // Member access in body
+        }
+      };
+    CPP
+  end
+
+  def create_header_with_unnamed_parameters
+    File.write(@test_header, <<~CPP)
+      class Processor {
+      public:
+        void process(int, float, bool);  // Unnamed parameters
       };
     CPP
   end
