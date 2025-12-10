@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require_relative "naming_helper"
 
 module M5LibGen
   # Generates complete mrbgem directory structure and files
   class MrbgemGenerator
+    include NamingHelper
+
     attr_reader :output_path
 
     def initialize(output_path)
@@ -103,17 +106,12 @@ module M5LibGen
       content += "\n/* Extern function declarations */\n"
       cpp_data.each do |klass|
         klass[:methods].each do |method|
-          # Add parameter count to handle overloading
-          param_count = method[:parameters].length
-          func_name = "m5unified_#{klass[:name].downcase}_#{method[:name].downcase}_#{param_count}"
+          # Use NamingHelper for consistent naming with C++ wrapper
+          func_name = generate_unique_function_name(klass[:name], method)
           # Convert bool return type to int, keep others as-is
           return_type = method[:return_type] == "bool" ? "int" : method[:return_type]
-          # Build parameter list
-          params = if method[:parameters].empty?
-                     "void"
-                   else
-                     method[:parameters].map { |p| "#{p[:type]} #{p[:name]}" }.join(", ")
-                   end
+          # Build parameter list with sanitized names
+          params = generate_sanitized_params(method)
           content += "extern #{return_type} #{func_name}(#{params});\n"
         end
       end
@@ -131,24 +129,24 @@ module M5LibGen
     end
 
     def generate_method_wrapper(class_name, method)
-      # Add parameter count to handle overloading
+      # Use NamingHelper for consistent naming
       param_count = method[:parameters].length
       func_name = "mrbc_m5_#{method[:name].downcase}_#{param_count}"
-      extern_func = "m5unified_#{class_name.downcase}_#{method[:name].downcase}_#{param_count}"
+      extern_func = generate_unique_function_name(class_name, method)
 
       content = "static void #{func_name}(mrbc_vm *vm, mrbc_value *v, int argc) {\n"
 
-      # Extract parameters from mruby stack
+      # Extract parameters from mruby stack with sanitized names
       method[:parameters].each_with_index do |param, idx|
         arg_index = idx + 1
-        param_name = param[:name]
+        param_name = sanitize_parameter_name(param[:name], idx)
 
         # For now, assume all parameters are int (will extend later)
         content += "  int #{param_name} = GET_INT_ARG(#{arg_index});\n"
       end
 
-      # Build extern function call
-      param_names = method[:parameters].map { |p| p[:name] }.join(", ")
+      # Build extern function call with sanitized parameter names
+      param_names = get_sanitized_param_names(method)
 
       if method[:return_type] == "void"
         # Void return - just call and return nil
