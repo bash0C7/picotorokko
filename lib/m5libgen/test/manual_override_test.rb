@@ -119,4 +119,28 @@ class ManualOverrideTest < Test::Unit::TestCase
     assert_includes code, 'uint32_t rgb888'
     assert_includes code, 'M5.Led.setColor(index, rgb888)'
   end
+
+  def test_imu_getaccel_returns_array
+    method = { name: 'getAccel', parameters: [] }
+
+    cpp_code = @override.get_cpp_wrapper('IMU_Class', 'getAccel', method)
+    assert_not_nil cpp_code
+    assert_includes cpp_code, 'm5unified_imu_class_getaccel_array'
+    assert_includes cpp_code, 'M5.Imu.getAccel'
+    assert_includes cpp_code, 'result[0]'
+    assert_includes cpp_code, 'result[1]'
+    assert_includes cpp_code, 'result[2]'
+
+    c_code = @override.get_c_binding('IMU_Class', 'getAccel', method)
+    assert_not_nil c_code
+    assert_includes c_code, 'mrbc_array_new'
+    assert_includes c_code, 'mrbc_float_value'
+    assert_includes c_code, 'mrbc_array_set'
+  end
+
+  def test_imu_has_three_custom_overrides
+    assert_equal :custom, @override.get_action('IMU_Class', 'getAccel')
+    assert_equal :custom, @override.get_action('IMU_Class', 'getGyro')
+    assert_equal :custom, @override.get_action('IMU_Class', 'getMag')
+  end
 end

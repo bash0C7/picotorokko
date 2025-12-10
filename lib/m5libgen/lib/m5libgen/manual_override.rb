@@ -244,7 +244,128 @@ module M5LibGen
         # Note: This is handled by a generic rule in MrbgemGenerator, not per-method overrides
         # ========================================================================
 
+        # ========================================================================
+        # Phase 1: IMU Methods (CRITICAL - Output Pointers)
+        # Problem: getAccel(float*, float*, float*) has output pointer parameters
+        # Solution: Return array of [ax, ay, az] values
+        # ========================================================================
+        "imu_class::getaccel" => {
+          action: :custom,
+          cpp_wrapper: ->(method) {
+            <<~CPP
+              extern "C" int m5unified_imu_class_getaccel_array(float* result) {
+                float ax, ay, az;
+                bool success = M5.Imu.getAccel(&ax, &ay, &az);
+                if (success) {
+                  result[0] = ax;
+                  result[1] = ay;
+                  result[2] = az;
+                  return 1;
+                }
+                return 0;
+              }
+            CPP
+          },
+          c_binding: ->(method) {
+            <<~C
+              static void mrbc_m5_getaccel_0(mrbc_vm *vm, mrbc_value *v, int argc) {
+                float result[3];
+                if (m5unified_imu_class_getaccel_array(result)) {
+                  // Create array and set values
+                  mrbc_value array = mrbc_array_new(vm, 3);
+                  mrbc_value ax = mrbc_float_value(vm, result[0]);
+                  mrbc_value ay = mrbc_float_value(vm, result[1]);
+                  mrbc_value az = mrbc_float_value(vm, result[2]);
+                  mrbc_array_set(&array, 0, &ax);
+                  mrbc_array_set(&array, 1, &ay);
+                  mrbc_array_set(&array, 2, &az);
+                  SET_RETURN(array);
+                } else {
+                  SET_NIL_RETURN();
+                }
+              }
+            C
+          }
+        },
+
+        "imu_class::getgyro" => {
+          action: :custom,
+          cpp_wrapper: ->(method) {
+            <<~CPP
+              extern "C" int m5unified_imu_class_getgyro_array(float* result) {
+                float gx, gy, gz;
+                bool success = M5.Imu.getGyro(&gx, &gy, &gz);
+                if (success) {
+                  result[0] = gx;
+                  result[1] = gy;
+                  result[2] = gz;
+                  return 1;
+                }
+                return 0;
+              }
+            CPP
+          },
+          c_binding: ->(method) {
+            <<~C
+              static void mrbc_m5_getgyro_0(mrbc_vm *vm, mrbc_value *v, int argc) {
+                float result[3];
+                if (m5unified_imu_class_getgyro_array(result)) {
+                  mrbc_value array = mrbc_array_new(vm, 3);
+                  mrbc_value gx = mrbc_float_value(vm, result[0]);
+                  mrbc_value gy = mrbc_float_value(vm, result[1]);
+                  mrbc_value gz = mrbc_float_value(vm, result[2]);
+                  mrbc_array_set(&array, 0, &gx);
+                  mrbc_array_set(&array, 1, &gy);
+                  mrbc_array_set(&array, 2, &gz);
+                  SET_RETURN(array);
+                } else {
+                  SET_NIL_RETURN();
+                }
+              }
+            C
+          }
+        },
+
+        "imu_class::getmag" => {
+          action: :custom,
+          cpp_wrapper: ->(method) {
+            <<~CPP
+              extern "C" int m5unified_imu_class_getmag_array(float* result) {
+                float mx, my, mz;
+                bool success = M5.Imu.getMag(&mx, &my, &mz);
+                if (success) {
+                  result[0] = mx;
+                  result[1] = my;
+                  result[2] = mz;
+                  return 1;
+                }
+                return 0;
+              }
+            CPP
+          },
+          c_binding: ->(method) {
+            <<~C
+              static void mrbc_m5_getmag_0(mrbc_vm *vm, mrbc_value *v, int argc) {
+                float result[3];
+                if (m5unified_imu_class_getmag_array(result)) {
+                  mrbc_value array = mrbc_array_new(vm, 3);
+                  mrbc_value mx = mrbc_float_value(vm, result[0]);
+                  mrbc_value my = mrbc_float_value(vm, result[1]);
+                  mrbc_value mz = mrbc_float_value(vm, result[2]);
+                  mrbc_array_set(&array, 0, &mx);
+                  mrbc_array_set(&array, 1, &my);
+                  mrbc_array_set(&array, 2, &mz);
+                  SET_RETURN(array);
+                } else {
+                  SET_NIL_RETURN();
+                }
+              }
+            C
+          }
+        },
+
         # Add more overrides as needed...
+        # See PATH_TO_100_PERCENT.md for complete roadmap
       }
     end
   end
