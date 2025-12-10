@@ -12,17 +12,61 @@ module M5LibGen
     end
 
     def generate(cpp_data)
+      # Filter out unsupported methods
+      filtered_data, stats = filter_unsupported_methods(cpp_data)
+
       create_structure
       render_mrbgem_rake
-      render_c_bindings(cpp_data)
-      render_ruby_lib(cpp_data)
-      render_readme(cpp_data)
-      render_cpp_wrapper(cpp_data)
+      render_c_bindings(filtered_data)
+      render_ruby_lib(filtered_data)
+      render_readme(filtered_data)
+      render_cpp_wrapper(filtered_data)
       render_cmake
-      true
+
+      # Return statistics about filtering
+      stats
     end
 
     private
+
+    # Filter out methods with unsupported types
+    def filter_unsupported_methods(cpp_data)
+      filtered_count = 0
+      generated_count = 0
+
+      filtered_data = cpp_data.map do |klass|
+        original_methods = klass[:methods]
+        supported_methods = original_methods.select do |method|
+          # Check return type
+          if TypeMapper.unsupported_type?(method[:return_type])
+            filtered_count += 1
+            next false
+          end
+
+          # Check parameter types
+          has_unsupported_param = method[:parameters].any? do |param|
+            TypeMapper.unsupported_type?(param[:type])
+          end
+
+          if has_unsupported_param
+            filtered_count += 1
+            false
+          else
+            generated_count += 1
+            true
+          end
+        end
+
+        klass.merge(methods: supported_methods)
+      end
+
+      stats = {
+        filtered_count: filtered_count,
+        generated_count: generated_count
+      }
+
+      [filtered_data, stats]
+    end
 
     def create_structure
       FileUtils.mkdir_p(@output_path)
