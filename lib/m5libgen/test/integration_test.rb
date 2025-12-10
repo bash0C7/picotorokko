@@ -117,7 +117,7 @@ class IntegrationTest < Test::Unit::TestCase
             name: "setup",
             return_type: "void",
             parameters: [
-              { type: "const config_t&", name: "cfg.atom" }  # Invalid name
+              { type: "int", name: "cfg.atom" }  # Invalid parameter name (contains dot)
             ],
             is_static: false,
             is_const: false,
@@ -139,7 +139,7 @@ class IntegrationTest < Test::Unit::TestCase
     refute_includes cpp_content, "cfg.atom",
                     "C++ wrapper should not contain invalid parameter name 'cfg.atom'"
 
-    # Should use sanitized name param_0
+    # Should use sanitized name param_0 (parameter name was invalid, but type is valid)
     assert_includes cpp_content, "param_0",
                     "C++ wrapper should use sanitized parameter name 'param_0'"
   end

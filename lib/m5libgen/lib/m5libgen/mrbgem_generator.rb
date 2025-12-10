@@ -2,6 +2,10 @@
 
 require "fileutils"
 require_relative "naming_helper"
+require_relative "manual_override"
+require_relative "type_mapper"
+require_relative "cmake_generator"
+require_relative "cpp_wrapper_generator"
 
 module M5LibGen
   # Generates complete mrbgem directory structure and files
@@ -12,6 +16,7 @@ module M5LibGen
 
     def initialize(output_path)
       @output_path = output_path
+      @manual_override = ManualOverride.new
     end
 
     def generate(cpp_data)
@@ -36,10 +41,29 @@ module M5LibGen
     def filter_unsupported_methods(cpp_data)
       filtered_count = 0
       generated_count = 0
+      skipped_by_override = 0
+      custom_override_count = 0
 
       filtered_data = cpp_data.map do |klass|
         original_methods = klass[:methods]
         supported_methods = original_methods.select do |method|
+          # Check manual override first
+          if @manual_override.has_override?(klass[:name], method[:name])
+            action = @manual_override.get_action(klass[:name], method[:name])
+            if action == :skip
+              skipped_by_override += 1
+              # Mark method as skipped with reason
+              method[:skip_reason] = @manual_override.get_skip_reason(klass[:name], method[:name])
+              next false
+            elsif action == :custom
+              custom_override_count += 1
+              # Mark method as having custom implementation
+              method[:has_custom_override] = true
+              generated_count += 1
+              next true
+            end
+          end
+
           # Check return type
           if TypeMapper.unsupported_type?(method[:return_type])
             filtered_count += 1
@@ -65,7 +89,9 @@ module M5LibGen
 
       stats = {
         filtered_count: filtered_count,
-        generated_count: generated_count
+        generated_count: generated_count,
+        skipped_by_override: skipped_by_override,
+        custom_override_count: custom_override_count
       }
 
       [filtered_data, stats]
@@ -129,6 +155,12 @@ module M5LibGen
     end
 
     def generate_method_wrapper(class_name, method)
+      # Check for custom override first
+      if method[:has_custom_override]
+        custom_code = @manual_override.get_c_binding(class_name, method[:name], method)
+        return custom_code if custom_code
+      end
+
       # Use NamingHelper for consistent naming
       param_count = method[:parameters].length
       func_name = "mrbc_m5_#{method[:name].downcase}_#{param_count}"

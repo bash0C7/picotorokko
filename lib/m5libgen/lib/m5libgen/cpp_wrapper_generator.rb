@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "naming_helper"
+require_relative "manual_override"
 
 module M5LibGen
   # Generates C++ extern "C" wrapper functions
@@ -9,6 +10,7 @@ module M5LibGen
 
     def initialize(cpp_data)
       @cpp_data = cpp_data
+      @manual_override = ManualOverride.new
     end
 
     def generate
@@ -26,6 +28,12 @@ module M5LibGen
     private
 
     def generate_wrapper_function(class_name, method)
+      # Check for custom override first
+      if method[:has_custom_override]
+        custom_code = @manual_override.get_cpp_wrapper(class_name, method[:name], method)
+        return custom_code if custom_code
+      end
+
       # Generate unique function name based on parameter types
       func_name = generate_unique_function_name(class_name, method)
       return_type = method[:return_type] == "bool" ? "int" : method[:return_type]

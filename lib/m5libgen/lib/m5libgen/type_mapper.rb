@@ -49,6 +49,9 @@ module M5LibGen
 
     # Detect if a C++ type is unsupported for mrubyc binding
     def self.unsupported_type?(cpp_type)
+      # Invalid type names: cfg.atom_display (struct member access as type)
+      return true if cpp_type.include?(".") || cpp_type.include?("->")
+
       # Function pointers: void (*callback)(int)
       return true if cpp_type.include?("(*")
 
@@ -59,7 +62,70 @@ module M5LibGen
       # Note: We could whitelist specific safe templates in the future
       return true if cpp_type.include?("<") && cpp_type.include?(">")
 
+      # Object references: M5GFX&, Button_Class&, Display_Device&
+      # These are C++ class instances that cannot be passed to/from mrubyc
+      return true if is_object_reference?(cpp_type)
+
+      # Struct references: rtc_time_t&, config_t&, touch_detail_t&
+      # mrubyc doesn't support struct marshalling
+      return true if is_struct_reference?(cpp_type)
+
+      # Pointer arrays (except char*): const uint8_t*, int16_t*
+      # mrubyc doesn't have built-in array marshalling
+      return true if is_pointer_array?(cpp_type)
+
       false
+    end
+
+    # Check if type is an object reference (C++ class reference)
+    def self.is_object_reference?(cpp_type)
+      return false unless cpp_type.include?("&")
+
+      normalized = cpp_type.strip.gsub(/^const\s+/, "").gsub(/&$/, "")
+
+      # Common M5Unified object types
+      object_patterns = [
+        /^M5[A-Z]/,           # M5GFX, M5Canvas, M5Display, etc.
+        /Button_Class$/,       # Button_Class
+        /Display_Device$/,     # Display_Device
+        /_Class$/,             # Any _Class suffix
+        /^IOExpander/          # IOExpander_Base, etc.
+      ]
+
+      object_patterns.any? { |pattern| normalized.match?(pattern) }
+    end
+
+    # Check if type is a struct reference
+    def self.is_struct_reference?(cpp_type)
+      return false unless cpp_type.include?("&")
+
+      normalized = cpp_type.strip.gsub(/^const\s+/, "").gsub(/&$/, "")
+
+      # Common struct patterns in M5Unified
+      struct_patterns = [
+        /_t$/,                 # rtc_time_t, config_t, touch_detail_t
+        /^RGBColor$/,          # RGBColor struct
+        /^point\d+d/,          # point3d_i16_t, etc.
+        /^wav_info/            # wav_info_t
+      ]
+
+      struct_patterns.any? { |pattern| normalized.match?(pattern) }
+    end
+
+    # Check if type is a pointer to array (not string)
+    def self.is_pointer_array?(cpp_type)
+      return false unless cpp_type.include?("*")
+      return false if cpp_type.include?("char") # char* is OK (string)
+      return false if cpp_type.include?("void") # void* might be OK
+
+      # Pointer to numeric types: const uint8_t*, int16_t*, float*, etc.
+      pointer_patterns = [
+        /u?int\d+_t\s*\*/,     # uint8_t*, int16_t*, etc.
+        /float\s*\*/,          # float*
+        /double\s*\*/          # double*
+      ]
+
+      pointer_patterns.any? { |pattern| cpp_type.match?(pattern) }
     end
 
     # Get mrubyc GET_*_ARG macro for extracting parameter from stack
