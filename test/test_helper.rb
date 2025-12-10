@@ -4,6 +4,7 @@ SimpleCov.start do
   add_filter "/test/"
   add_filter "/vendor/"
   add_filter "/lib/picotorokko/templates/" # ユーザープロジェクト向けテンプレートは除外
+  add_filter "/lib/m5libgen/scripts/" # 一度きり実行の分析スクリプト（テスト対象外）
   # NOTE: 段階的にカバレッジ要件を引き上げ
   # Phase 3.2: 60% 達成
   # Phase 4.1: line 75%, branch 55% (実装)
