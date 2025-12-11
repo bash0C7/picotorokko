@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
+require_relative "naming_helper"
+require_relative "manual_override"
+
 module M5LibGen
   # Generates C++ extern "C" wrapper functions
   class CppWrapperGenerator
+    include NamingHelper
+
     def initialize(cpp_data)
       @cpp_data = cpp_data
+      @manual_override = ManualOverride.new
     end
 
     def generate
@@ -22,21 +28,21 @@ module M5LibGen
     private
 
     def generate_wrapper_function(class_name, method)
-      # Add parameter count to function name to handle overloading
-      param_count = method[:parameters].length
-      func_name = "m5unified_#{class_name.downcase}_#{method[:name].downcase}_#{param_count}"
+      # Check for custom override first
+      if method[:has_custom_override]
+        custom_code = @manual_override.get_cpp_wrapper(class_name, method[:name], method)
+        return custom_code if custom_code
+      end
+
+      # Generate unique function name based on parameter types
+      func_name = generate_unique_function_name(class_name, method)
       return_type = method[:return_type] == "bool" ? "int" : method[:return_type]
-      params = if method[:parameters].empty?
-                 "void"
-               else
-                 method[:parameters].map do |p|
-                   "#{p[:type]} #{p[:name]}"
-                 end.join(", ")
-               end
+      params = generate_sanitized_params(method)
 
       content = "#{return_type} #{func_name}(#{params}) {\n"
       api_call = "M5.#{class_name}.#{method[:name]}"
-      param_names = method[:parameters].map { |p| p[:name] }.join(", ")
+      # Use sanitized parameter names in API call
+      param_names = get_sanitized_param_names(method)
       # Always add parentheses for method calls
       api_call += "(#{param_names})"
 
