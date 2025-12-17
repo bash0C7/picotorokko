@@ -35,11 +35,11 @@ class ScenarioNewTest < PicotorokkoTestCase
         project_dir = File.join(tmpdir, project_id)
         assert Dir.exist?(project_dir), "project directory should exist at #{project_dir}"
         assert Dir.exist?(File.join(project_dir, "storage", "home")), "storage/home should exist"
-        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "mrbgems/applib should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "picoruby-applib")), "mrbgems/picoruby-applib should exist"
 
         # User expectation: Default mrbgem exists
-        assert File.exist?(File.join(project_dir, "mrbgems", "applib", "mrblib", "applib.rb")), "default mrblib should exist"
-        assert File.exist?(File.join(project_dir, "mrbgems", "applib", "src", "applib.c")), "default C source should exist"
+        assert File.exist?(File.join(project_dir, "mrbgems", "picoruby-applib", "mrblib", "applib.rb")), "default mrblib should exist"
+        assert File.exist?(File.join(project_dir, "mrbgems", "picoruby-applib", "src", "applib.c")), "default C source should exist"
 
         # User expectation: Can read project README
         readme_path = File.join(project_dir, "README.md")
@@ -80,7 +80,7 @@ class ScenarioNewTest < PicotorokkoTestCase
         project_dir = File.join(tmpdir, project_id)
         assert File.exist?(File.join(project_dir, "README.md")), "README should exist"
         assert File.exist?(File.join(project_dir, ".picoruby-env.yml")), ".picoruby-env.yml should exist"
-        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "mrbgems/applib should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "picoruby-applib")), "mrbgems/picoruby-applib should exist"
 
         # User expectation: Can build with the project
         assert Dir.exist?(File.join(project_dir, "storage", "home")), "storage/home should exist"
@@ -141,7 +141,7 @@ class ScenarioNewTest < PicotorokkoTestCase
         assert_match(/#{project_id}/, claude, "CLAUDE.md should contain project name")
 
         # Verify mrbgem uses project structure
-        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib")), "mrbgems/applib should exist"
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "picoruby-applib")), "mrbgems/picoruby-applib should exist"
       end
     end
 

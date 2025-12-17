@@ -4,7 +4,7 @@ mrbgems do |conf|
   # Edit to add custom mrbgems for your application
 
   # Core utilities
-  conf.gem :core => "mruby-print"
+  conf.gem core: "mruby-print"
 
   # Add your custom mrbgems here:
   # conf.gem "mrbgems/my-sensor"
@@ -12,5 +12,5 @@ mrbgems do |conf|
   # conf.gem :core => "sprintf"
 
   # Device-specific application mrbgem (auto-generated)
-  conf.gem "mrbgems/app"
+  conf.gem "mrbgems/picoruby-applib"
 end

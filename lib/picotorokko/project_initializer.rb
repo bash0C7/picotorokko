@@ -174,16 +174,16 @@ module Picotorokko
 
     # @rbs (String) -> void
     def generate_single_mrbgem(name)
-      mrbgem_dir = File.join(project_root, "mrbgems", name)
+      mrbgem_dir = File.join(project_root, "mrbgems", "picoruby-#{name}")
       FileUtils.mkdir_p(File.join(mrbgem_dir, "mrblib"))
       FileUtils.mkdir_p(File.join(mrbgem_dir, "src"))
 
       # Prepare template context
-      c_prefix = name.downcase
+      c_prefix = name.downcase.tr("-", "_")
       # Convert name to CamelCase for valid Ruby class name
       class_name = name.split(/[-_]/).map(&:capitalize).join
       template_context = {
-        mrbgem_name: name,
+        mrbgem_name: "picoruby-#{name}",
         class_name: class_name,
         c_prefix: c_prefix,
         author_name: options[:author] || detect_git_author || ""

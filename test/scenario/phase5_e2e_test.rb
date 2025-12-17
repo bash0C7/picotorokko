@@ -30,7 +30,7 @@ class ScenarioPhase5E2ETest < PicotorokkoTestCase
         assert File.exist?(File.join(project_dir, "README.md"))
         assert File.exist?(File.join(project_dir, ".picoruby-env.yml"))
         assert Dir.exist?(File.join(project_dir, "storage", "home"))
-        assert Dir.exist?(File.join(project_dir, "mrbgems", "applib"))
+        assert Dir.exist?(File.join(project_dir, "mrbgems", "picoruby-applib"))
       end
     end
 
@@ -41,7 +41,7 @@ class ScenarioPhase5E2ETest < PicotorokkoTestCase
         assert status.success?, "ptrk new should succeed. Output: #{output}"
 
         project_dir = File.join(tmpdir, project_id)
-        applib_gem = File.join(project_dir, "mrbgems", "applib")
+        applib_gem = File.join(project_dir, "mrbgems", "picoruby-applib")
 
         # Verify mrbgems structure
         assert Dir.exist?(applib_gem)

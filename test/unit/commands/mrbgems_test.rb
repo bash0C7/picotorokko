@@ -34,15 +34,15 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
         assert_match(/Created: README.md/, output)
 
         # ディレクトリが作成されたことを確認
-        assert_true(Dir.exist?("mrbgems/App"))
-        assert_true(Dir.exist?("mrbgems/App/mrblib"))
-        assert_true(Dir.exist?("mrbgems/App/src"))
+        assert_true(Dir.exist?("mrbgems/picoruby-App"))
+        assert_true(Dir.exist?("mrbgems/picoruby-App/mrblib"))
+        assert_true(Dir.exist?("mrbgems/picoruby-App/src"))
 
         # ファイルが作成されたことを確認
-        assert_true(File.exist?("mrbgems/App/mrbgem.rake"))
-        assert_true(File.exist?("mrbgems/App/mrblib/app.rb"))
-        assert_true(File.exist?("mrbgems/App/src/app.c"))
-        assert_true(File.exist?("mrbgems/App/README.md"))
+        assert_true(File.exist?("mrbgems/picoruby-App/mrbgem.rake"))
+        assert_true(File.exist?("mrbgems/picoruby-App/mrblib/app.rb"))
+        assert_true(File.exist?("mrbgems/picoruby-App/src/app.c"))
+        assert_true(File.exist?("mrbgems/picoruby-App/README.md"))
       ensure
         Dir.chdir(original_dir)
       end
@@ -62,9 +62,9 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
         assert_match(/Generating mrbgem template: CustomLib/, output)
 
         # ディレクトリが作成されたことを確認
-        assert_true(Dir.exist?("mrbgems/CustomLib"))
-        assert_true(File.exist?("mrbgems/CustomLib/mrblib/customlib.rb"))
-        assert_true(File.exist?("mrbgems/CustomLib/src/customlib.c"))
+        assert_true(Dir.exist?("mrbgems/picoruby-CustomLib"))
+        assert_true(File.exist?("mrbgems/picoruby-CustomLib/mrblib/customlib.rb"))
+        assert_true(File.exist?("mrbgems/picoruby-CustomLib/src/customlib.c"))
       ensure
         Dir.chdir(original_dir)
       end
@@ -80,10 +80,10 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
           Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
-        content = File.read("mrbgems/App/mrbgem.rake")
+        content = File.read("mrbgems/picoruby-App/mrbgem.rake")
 
         # 内容を確認
-        assert_match(/MRuby::Gem::Specification\.new\('App'\)/, content)
+        assert_match(/MRuby::Gem::Specification\.new\('picoruby-App'\)/, content)
         assert_match(/spec\.license = 'MIT'/, content)
         assert_match(/spec\.summary = 'Application-specific mrbgem'/, content)
       ensure
@@ -101,7 +101,7 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
           Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
-        content = File.read("mrbgems/App/mrblib/app.rb")
+        content = File.read("mrbgems/picoruby-App/mrblib/app.rb")
 
         # クラス定義を確認
         assert_match(/class App/, content)
@@ -121,7 +121,7 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
           Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
-        content = File.read("mrbgems/App/src/app.c")
+        content = File.read("mrbgems/picoruby-App/src/app.c")
 
         # マクロと関数を確認
         assert_include(content, "#elif defined(PICORB_VM_MRUBYC)")
@@ -144,7 +144,7 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
       Dir.chdir(tmpdir)
       begin
         # ディレクトリを事前に作成
-        FileUtils.mkdir_p("mrbgems/App")
+        FileUtils.mkdir_p("mrbgems/picoruby-App")
 
         assert_raises(RuntimeError) do
           capture_stdout do
@@ -166,7 +166,7 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
           Picotorokko::Commands::Mrbgems.start(["generate", "App"])
         end
 
-        content = File.read("mrbgems/App/mrbgem.rake")
+        content = File.read("mrbgems/picoruby-App/mrbgem.rake")
 
         # author_nameが含まれていることを確認
         assert_match(/spec\.author/, content)
@@ -185,7 +185,7 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
           Picotorokko::Commands::Mrbgems.start(["generate", "App", "--author", "Test Author"])
         end
 
-        content = File.read("mrbgems/App/mrbgem.rake")
+        content = File.read("mrbgems/picoruby-App/mrbgem.rake")
 
         # author_nameが正しく設定されたことを確認
         assert_match(/spec\.author\s*=\s*'Test Author'/, content)
@@ -204,7 +204,7 @@ class CommandsMrbgemsTest < PicotorokkoTestCase
           Picotorokko::Commands::Mrbgems.start(["generate", "CustomLib"])
         end
 
-        content = File.read("mrbgems/CustomLib/src/customlib.c")
+        content = File.read("mrbgems/picoruby-CustomLib/src/customlib.c")
 
         # 変数名とクラス名が正しく置換されたことを確認
         assert_match(/void\s+mrbc_customlib_init/, content)

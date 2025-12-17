@@ -292,11 +292,11 @@ class UnitCommandsNewTest < PicotorokkoTestCase
           initializer = Picotorokko::ProjectInitializer.new("test-project", {})
           initializer.initialize_project
 
-          # Check that default 'applib' mrbgem is created
-          assert Dir.exist?("test-project/mrbgems/applib"), "Default 'applib' mrbgem should be created"
-          assert File.exist?("test-project/mrbgems/applib/mrbgem.rake"), "mrbgem.rake should exist"
-          assert File.exist?("test-project/mrbgems/applib/mrblib/applib.rb"), "Ruby template should exist"
-          assert File.exist?("test-project/mrbgems/applib/src/applib.c"), "C template should exist"
+          # Check that default 'picoruby-applib' mrbgem is created
+          assert Dir.exist?("test-project/mrbgems/picoruby-applib"), "Default 'picoruby-applib' mrbgem should be created"
+          assert File.exist?("test-project/mrbgems/picoruby-applib/mrbgem.rake"), "mrbgem.rake should exist"
+          assert File.exist?("test-project/mrbgems/picoruby-applib/mrblib/applib.rb"), "Ruby template should exist"
+          assert File.exist?("test-project/mrbgems/picoruby-applib/src/applib.c"), "C template should exist"
         ensure
           Dir.chdir(original_dir)
         end

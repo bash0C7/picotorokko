@@ -30,7 +30,7 @@ module Picotorokko
 
       # @rbs (String) -> String
       def prepare_and_validate_directory(name)
-        mrbgem_dir = File.join(Dir.pwd, "mrbgems", name)
+        mrbgem_dir = File.join(Dir.pwd, "mrbgems", "picoruby-#{name}")
         raise "Error: Directory already exists: #{mrbgem_dir}" if Dir.exist?(mrbgem_dir)
 
         puts "Generating mrbgem template: #{name}"
@@ -42,7 +42,7 @@ module Picotorokko
 
       # @rbs (String) -> Hash[Symbol, String]
       def prepare_template_context(name)
-        c_prefix = name.downcase
+        c_prefix = name.downcase.tr("-", "_")
         # Convert to PascalCase for valid Ruby class name
         # If name starts with uppercase, keep as-is (user specified PascalCase)
         # Otherwise, convert first letter of each segment to uppercase
@@ -54,7 +54,7 @@ module Picotorokko
         author_name = options[:author] || `git config user.name`.strip || "Your Name"
 
         {
-          mrbgem_name: name,
+          mrbgem_name: "picoruby-#{name}",
           class_name: class_name,
           c_prefix: c_prefix,
           author_name: author_name
@@ -100,9 +100,9 @@ module Picotorokko
       # @rbs (String, String) -> void
       def print_success_message(name, c_prefix)
         puts "\n=== mrbgem Template Generated ==="
-        puts "Location: mrbgems/#{name}/"
+        puts "Location: mrbgems/picoruby-#{name}/"
         puts "\nNext steps:"
-        puts "  1. Edit the C extension: mrbgems/#{name}/src/#{c_prefix}.c"
+        puts "  1. Edit the C extension: mrbgems/picoruby-#{name}/src/#{c_prefix}.c"
         puts "  2. The mrbgem will be registered automatically during 'ptrk build setup'"
         puts "  3. Export patches to manage your changes: ptrk patch export <env>"
       end
