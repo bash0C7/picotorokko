@@ -182,11 +182,13 @@ module Picotorokko
       c_prefix = name.downcase.tr("-", "_")
       # Convert name to CamelCase for valid Ruby class name
       class_name = name.split(/[-_]/).map(&:capitalize).join
+      mrbgem_full_name = "picoruby-#{name}"
+      author_name = options[:author] || detect_git_author || ""
       template_context = {
-        mrbgem_name: "picoruby-#{name}",
+        mrbgem_name: mrbgem_full_name,
         class_name: class_name,
         c_prefix: c_prefix,
-        author_name: options[:author] || detect_git_author || ""
+        author_name: author_name
       }
 
       # Render and write template files
@@ -198,10 +200,10 @@ module Picotorokko
       templates_dir = File.expand_path("templates/mrbgem_app", __dir__)
 
       templates = [
-        { source: "mrbgem.rake.erb", dest: "mrbgem.rake" },
-        { source: "README.md.erb", dest: "README.md" },
-        { source: "mrblib/app.rb.erb", dest: "mrblib/#{c_prefix}.rb" },
-        { source: "src/app.c.erb", dest: "src/#{c_prefix}.c" }
+        { source: "mrbgem.rake", dest: "mrbgem.rake" },
+        { source: "README.md", dest: "README.md" },
+        { source: "mrblib/app.rb", dest: "mrblib/#{c_prefix}.rb" },
+        { source: "src/app.c", dest: "src/#{c_prefix}.c" }
       ]
 
       templates.each do |template|

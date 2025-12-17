@@ -1,8 +1,9 @@
+require "erb"
+
 module Picotorokko
   module Template
     # C コード用のテンプレートエンジン
-    # シンプルな文字列置換アプローチを使用
-    # TEMPLATE_* パターンの識別子を変数値で置換する
+    # ERB を使用してテンプレートを処理
     class CTemplateEngine
       # @rbs (String, Hash[Symbol, untyped]) -> void
       def initialize(template_path, variables)
@@ -17,13 +18,13 @@ module Picotorokko
       def render
         source = File.read(@template_path, encoding: "UTF-8")
 
-        # 各変数についてプレースホルダを置換
+        context_obj = Object.new
         @variables.each do |key, value|
-          placeholder = "TEMPLATE_#{key.to_s.upcase}"
-          source.gsub!(placeholder, value.to_s)
+          context_obj.define_singleton_method(key) { value }
         end
 
-        source
+        erb = ERB.new(source, trim_mode: "-")
+        erb.result(context_obj.instance_eval { binding })
       end
     end
   end

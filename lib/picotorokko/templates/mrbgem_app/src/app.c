@@ -7,12 +7,12 @@
 #include <mrubyc.h>
 
 /**
- * TEMPLATE_CLASS_NAME.version
+ * <%= class_name %>.version
  * Returns the version number of this application-specific mrbgem.
  * Returns an integer value (e.g., 100 = v1.0.0).
  */
 static void
-c_TEMPLATE_C_PREFIX_version(mrbc_vm *vm, mrbc_value *v, int argc)
+c_<%= c_prefix %>_version(mrbc_vm *vm, mrbc_value *v, int argc)
 {
   // Return the version number as an integer
   mrbc_value ret = mrbc_integer_value(100);
@@ -20,18 +20,18 @@ c_TEMPLATE_C_PREFIX_version(mrbc_vm *vm, mrbc_value *v, int argc)
 }
 
 /**
- * TEMPLATE_CLASS_NAME mrbgem initialization function
+ * <%= class_name %> mrbgem initialization function
  * Automatically called when the mrbgem is loaded.
  * Register class methods here.
  */
 void
-mrbc_TEMPLATE_C_PREFIX_init(mrbc_vm *vm)
+mrbc_<%= c_prefix %>_init(mrbc_vm *vm)
 {
-  // Define the TEMPLATE_CLASS_NAME class
-  mrbc_class *TEMPLATE_C_PREFIX_class = mrbc_define_class(vm, "TEMPLATE_CLASS_NAME", mrbc_class_object);
+  // Define the class
+  mrbc_class *<%= c_prefix %>_class = mrbc_define_class(vm, "<%= class_name %>", mrbc_class_object);
 
-  // Register class method: TEMPLATE_CLASS_NAME.version
-  mrbc_define_method(vm, TEMPLATE_C_PREFIX_class, "version", c_TEMPLATE_C_PREFIX_version);
+  // Register class method: version
+  mrbc_define_method(vm, <%= c_prefix %>_class, "version", c_<%= c_prefix %>_version);
 }
 
 #endif

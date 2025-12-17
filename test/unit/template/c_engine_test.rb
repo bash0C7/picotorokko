@@ -5,23 +5,23 @@ class TemplateCEngineTest < PicotorokkoTestCase
 
   test "renders C template with single placeholder" do
     template = create_c_template(<<~C)
-      void TEMPLATE_C_PREFIX_init(mrbc_vm *vm) {
+      void <%= c_prefix %>_init(mrbc_vm *vm) {
         // Initialize
       }
     C
     result = Ptrk::Template::CTemplateEngine.new(template, { c_prefix: "myapp" }).render
 
     assert_include(result, "void myapp_init(mrbc_vm *vm)")
-    assert_not_include(result, "TEMPLATE_")
+    assert_not_include(result, "<%=")
   ensure
     FileUtils.rm_f(template)
   end
 
   test "renders C template with multiple placeholders" do
     template = create_c_template(<<~C)
-      void mrbc_TEMPLATE_C_PREFIX_init(mrbc_vm *vm) {
-        mrbc_class *TEMPLATE_C_PREFIX_class =
-          mrbc_define_class(vm, "TEMPLATE_CLASS_NAME", mrbc_class_object);
+      void mrbc_<%= c_prefix %>_init(mrbc_vm *vm) {
+        mrbc_class *<%= c_prefix %>_class =
+          mrbc_define_class(vm, "<%= class_name %>", mrbc_class_object);
       }
     C
     variables = { c_prefix: "myapp", class_name: "MyApp" }
@@ -30,7 +30,7 @@ class TemplateCEngineTest < PicotorokkoTestCase
     assert_include(result, "void mrbc_myapp_init")
     assert_include(result, "myapp_class")
     assert_include(result, '"MyApp"')
-    assert_not_include(result, "TEMPLATE_")
+    assert_not_include(result, "<%=")
   ensure
     FileUtils.rm_f(template)
   end
@@ -38,7 +38,7 @@ class TemplateCEngineTest < PicotorokkoTestCase
   test "handles C function definition placeholders" do
     template = create_c_template(<<~C)
       static void
-      c_TEMPLATE_C_PREFIX_version(mrbc_vm *vm, mrbc_value *v, int argc)
+      c_<%= c_prefix %>_version(mrbc_vm *vm, mrbc_value *v, int argc)
       {
         mrbc_value ret = mrbc_integer_value(100);
         SET_RETURN(ret);
@@ -47,7 +47,7 @@ class TemplateCEngineTest < PicotorokkoTestCase
     result = Ptrk::Template::CTemplateEngine.new(template, { c_prefix: "sensor" }).render
 
     assert_include(result, "c_sensor_version")
-    assert_not_include(result, "TEMPLATE_")
+    assert_not_include(result, "<%=")
   ensure
     FileUtils.rm_f(template)
   end
@@ -56,10 +56,10 @@ class TemplateCEngineTest < PicotorokkoTestCase
     template = create_c_template(<<~C)
       #include <mrubyc.h>
 
-      void mrbc_TEMPLATE_C_PREFIX_init(mrbc_vm *vm) {
-        mrbc_class *TEMPLATE_C_PREFIX_class =
-          mrbc_define_class(vm, "TEMPLATE_CLASS_NAME", mrbc_class_object);
-        mrbc_define_method(vm, TEMPLATE_C_PREFIX_class, "version", c_TEMPLATE_C_PREFIX_version);
+      void mrbc_<%= c_prefix %>_init(mrbc_vm *vm) {
+        mrbc_class *<%= c_prefix %>_class =
+          mrbc_define_class(vm, "<%= class_name %>", mrbc_class_object);
+        mrbc_define_method(vm, <%= c_prefix %>_class, "version", c_<%= c_prefix %>_version);
       }
     C
     variables = { c_prefix: "gpio", class_name: "GPIO" }
@@ -76,9 +76,9 @@ class TemplateCEngineTest < PicotorokkoTestCase
 
   test "handles multiple occurrences of same placeholder" do
     template = create_c_template(<<~C)
-      void mrbc_TEMPLATE_C_PREFIX_init(mrbc_vm *vm) {
-        mrbc_class *TEMPLATE_C_PREFIX_class = mrbc_define_class(...);
-        mrbc_define_method(vm, TEMPLATE_C_PREFIX_class, ...);
+      void mrbc_<%= c_prefix %>_init(mrbc_vm *vm) {
+        mrbc_class *<%= c_prefix %>_class = mrbc_define_class(...);
+        mrbc_define_method(vm, <%= c_prefix %>_class, ...);
       }
     C
     result = Ptrk::Template::CTemplateEngine.new(template, { c_prefix: "uart" }).render
@@ -90,19 +90,18 @@ class TemplateCEngineTest < PicotorokkoTestCase
     FileUtils.rm_f(template)
   end
 
-  test "does not replace placeholders in comments" do
+  test "processes ERB syntax correctly" do
     template = create_c_template(<<~C)
-      // TEMPLATE_C_PREFIX initialization
-      // See TEMPLATE_CLASS_NAME documentation
-      void mrbc_TEMPLATE_C_PREFIX_init(mrbc_vm *vm) {
-        // TEMPLATE_C_PREFIX_class setup
+      // Device: <%= c_prefix %>
+      void mrbc_<%= c_prefix %>_init(mrbc_vm *vm) {
+        // <%= class_name %> implementation
       }
     C
     result = Ptrk::Template::CTemplateEngine.new(template, { c_prefix: "spi", class_name: "SPI" }).render
 
-    # Placeholders in comments should still be replaced (C engine is simple)
-    # because it does text-based replacement, not AST-aware
+    assert_include(result, "// Device: spi")
     assert_include(result, "void mrbc_spi_init")
+    assert_include(result, "// SPI implementation")
   ensure
     FileUtils.rm_f(template)
   end
@@ -133,31 +132,17 @@ class TemplateCEngineTest < PicotorokkoTestCase
     FileUtils.rm_f(template)
   end
 
-  test "replaces placeholders case-sensitively" do
+  test "handles ERB expressions" do
     template = create_c_template(<<~C)
-      TEMPLATE_C_PREFIX and
-      template_c_prefix
-      Template_C_Prefix
-    C
-    result = Ptrk::Template::CTemplateEngine.new(template, { c_prefix: "gpio" }).render
-
-    assert_include(result, "gpio and")
-    assert_include(result, "template_c_prefix")
-    assert_include(result, "Template_C_Prefix")
-  ensure
-    FileUtils.rm_f(template)
-  end
-
-  test "handles underscores in replacement values" do
-    template = create_c_template(<<~C)
-      void mrbc_TEMPLATE_C_PREFIX_init() {
-        mrbc_class *TEMPLATE_C_PREFIX_class = ...;
+      void mrbc_<%= c_prefix %>_init(mrbc_vm *vm) {
+        mrbc_class *<%= c_prefix %>_class = mrbc_define_class(vm, "<%= class_name %>", mrbc_class_object);
       }
     C
-    result = Ptrk::Template::CTemplateEngine.new(template, { c_prefix: "my_device" }).render
+    result = Ptrk::Template::CTemplateEngine.new(template, { c_prefix: "gpio", class_name: "GPIO" }).render
 
-    assert_include(result, "mrbc_my_device_init")
-    assert_include(result, "my_device_class")
+    assert_include(result, "void mrbc_gpio_init")
+    assert_include(result, "gpio_class")
+    assert_include(result, '"GPIO"')
   ensure
     FileUtils.rm_f(template)
   end
